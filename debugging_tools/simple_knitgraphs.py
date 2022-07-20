@@ -65,6 +65,7 @@ def tube(width: int = 4, height: int = 4, carrier:int=3) -> Knit_Graph:
 
 def add_hole_on_tube(tube_width, tube_height, hole_start_course, hole_start_wale, hole_width, hole_height, carrier: int =3, new_carrier: Optional[int] = None) -> Knit_Graph:
     assert hole_width != tube_width*2 - 1, f"invalid hole width"
+    assert tube_height > hole_start_course + hole_height, f'tube_height is not sufficient to produce this hole'
     # knitGraph = Knit_Graph()
     # yarn = Yarn("yarn", knitGraph, carrier_id=carrier)
     # knitGraph.add_yarn(yarn)
@@ -174,7 +175,7 @@ def add_hole_on_tube(tube_width, tube_height, hole_start_course, hole_start_wale
                 knitGraph.add_loop(loop)
                 knitGraph.connect_loops(parent_id, child_id)
             parent_loops_old_yarn = next_row
-            print('parent_loops_old_yarn_1', parent_loops_old_yarn)
+            # print('parent_loops_old_yarn_1', parent_loops_old_yarn)
             #for new yarn
             for parent_id in parent_loops_new_yarn:
                 child_id, loop = new_yarn.add_loop_to_end()
@@ -197,7 +198,7 @@ def add_hole_on_tube(tube_width, tube_height, hole_start_course, hole_start_wale
         if hole_height % 2 == 0:
         #add remain new loops for the recovery row, these new loops are increase loops (i.e., no parent loop)
             #first add loops that have no parents, the number of which should  = hole_width
-            for  i in range(hole_width):
+            for i in range(hole_width):
                 child_id, loop = yarn.add_loop_to_end()
                 next_row.append(child_id)
                 knitGraph.add_loop(loop)
@@ -213,7 +214,7 @@ def add_hole_on_tube(tube_width, tube_height, hole_start_course, hole_start_wale
         elif hole_end_wale == 2*tube_width -1 and hole_height % 2 == 1:
         #add remain new loops for the recovery row, these new loops are increase loops (i.e., no parent loop)
             #first add loops that have no parents, the number of which should  = hole_width
-            for  i in range(hole_width):
+            for i in range(hole_width):
                 child_id, loop = yarn.add_loop_to_end()
                 next_row.append(child_id)
                 knitGraph.add_loop(loop)
@@ -234,12 +235,13 @@ def add_hole_on_tube(tube_width, tube_height, hole_start_course, hole_start_wale
                 knitGraph.add_loop(loop)
                 knitGraph.connect_loops(parent_id, child_id)
             #add loops that have no parents, the number of which should  = hole_width
-            for  i in range(hole_width):
+            for i in range(hole_width):
                 child_id, loop = yarn.add_loop_to_end()
                 next_row.append(child_id)
                 knitGraph.add_loop(loop)
         #build complete tube again based on this complete row
         parent_loops = next_row 
+        # print('tube_height - hole_start_course - hole_height - 1', tube_height - hole_start_course - hole_height - 1)
         for _ in range(tube_height - hole_start_course - hole_height - 1):
             next_row = []
             for parent_id in parent_loops:
@@ -248,8 +250,8 @@ def add_hole_on_tube(tube_width, tube_height, hole_start_course, hole_start_wale
                 knitGraph.add_loop(loop)
                 knitGraph.connect_loops(parent_id, child_id)
             parent_loops = next_row 
-        print('knit_graph.last_loop_id_4', knitGraph.last_loop_id)
-        print('knit_graph.graph.nodes', knitGraph.graph.nodes)
+        # print('knit_graph.last_loop_id_4', knitGraph.last_loop_id)
+        # print('knit_graph.graph.nodes', knitGraph.graph.nodes)
     return knitGraph, indicator, hole_end_wale
 
 
