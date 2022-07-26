@@ -46,14 +46,12 @@ def test_short_rows():
     visualize_knitGraph(knit_graph)
 
 def test_add_hole_on_tube():
-    knit_graph, indicator, hole_end_wale = add_hole_on_tube(tube_width=3, tube_height=8, hole_start_course=3, hole_start_wale=2, hole_width=1, hole_height=3, carrier=3, new_carrier = 4)
+    knit_graph, indicator, hole_end_wale = add_hole_on_tube(tube_width=3, tube_height=8, hole_start_course=2, hole_start_wale=2, hole_width=1, hole_height=5, carrier=3, new_carrier = 4)
     # print('indicator', indicator)
     visualize_knitGraph(knit_graph, is_tube = True, indicator = indicator, hole_end_wale = hole_end_wale)
 
 if __name__ == "__main__":
     # test_stockinette()
-    # test_round_stockinette1()
-    # test_round_stockinette2()
     # test_rib()
     # test_seed()
     # test_twisted_stripes()
@@ -61,6 +59,5 @@ if __name__ == "__main__":
     # test_lace()
     # test_short_rows()
     # test_hole_by_short_row()
-    # test_test_parentsoffset()
     # test_tube()
     test_add_hole_on_tube()
