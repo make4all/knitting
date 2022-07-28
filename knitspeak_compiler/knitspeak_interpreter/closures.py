@@ -55,10 +55,8 @@ class Num_Assignment_Closure(Num_Closure):
         """
         if isinstance(self.assignment, Num_Closure):
             val = self.assignment.to_int()
-            print(f'isinstance_Num_Assignment_Closure {self.assignment,}')
         else:
             val = self.assignment
-            print(f'is not Num_Closure instance {self.assignment}')
         self.symbol_table[self.var_name] = val
         assert val >= 0, f"Non Negative Numbers:{val}"
         return val
@@ -104,11 +102,9 @@ class Operation_Closure(Num_Closure):
         """
         if isinstance(self.first_num, Num_Closure):
             first = self.first_num.to_int()
-            print('first_num: isinstance_Operation_Closure(self.first_num, Num_Closure)')
         else:
             first = self.first_num
         if isinstance(self.second_num, Num_Closure):
-            print('second_num: isinstance_Operation_Closure(self.second_num, Num_Closure)')
             second = self.second_num.to_int()
         else:
             second = self.second_num
@@ -148,12 +144,10 @@ class Iterator_Closure:
         :return: the list of integers between start and end considering rs/ws restrictions
         """
         if isinstance(self.start_num, Num_Closure):
-            print('start_num: isinstance_Num_Closure(self.start_num, Num_Closure)')
             first = self.start_num.to_int()
         else:
             first = self.start_num
         if isinstance(self.end_num, Num_Closure):
-            print('end_num: isinstance_Num_Closure(self.end_num, Num_Closure)')
             second = self.end_num.to_int()
         else:
             second = self.end_num
