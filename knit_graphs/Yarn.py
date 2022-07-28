@@ -68,6 +68,7 @@ class Yarn:
                 assert self.last_loop_id > loop.loop_id, \
                     f"Cannot add loop {loop.loop_id} after loop {self.last_loop_id}."
                 loop_id = loop.loop_id
+            #updated below, initially "elif self.last_loop_id is None:"
             elif self.last_loop_id is None and self.knit_graph.last_loop_id is None:  # the first loop on the yarn
                 loop_id = 0
             else:  # the next loop on this yarn

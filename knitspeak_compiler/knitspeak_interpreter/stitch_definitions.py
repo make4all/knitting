@@ -1,4 +1,3 @@
-"""Stitch definitions are used to construct a stitch at compile time"""
 from enum import Enum
 from typing import List, Optional
 

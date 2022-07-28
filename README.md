@@ -1,11 +1,10 @@
-# 599-Knitting-Assignments
-This repository contains the code needed to complete the programming assignments in UW CSE 599 on E-Textiles for the Fall Quarter of 2021.
-
+# 599-Knitting-Complete
+Code Base for UW CSE 599 Course on E-Textiles Programming Assignments
 
 ## Installation
 In the command line, type:
 ```console
-git clone https://github.com/mhofmann-uw/599-Knitting-Assignments.git
+git clone https://github.com/mhofmann-uw/599-Knitting-Complete.git
 ```
 Next, change into the working directory by typing:
 ```console
@@ -21,7 +20,6 @@ git submodule update
 ^*These commands initialize and update the submodules (other Git repos) that the visualizer depends on.*
 
 See the github documentation on [cloning a repository](https://docs.github.com/en/free-pro-team@latest/github/creating-cloning-and-archiving-repositories/cloning-a-repository) if you need assistance with installation.
-
 
 
 ## Set Up
@@ -45,17 +43,17 @@ For Windows: `set PYTHONPATH=%PYTHONPATH%;C:\path\to\your\project\`
 Now you should be able to access main methods from cmd line (e.g., `python tests\test_simple_knitgraphs.py`)
 
 
-
 ## Package Structure
 Assignment 1 is spread across two packages and the test package
 
 ### knit_graphs
-This package contains the classes used to create a knit graph (Loop, Yarn, Knit_Graph, Pull_Direction(Enum)). Methods in these classes need to be implemented to complete Assignment 1
+This package contains the classes used to create a knit graph (`Loop`, `Yarn`, `Knit_Graph`, `Pull_Direction(Enum)`). 
+Methods in these classes need to be implemented to complete Assignment 1
 
 ### debugging_tools
-This package contains a visualizer method to help visualize simple knitgraphs. This may be useful to extend for debugging future projects
-It also contains a set of simple knitgraph which manually generate some simple textures. In future assignments we will make it easier to define more complex knit graphs. 2 of these textures need to be implemented for assignment 1
+This package contains a visualizer method to help visualize simple knit graphs. This may be useful to extend for 
+debugging future projects. It also contains a set of simple knitgraph which manually generate some simple textures. 
+In future assignments we will make it easier to define more complex knit graphs. 2 of these textures need to be implemented for assignment 1
 
-## knitting_machine
-This package contains a representation of a v-bed knitting machine and 'KnitoutGenerator' class to create knitout 
-instructions by manipulting that machine-state. Knitout operations are in the machine_operations file.
+### knitting_machine
+This package contains the code to generate knitout code using a model of a v-bed knitting machine.

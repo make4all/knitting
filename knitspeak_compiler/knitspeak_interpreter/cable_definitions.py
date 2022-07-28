@@ -88,7 +88,7 @@ class Cable_Definition:
                                 self.lean.flip())
 
     def __str__(self):
-        return f"C{self.lean}({self._left_crossing_loops}-{self._left_crossing_pull_direction}/{self._right_crossing_loops}-{self._right_crossing_pull_direction}"
+        return f"C{self.lean}{self._left_crossing_loops}-{self._left_crossing_pull_direction}/{self._right_crossing_loops}-{self._right_crossing_pull_direction}"
 
     def __repr__(self):
         return str(self)

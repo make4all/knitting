@@ -1,5 +1,6 @@
 """Compiler code for converting knitspeak AST to knitgraph"""
-from typing import List, Dict, Union, Tuple, Set
+from typing import List, Dict, Union, Tuple, Optional, Set
+import xxlimited
 
 from knit_graphs.Knit_Graph import Knit_Graph
 from knit_graphs.Yarn import Yarn
@@ -15,13 +16,16 @@ class Knitspeak_Compiler:
     """
 
     def __init__(self):
+        # self._parser = KnitSpeak_Interpreter(True, True, True)
         self._parser = KnitSpeak_Interpreter()
         self.parse_results: List[Dict[str, Union[List[int, Num_Closure, Iterator_Closure], List[tuple]]]] = []
         self.course_ids_to_operations: Dict[int, List[tuple]] = {}
         self.knit_graph = Knit_Graph()
-        self.yarn = Yarn("yarn", self.knit_graph)
+        self.yarn = Yarn("yarn", self.knit_graph, carrier_id = 3)
         self.knit_graph.add_yarn(self.yarn)
         self.last_course_loop_ids: List[int] = []
+        self.last_course_loop_ids_left: List[int] = []
+        self.last_course_loop_ids_right: List[int] = []
         self.cur_course_loop_ids: List[int] = []
         self.current_row = 0
         self.loop_ids_consumed_by_current_course: Set[int] = set()
@@ -32,6 +36,7 @@ class Knitspeak_Compiler:
         """
         self.current_row += 1
         self._parser.parser.symbolTable["current_row"] = self.current_row
+        print('self._parser.parser.symbolTable["current_row"]', self._parser.parser.symbolTable["current_row"])
 
     @property
     def _working_ws(self) -> bool:
@@ -49,24 +54,254 @@ class Knitspeak_Compiler:
         :param patternIsFile: True if pattern is provided in a file
         :return: the resulting compiled knit graph
         """
-        self.parse_results = self._parser.parse(pattern, patternIsFile)
+        self.parse_results = self._parser.interpret(pattern, patternIsFile)
+        print('parse_results_from_compiler_file', self.parse_results)
         self._organize_courses()
         self.populate_0th_course(starting_width)
+        num_operation_courses = len(self.course_ids_to_operations)
+        # self.course_to_action_queues(starting_width)
         while self.current_row < row_count:
             for course_id in sorted(self.course_ids_to_operations):
                 self._increment_current_row()
-                assert self.current_row % course_id == 0
+                # print('self._increment_current_row()', self._increment_current_row())
+                if self.current_row > num_operation_courses:
+                    count = int((self.current_row-1)/num_operation_courses)
+                    print('course_id + count * num_operation_courses', course_id + count * num_operation_courses)
+                    assert self.current_row % (course_id + count * num_operation_courses) == 0
+                else: 
+                    assert self.current_row % course_id  == 0
                 course_instructions = self.course_ids_to_operations[course_id]
+                print(f'course id is {course_id}, current_row is {self.current_row}, course_instructions is {course_instructions}')
                 while len(self.loop_ids_consumed_by_current_course) < len(self.last_course_loop_ids):
+                # while len(self.loop_ids_consumed_by_current_course) < len(self.last_course_loop_ids) - 1:
                     for instruction in course_instructions:
                         self._process_instruction(instruction)
                         if len(self.loop_ids_consumed_by_current_course) == len(self.last_course_loop_ids):
+                        # if len(self.loop_ids_consumed_by_current_course) == len(self.last_course_loop_ids) - 1:
                             break
                 self.last_course_loop_ids = self.cur_course_loop_ids
+                print(f'self.cur_course_loop_ids is {self.cur_course_loop_ids}')
                 self.cur_course_loop_ids = []
                 self.loop_ids_consumed_by_current_course = set()
                 if self.current_row == row_count:
                     break
+        return self.knit_graph
+
+    def compile_with_hole(self, starting_width: int, row_count: int, pattern: str, patternIsFile: bool = False, hole_start_wale: Optional[int] = None, hole_start_row: Optional[int] = None, hole_width: Optional[int] = None, hole_height: Optional[int] = None) -> Knit_Graph: #side: Optional[str] = ''
+        """
+        Populates the knit_graph based on the compiled instructions. May throw errors from compilation
+        :param row_count: the number of rows to knit before completing, pattern may repeat or be incomplete
+        :param starting_width: the number of loops used to create the 0th course
+        :param pattern: the pattern as a string or in a file
+        :param patternIsFile: True if pattern is provided in a file
+        :return: the resulting compiled knit graph
+        """
+        # yarn = self.yarn
+        self.parse_results = self._parser.interpret(pattern, patternIsFile)
+        print('parse_results_from_compiler_file', self.parse_results)
+        self._organize_courses()
+        self.populate_0th_course(starting_width)
+        num_operation_courses = len(self.course_ids_to_operations)
+        course_id_to_nodes_consumed_by_action = self.course_to_action_queues(starting_width)
+        def row_growth(row_num, num_operation_courses):
+            while self.current_row < row_num:
+                for course_id in sorted(self.course_ids_to_operations):
+                    self._increment_current_row()
+                    # print('self._increment_current_row()', self._increment_current_row())
+                    if self.current_row > num_operation_courses:
+                        count = int((self.current_row-1)/num_operation_courses)
+                        print('course_id + count * num_operation_courses', course_id + count * num_operation_courses)
+                        assert self.current_row % (course_id + count * num_operation_courses) == 0
+                    else: 
+                        assert self.current_row % course_id  == 0
+                    course_instructions = self.course_ids_to_operations[course_id]
+                    print(f'course id is {course_id}, current_row is {self.current_row}, course_instructions is {course_instructions}')
+                    while len(self.loop_ids_consumed_by_current_course) < len(self.last_course_loop_ids):
+                        for instruction in course_instructions:
+                            print(f'yarn is {self.yarn}')
+                            self._process_instruction(self.yarn, instruction)
+                            if len(self.loop_ids_consumed_by_current_course) == len(self.last_course_loop_ids):
+                                break
+                    self.last_course_loop_ids = self.cur_course_loop_ids
+                    self.cur_course_loop_ids = []
+                    self.loop_ids_consumed_by_current_course = set()
+                    if self.current_row == row_num:
+                        break
+
+        #grow bottom rows before hole first
+        assert 1<hole_start_row < row_count, f'hole_start_row should be less than row_count'
+        row_growth(hole_start_row - 1, num_operation_courses)
+
+        if hole_start_row % 2 == 0:
+            grow_first_operations = {}
+            grow_second_operations = {}
+            course_id = start_row = hole_start_row % num_operation_courses
+            left_growth_range =  hole_start_wale
+            right_growth_range =  starting_width - (hole_start_wale + hole_width)
+            print(f'left_growth_range is {left_growth_range}, and right_growth_range is {right_growth_range}')
+            for i in range(hole_start_row, hole_start_row+hole_height):
+                if i > num_operation_courses:
+                    course_id = i % num_operation_courses
+                else:
+                    course_id = i
+                course_operation_for_right = course_operation_for_left = course_id_to_nodes_consumed_by_action[course_id]
+                if course_id % 2 == 1:
+                    course_operation_for_left = [*reversed(course_id_to_nodes_consumed_by_action[course_id])]
+                elif course_id % 2 == 0:
+                    course_operation_for_right = [*reversed(course_id_to_nodes_consumed_by_action[course_id])]
+                # print(f'when course_id is {course_id}, course_operation_for_left is {course_operation_for_left}')
+                course_operation_to_load_for_left = []
+                course_operation_to_load_for_right = []
+                total1 = 0
+                total2 = 0
+                if len(course_operation_for_left) == 1:
+                    action = course_operation_for_left[0][0]
+                    grow_first_operations[course_id] = [(action, left_growth_range)]
+                    grow_second_operations[course_id] = [(action, right_growth_range)]
+                else:
+                    while total1 < left_growth_range:
+                        for instruction in course_operation_for_left:
+                            total1 += instruction[1]
+                            # action = instruction[0]
+                            if course_id%2 == 1:
+                                course_operation_to_load_for_left.insert(0, instruction)
+                            else:
+                                course_operation_to_load_for_left.append(instruction)
+                            # print(f'course_operation_to_load_for_left is {course_operation_to_load_for_left}')
+                            if total1 == left_growth_range:
+                                break
+                    grow_first_operations[course_id] = course_operation_to_load_for_left
+                
+                    while total2 < right_growth_range:
+                        for instruction in course_operation_for_right:
+                            total2 += instruction[1]
+                            # action = instruction[0]
+                            if course_id%2 ==0:
+                                course_operation_to_load_for_right.insert(0, instruction)
+                            else:
+                                course_operation_to_load_for_right.append(instruction)
+                            if total2 == right_growth_range:
+                                break
+                    grow_second_operations[course_id] = course_operation_to_load_for_right
+                # print(f'grow_first_operations{course_id} is {grow_first_operations[course_id]}')
+
+            #add instructions for remaining rows following hole to grow_first_operations
+            if hole_height % 2 == 0:
+                for i in range(hole_start_row+hole_height, row_count+1):
+                    course_id = i
+                    grow_first_operations[course_id] = course_id_to_nodes_consumed_by_action[course_id]
+            print(f"grow_first_operations is {grow_first_operations}, and grow_second_operations is {grow_second_operations}")
+            
+            if len(grow_second_operations) != 0:
+                    # todo: assertion regarding carrier id 
+                    new_yarn = Yarn("new_yarn", self.knit_graph, carrier_id=4)
+                    self.knit_graph.add_yarn(new_yarn) 
+
+            def execute_instructions1(action, yarn, side):
+                """
+                Executes the action according to its type
+                """
+                is_stitch = isinstance(action, Stitch_Definition)
+                is_cable = isinstance(action, Cable_Definition)
+                is_list = type(action) is list
+                if is_stitch:
+                    print(f'haha is stitch')
+                    # self._process_stitch(action, yarn=yarn, last_course_loop_ids = last_course_loop_ids)
+                    self._process_stitch(yarn, action, side = side)
+                elif is_cable:
+                    self._process_cable(yarn, action, side = side)
+                elif is_list:
+                    self._process_list(yarn, action)
+                else:
+                    self._process_instruction(yarn, action)
+
+            self.last_course_loop_ids_left = self.last_course_loop_ids[-left_growth_range:]
+            self.last_course_loop_ids_right = self.last_course_loop_ids[:right_growth_range]
+            for i in range(hole_height):
+                while self.current_row < hole_start_row + hole_height - 1:
+                    for course_id in sorted(grow_first_operations):
+                        self._increment_current_row()
+                #         # print('self._increment_current_row()', self._increment_current_row())
+                #         if self.current_row > num_operation_courses:
+                #             count = int((self.current_row-1)/num_operation_courses)
+                #             print('course_id + count * num_operation_courses', course_id + count * num_operation_courses)
+                #             assert self.current_row % (course_id + count * num_operation_courses) == 0
+                #         else: 
+                #             assert self.current_row % course_id  == 0
+                        course_instructions_left = grow_first_operations[course_id]
+                        course_instructions_right = grow_second_operations[course_id]
+                        print(f'course_instructions_left for course_id {course_id} is {course_instructions_left}, course_instructions_right for course_id {course_id} is {course_instructions_right}')
+                #         print(f'course id is {course_id}, current_row is {self.current_row}, course_instructions is {course_instructions}')
+                        while len(self.loop_ids_consumed_by_current_course) < len(self.last_course_loop_ids_left): #bian
+                            for instruction in course_instructions_left:
+                                if isinstance(instruction[0], Stitch_Definition) and instruction[1] > 1:
+                                    times = instruction[1]
+                                    for i in range(times):
+                                        print('times for left')
+                                        execute_instructions1(instruction[0], yarn = self.yarn, side = 'left')
+                                # self._process_instruction(instruction)
+                                else:
+                                    execute_instructions1(instruction[0], yarn = self.yarn, side = 'left')
+                                if len(self.loop_ids_consumed_by_current_course) == len(self.last_course_loop_ids_left):
+                                    break
+                        self.last_course_loop_ids_left = self.cur_course_loop_ids #bian
+                        print(f'self.last_course_loop_ids_left is {self.last_course_loop_ids_left}')
+                        self.cur_course_loop_ids = []
+                        self.loop_ids_consumed_by_current_course = set()
+                        # if self.current_row == hole_start_row + hole_height - 1:
+                        #     break
+
+                        while len(self.loop_ids_consumed_by_current_course) < len(self.last_course_loop_ids_right): #bian
+                            for instruction in course_instructions_right:
+                                if isinstance(instruction[0], Stitch_Definition) and instruction[1] > 1:
+                                    times = instruction[1]
+                                    for i in range(times):
+                                        print('times for right')
+                                        execute_instructions1(instruction[0], yarn = new_yarn, side = 'right')
+                                # self._process_instruction(instruction)
+                                else:
+                                    execute_instructions1(instruction[0], yarn = new_yarn, side = 'right')
+                                if len(self.loop_ids_consumed_by_current_course) == len(self.last_course_loop_ids_right):
+                                    break
+                        self.last_course_loop_ids_right = self.cur_course_loop_ids #bian
+                        print(f'self.last_course_loop_ids_right is {self.last_course_loop_ids_right}')
+                        self.cur_course_loop_ids = []
+                        self.loop_ids_consumed_by_current_course = set()
+                        if self.current_row == hole_start_row + hole_height - 1:
+                            break
+            '''add dummy nodes to this special row immediately above hole, so that when len(self.cur_course_loop_ids) below increase as 
+            we add node with yarn, prior_course_index will be updated as desired, otherwise cause node index bug
+            # course_index = len(self.cur_course_loop_ids)
+            # prior_course_index = (len(last_course_loop_ids) - 1) - course_index'''
+            for i in range(hole_width):
+                self.last_course_loop_ids_right.append('dummy_node'+str(i+1))
+            #mind the order of list concatenation
+            self.last_course_loop_ids = self.last_course_loop_ids_right + self.last_course_loop_ids_left
+            print(f'special row is {self.last_course_loop_ids}')
+            special_row_nodes_num = starting_width - hole_width
+            for course_id in range(hole_start_row+hole_height, row_count+1):
+                # for course_id in sorted(grow_first_operations):
+                self._increment_current_row()
+                course_instructions_left = grow_first_operations[course_id]
+                while len(self.loop_ids_consumed_by_current_course) < len(self.last_course_loop_ids): #bian
+                    for instruction in course_instructions_left:
+                        if isinstance(instruction[0], Stitch_Definition) and instruction[1] > 1:
+                            times = instruction[1]
+                            for i in range(times):
+                                print('times for right')
+                                execute_instructions1(instruction[0], yarn = self.yarn, side = '')
+                        # self._process_instruction(instruction)
+                        else:
+                            execute_instructions1(instruction[0], yarn = self.yarn, side = '')
+                        if len(self.loop_ids_consumed_by_current_course) == len(self.last_course_loop_ids):
+                            break
+                self.last_course_loop_ids = self.cur_course_loop_ids #bian
+                print(f'self.last_course_loop_ids is {self.last_course_loop_ids}')
+                self.cur_course_loop_ids = []
+                self.loop_ids_consumed_by_current_course = set()
+                if self.current_row == row_count:
+                    break
+
         return self.knit_graph
 
     def populate_0th_course(self, starting_width: int):
@@ -90,30 +325,36 @@ class Knitspeak_Compiler:
         """
         for instructions in self.parse_results:
             course_ids = instructions["courseIds"]
+            print('course_ids', course_ids, type(course_ids))
             course_instructions = instructions["stitch-operations"]
             for course_id in course_ids:
                 if isinstance(course_id, Num_Closure):
+                    print('isinstance(course_id, Num_Closure)')
                     course_id = course_id.to_int()  # converts any variable numbers to their current state
                     assert course_id not in self.course_ids_to_operations, f"KnitSpeak Error: Course {course_id} is defined more than once"
                     self.course_ids_to_operations[course_id] = course_instructions
                 elif isinstance(course_id, Iterator_Closure):  # closes iteration over variable numbers
+                    print('isinstance(course_id, Iterator_Closure)')
                     sub_courses = course_id.to_int_list()
                     for sub_id in sub_courses:
                         assert sub_id not in self.course_ids_to_operations, f"KnitSpeak Error: Course {sub_id} is defined more than once"
                         self.course_ids_to_operations[sub_id] = course_instructions
                 else:  # course_id is integer
+                    print('else')
                     assert course_id not in self.course_ids_to_operations, f"KnitSpeak Error: Course {course_id} is defined more than once"
                     self.course_ids_to_operations[course_id] = course_instructions
 
         max_course = max(*self.course_ids_to_operations)
         if "all_rs" in self._parser.parser.symbolTable:
-            course_instructions = self.course_ids_to_operations[1]
+            print('"all_rs" in self._parser.parser.symbolTable')
+            course_instructions = self.course_ids_to_operations[1] #since in hand-knitting language, course start from 1st not 0.
             for course_id in range(3, max_course + 1, 2):
                 if course_id not in self.course_ids_to_operations:
                     self.course_ids_to_operations[course_id] = course_instructions
                 else:
                     print(f"KnitSpeak Warning: course {course_id} overrides rs-instructions")
         if "all_ws" in self._parser.parser.symbolTable:
+            print('"all_ws" in self._parser.parser.symbolTable')
             course_instructions = self.course_ids_to_operations[2]
             for course_id in range(4, max_course + 1, 2):
                 if course_id not in self.course_ids_to_operations:
@@ -126,9 +367,10 @@ class Knitspeak_Compiler:
 
         if max_course % 2 == 1 and "all_ws" in self._parser.parser.symbolTable:  # ends on rs row
             self.course_ids_to_operations[max_course + 1] = self.course_ids_to_operations[2]
+        print(f'self.course_ids_to_operations is {self.course_ids_to_operations}, max_course is {max_course}')
 
-    def _process_instruction(self, instruction: Tuple[Union[tuple, Stitch_Definition, Cable_Definition, list],
-                                                      Tuple[bool, int]]):
+    def _process_instruction(self, yarn, instruction: Tuple[Union[tuple, Stitch_Definition, Cable_Definition, list],
+                                                      Tuple[bool, int]], side: Optional[str]= ''):
         """
         :param instruction: A tuple with the knitting instructions and information about how to repeat them
         instruction[0] can be a stitch definition, cable definition, or a list of instruction tuples
@@ -137,6 +379,7 @@ class Knitspeak_Compiler:
          If the boolean is false, then the integer represents the number of loops left after executing the instructions
         :return:
         """
+        # ([(1-BtF-c0->1, (True, 1))], (False, 0))
         action = instruction[0]
         is_stitch = isinstance(action, Stitch_Definition)
         is_cable = isinstance(action, Cable_Definition)
@@ -145,36 +388,84 @@ class Knitspeak_Compiler:
         repeats = 1
         if static_repeats:
             repeats = instruction[1][1]
+            # print('process instruction', instruction[0], repeats, isinstance(repeats, Num_Closure))
+            # print('type of repeats', repeats)
             if isinstance(repeats, Num_Closure):
                 repeats = repeats.to_int()
+                # print('repeats.to_int()', repeats)
         remaining_loops = 0
         if not static_repeats:
             remaining_loops = instruction[1][1]
             if isinstance(remaining_loops, Num_Closure):
+                print('repeats.to_int() under not static_repeats', repeats)
                 remaining_loops = remaining_loops.to_int()
 
-        def execute_instructions():
+        def execute_instructions(yarn, action, side = side):
             """
             Executes the action according to its type
             """
             if is_stitch:
-                self._process_stitch(action)
+                self._process_stitch(yarn, action, side = side)
             elif is_cable:
-                self._process_cable(action)
+                self._process_cable(yarn, action, side = side)
             elif is_list:
-                self._process_list(action)
+                self._process_list(yarn, action)
             else:
-                self._process_instruction(action)
+                self._process_instruction(yarn, action)
 
         if not static_repeats:  # need to iterate until remaining loops is left
             while (len(self.last_course_loop_ids) - len(self.loop_ids_consumed_by_current_course)) > remaining_loops:
-                execute_instructions()
+                execute_instructions(yarn, action, side = side)
             assert remaining_loops == (len(self.last_course_loop_ids) - len(self.loop_ids_consumed_by_current_course))
         else:
             for _ in range(0, repeats):
-                execute_instructions()
+                execute_instructions(yarn, action, side = side)
+    
+    def course_to_action_queues(self, starting_width):
+        course_id_to_nodes_consumed_by_action = {}
+        repeats = 1 
+        for course_id in sorted(self.course_ids_to_operations):
+            count = 0
+            course_id_to_nodes_consumed_by_action[course_id] = []
+            course_instructions = self.course_ids_to_operations[course_id]
+            if len(course_instructions) == 1 and course_instructions[0][1][0] == True:
+                repeats = starting_width
+                course_id_to_nodes_consumed_by_action[course_id].append((course_instructions[0][0], repeats))
+            else:
+                for instruction in course_instructions:
+                    action = instruction[0]
+                    static_repeats = instruction[1][0]
+                    repeats = 1
+                    if static_repeats:
+                        repeats = instruction[1][1]
+                        if isinstance(repeats, Num_Closure):
+                            repeats = repeats.to_int()
+    
+                    if isinstance(action, Stitch_Definition):
+                        nodes_consumed_num = len(action)
+                    elif isinstance(action, Cable_Definition):
+                        nodes_consumed_num = len(action.stitch_definitions())
+                    elif type(action) is list and instruction[1][0] == False:
+                        nodes_consumed_num = starting_width - count
+                        action = action[0][0]
+                        # for sub_action in action:
+                        #     action = sub_action[0]
+                        #     if sub_action[1][0] == True:
+                        #         repeats = sub_action[1][1]
+                        #         if isinstance(repeats, Num_Closure):
+                        #             repeats = repeats.to_int()
+                        #         elif isinstance(action, Stitch_Definition):
+                        #             nodes_consumed_num = len(Stitch_Definition)
+                        #         elif isinstance(action, Cable_Definition):
+                        #             nodes_consumed_num = len(action.stitch_definitions())
+                        #         course_id_to_nodes_consumed_by_action[course_id].append((action, repeats*nodes_consumed_num))
+                    course_id_to_nodes_consumed_by_action[course_id].append((action, repeats*nodes_consumed_num))
+                    count+=repeats*nodes_consumed_num
+        print(f'course_id_to_nodes_consumed_by_action is {course_id_to_nodes_consumed_by_action}')
+        return course_id_to_nodes_consumed_by_action
 
-    def _process_stitch(self, stitch_def: Stitch_Definition, flipped_by_cable=False):
+
+    def _process_stitch(self, yarn, stitch_def: Stitch_Definition, flipped_by_cable=False, side: Optional[str] = ''):
         """
         Uses a stitch definition and compiler state to generate a new loop and connect it to the prior course.
         May throw two compiler errors.
@@ -183,10 +474,22 @@ class Knitspeak_Compiler:
         :param flipped_by_cable: if True, implies that this stitch came from a cable and has been flipped appropriately
         :param stitch_def: the stitch definition used to connect the new loop
         """
+        print(f'yarn is {yarn}')
+        if side == 'left':
+            last_course_loop_ids = self.last_course_loop_ids_left
+            print('left', last_course_loop_ids)
+        elif side == 'right':
+            last_course_loop_ids = self.last_course_loop_ids_right
+            print('right', last_course_loop_ids)
+        else:
+            last_course_loop_ids  = self.last_course_loop_ids
+            print('not right or left', self.last_course_loop_ids)
         if self._working_ws and not flipped_by_cable:  # flips stitches following hand-knitting conventions
             stitch_def = stitch_def.copy_and_flip()
         course_index = len(self.cur_course_loop_ids)
-        prior_course_index = (len(self.last_course_loop_ids) - 1) - course_index
+        print(f'last_course_loop_ids is {last_course_loop_ids}')
+        prior_course_index = (len(last_course_loop_ids) - 1) - course_index
+        print(f'prior_course_index is {prior_course_index}')
         if stitch_def.child_loops == 1:
             # Todo: Implement processing the stitch into the knitgraph
             #  add a new loop to the end of  self.yarn and add it to the self.knitgraph
@@ -195,19 +498,35 @@ class Knitspeak_Compiler:
             #   mark the parent_loop as "consumed" by putting it in the loop_ids_consumed_by_current_course set
             #   then connect that parent loop to the new child_loop given the stitch information in the stitch_def
             #  add the newly created loop to the end of self.cur_course_loop_ids
-            raise NotImplementedError
+            loop_id, loop = yarn.add_loop_to_end()
+            self.knit_graph.add_loop(loop)
+            print(f'stitch_def is {stitch_def}, stitch_def.offset_to_parent_loops is {stitch_def.offset_to_parent_loops}')
+            for stack_position, parent_offset in enumerate(stitch_def.offset_to_parent_loops):
+                parent_index = prior_course_index + parent_offset
+                assert 0 <= parent_index < len(last_course_loop_ids), f"Knitspeak Error: Cannot find a loop at index {parent_index}"
+                parent_loop_id = last_course_loop_ids[parent_index]
+                assert parent_loop_id not in self.loop_ids_consumed_by_current_course, \
+                    f"Knitspeak Error: Loop {parent_loop_id} has already been used"
+                self.loop_ids_consumed_by_current_course.add(parent_loop_id)
+                print(f'connect parent_loop_id {parent_loop_id} to loop_id {loop_id}, depth is {stitch_def.cabling_depth}')
+                print(f'parent_loop_id is {parent_loop_id}')
+                if 'dummy_node' not in str(parent_loop_id): 
+
+                    self.knit_graph.connect_loops(parent_loop_id, loop_id, stitch_def.pull_direction,
+                                                stack_position, stitch_def.cabling_depth, parent_offset)
+            self.cur_course_loop_ids.append(loop_id)
         else:  # slip statement
             assert len(stitch_def.offset_to_parent_loops) == 1, "Cannot slip multiple loops"
             for stack_position, parent_offset in enumerate(stitch_def.offset_to_parent_loops):
-                parent_index = (len(self.last_course_loop_ids) - 1) - course_index + parent_offset
-                assert 0 <= parent_index < len(self.last_course_loop_ids), f"Knitspeak Error: Cannot find a loop at index {parent_index}"
-                parent_loop_id = self.last_course_loop_ids[parent_index]
+                parent_index = (len(last_course_loop_ids) - 1) - course_index + parent_offset
+                assert 0 <= parent_index < len(last_course_loop_ids), f"Knitspeak Error: Cannot find a loop at index {parent_index}"
+                parent_loop_id = last_course_loop_ids[parent_index]
                 assert parent_loop_id not in self.loop_ids_consumed_by_current_course, \
                     f"Knitspeak Error: Loop {parent_loop_id} has already been used"
                 self.loop_ids_consumed_by_current_course.add(parent_loop_id)
                 self.cur_course_loop_ids.append(parent_loop_id)
 
-    def _process_cable(self, cable_def: Cable_Definition):
+    def _process_cable(self, yarn, cable_def: Cable_Definition, side: Optional[str] = ''):
         """
         Uses a cable definition and compiler state to generate and connect a cable
         :param cable_def: the cable definition used to connect the cable into the knitgraph
@@ -215,13 +534,14 @@ class Knitspeak_Compiler:
         if self._working_ws:  # flips cable by hand-knitting convention
             cable_def = cable_def.copy_and_flip()
         stitch_definitions = cable_def.stitch_definitions()
+        print(f'process_cable, len of stitch_definitions is {len(stitch_definitions)}')
         for stitch_definition in stitch_definitions:
-            self._process_stitch(stitch_definition, flipped_by_cable=True)
+            self._process_stitch(yarn, stitch_definition, flipped_by_cable=True, side = side)
 
-    def _process_list(self, action: List[tuple]):
+    def _process_list(self, yarn, action: List[tuple]):
         """
         Processes actions in a list of actions
         :param action: the list of actions
         """
         for sub_action in action:
-            self._process_instruction(sub_action)
+            self._process_instruction(yarn, sub_action)

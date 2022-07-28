@@ -55,7 +55,7 @@ num_exp: integer num_suffix? {1}|
                     "currow" {2}|
                     num_id {3} |
                     num_assign {5} |
-                    num_op {4};
+                    num_op {4}; 
 num_id: identifier;
 num_assign: identifier "=" num_exp;
 

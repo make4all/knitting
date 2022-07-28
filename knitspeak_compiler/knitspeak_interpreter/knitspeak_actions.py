@@ -11,6 +11,7 @@ from knitspeak_compiler.knitspeak_interpreter.stitch_definitions import Stitch_D
 
 # some boiler plate parglare code
 action = get_collector()
+print('action haha', action)
 
 
 @action
@@ -21,6 +22,8 @@ def course_ids(context, nodes) -> List[Union[int, Num_Closure, Iterator_Closure]
     :param nodes: the nodes of the parsed content should be of length 2
     :return: a list of course_id integers
     """
+    print('context', context)
+    print(f'haha1, node is {nodes}')
     row_node = 1
     course_range = nodes[0]
     if len(nodes) == 3:
@@ -36,6 +39,7 @@ def course_ids(context, nodes) -> List[Union[int, Num_Closure, Iterator_Closure]
 
 @action
 def course_statement(_, nodes) -> Dict[str, list]:
+    print(f'haha2, node is {nodes}')
     """
     The action that simplifies courseStatements
     :param _: unused context provided by parglare
@@ -50,10 +54,12 @@ def course_statement(_, nodes) -> Dict[str, list]:
     if nodes[0] is not None:
         newStitchDefs = _flipStitchList(nodes[2])
         return {"courseIds": nodes[1], "stitch-operations": newStitchDefs}
+    print('here1', {"courseIds": nodes[1], "stitch-operations": nodes[2]})
     return {"courseIds": nodes[1], "stitch-operations": nodes[2]}
 
 
 def _flipStitchList(operation_tuple_list: List[tuple]) -> list:
+    print('haha3')
     """
     flips the operations in the list as if they were worked from the opposite side (knits vs purls)
     :param operation_tuple_list: the list of operations that need to be flipped
@@ -72,6 +78,7 @@ def _flipStitchList(operation_tuple_list: List[tuple]) -> list:
 
 @action
 def side(_, nodes: str) -> str:
+    print('haha4', nodes)
     """
     :param _: the unused context provided by action
     :param nodes: should be one node with the side information
@@ -87,6 +94,7 @@ def side(_, nodes: str) -> str:
 
 @action
 def course_id_list(_, nodes: list) -> List[Union[int, Num_Closure, Iterator_Closure]]:
+    print(f'haha5, node is {nodes}')
     """
     course_id_list: course_id_list commaAnd course_id | course_id;
     :param _: context data ignored but passed by parglare
@@ -122,6 +130,7 @@ def course_id_list(_, nodes: list) -> List[Union[int, Num_Closure, Iterator_Clos
 
 @action
 def stitch_statement_List(_, nodes) -> List[tuple]:
+    print(f'haha6, node is {nodes}')
     """
     :param _: parglare context provided but not needed
     :param nodes: the nodes passed by parglare
@@ -131,6 +140,7 @@ def stitch_statement_List(_, nodes) -> List[tuple]:
         if type(nodes[0]) is list:
             return nodes[0]
         else:
+            print('here', [nodes[0]])
             return [nodes[0]]
     else:
         stitchList = nodes[0]
@@ -150,6 +160,7 @@ def stitch_statement_List(_, nodes) -> List[tuple]:
 
 @action
 def repeated_Stitch(_, nodes: list) -> Tuple[Union[Stitch_Definition, Cable_Definition], Tuple[bool, int]]:
+    print(f'haha7, node is {nodes}')
     """
     :param _: context provided by parglare but not used
     :param nodes:
@@ -164,6 +175,7 @@ def repeated_Stitch(_, nodes: list) -> Tuple[Union[Stitch_Definition, Cable_Defi
 
 @action
 def repeated_stitch_group(_, nodes):
+    print(f'haha8, node is {nodes}')
     """
     :param _:
     :param nodes:
@@ -177,6 +189,7 @@ def repeated_stitch_group(_, nodes):
 
 @action
 def static_stitch_group(_, nodes) -> Tuple[List[tuple], Tuple[bool, int]]:
+    print(f'haha9, node is {nodes}')
     """
     :param _: the context passed by parglare but not used
     :param nodes:nodes[1] the stitch statement list to be repeated, nodes[3] the repetition count
@@ -189,6 +202,7 @@ def static_stitch_group(_, nodes) -> Tuple[List[tuple], Tuple[bool, int]]:
 
 @action
 def conditional_stitch_group(_, nodes: list) -> Tuple[List[Tuple], Tuple[bool, int]]:
+    print(f'haha10, node is {nodes}')
     """
     :param _: the context passed by parglare but not used
     :param nodes: nodes[1] the stitch statement list to be repeated, nodes[3] the repetition instructions
@@ -199,6 +213,8 @@ def conditional_stitch_group(_, nodes: list) -> Tuple[List[Tuple], Tuple[bool, i
 
 @action
 def between_courses(context, nodes) -> Union[Iterator_Closure, List[int]]:
+    print('context', context)
+    print(f'haha11, node is {nodes}')
     """
     process statement iterated courses to a list of course_ids
     :param context: context passed by parglare, but not used
@@ -229,6 +245,7 @@ def between_courses(context, nodes) -> Union[Iterator_Closure, List[int]]:
 
 @action
 def rep_condition(_, nodes: list) -> Tuple[bool, Union[int, Num_Closure]]:
+    print(f'haha12, node is {nodes}')
     """
     :param _: the context passed by parglare but not used
     :param nodes: the nodes needed to parse the rep_condition and repeat information
@@ -248,6 +265,7 @@ def rep_condition(_, nodes: list) -> Tuple[bool, Union[int, Num_Closure]]:
 
 @action
 def rowOrRound(_, nodes: str) -> str:
+    print(f'haha13, node is {nodes}')
     """
     :param _: context passed by parglare but not used
     :param nodes: the string marking the type of construction
@@ -260,6 +278,8 @@ def rowOrRound(_, nodes: str) -> str:
 
 @action
 def num_assign(context: Context, nodes: list) -> Num_Assignment_Closure:
+    print('context', context)
+    print(f'haha14, node is {nodes}')
     """
     parses a definition of a variable number and adds it to the symbol table
     :param context: context used to access symbol table for storing the definition
@@ -273,6 +293,8 @@ def num_assign(context: Context, nodes: list) -> Num_Assignment_Closure:
 
 @action
 def num_id(context: Context, nodes: list) -> Num_Variable_Closure:
+    print('context', context)
+    print(f'haha15, node is {nodes}')
     """
     gathers number by keyword from symbol table
     :param context: used to access symbol table
@@ -286,6 +308,8 @@ def num_id(context: Context, nodes: list) -> Num_Variable_Closure:
 
 @action
 def num_exp(context, nodes: list) -> Union[int, Num_Closure]:
+    print('context', context)
+    print(f'haha16, node is {nodes}')
     """
     :param context: used to get current row state
     :param nodes: the nodes used to create an integer
@@ -300,6 +324,8 @@ def num_exp(context, nodes: list) -> Union[int, Num_Closure]:
 
 @action
 def num_op(context, nodes: list) -> Union[int, Operation_Closure]:
+    print('context', context)
+    print(f'haha17, node is {nodes}')
     """
     :param context: context not used
     :param nodes: the nodes involved in teh operation
@@ -330,6 +356,7 @@ def num_op(context, nodes: list) -> Union[int, Operation_Closure]:
 
 
 def _stripToDigits(text: str) -> str:
+    print('haha18')
     digits = ""
     for c in text:
         if c.isdigit():
@@ -339,6 +366,7 @@ def _stripToDigits(text: str) -> str:
 
 @action
 def integer(_, node: str) -> int:
+    print(f'haha19, node is {node}')
     """
     :param _: context not used
     :param node: the number string
@@ -351,11 +379,15 @@ def integer(_, node: str) -> int:
 
 @action
 def opId(context: Context, nodes: List[str]) -> Union[Stitch_Definition, Cable_Definition]:
+    print('context', context)
+    print(f'haha20, node is {nodes}')
     """
     :param context: context used to access symbol table
     :param nodes: node used to identify stitch type
     :return: the stitch definition or cable definition keyed to this term
     """
     currentSymbolTable = context.parser.symbolTable
+    print('currentSymbolTable', currentSymbolTable, currentSymbolTable._symbol_table)
     assert nodes[0] in currentSymbolTable, "No stitch defined ID={}".format(nodes[0])
+    print('currentSymbolTable[nodes[0]]', currentSymbolTable[nodes[0]])
     return currentSymbolTable[nodes[0]]

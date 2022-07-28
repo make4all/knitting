@@ -33,7 +33,6 @@ def visualize_knitGraph(knit_graph: Knit_Graph, is_tube: bool = False, indicator
     edge_color_property = {}
     stitch_labels = {}
     yarns = [*knit_graph.yarns.values()]
-    # print('yarns',yarns)
     x = 0
     y0 = y = 0
     h_back2front, w_back2front, w_between_node, h_course = 0.4, 0.1, 0.5, 1
@@ -41,6 +40,7 @@ def visualize_knitGraph(knit_graph: Knit_Graph, is_tube: bool = False, indicator
     hole_height = [len(row)<row_length for row in [*course_to_loop_ids.values()]].count(True)
     hole_width = row_length - min([len(value) for key, value in course_to_loop_ids.items()])
     tube_width = int(len(course_to_loop_ids[0])/2) 
+
     #visualization for non-tube/sheets
     def visualize_sheet():
         x = 0
@@ -58,7 +58,6 @@ def visualize_knitGraph(knit_graph: Knit_Graph, is_tube: bool = False, indicator
             else:
                 for parent_id in parent_ids:
                     parent_offset = knit_graph.graph[parent_id][node]["parent_offset"]
-                    print(f'node is {node}, parent_ids is {parent_ids}, offset is {parent_offset}')
                     original_parent_id = parent_id - parent_offset
                     parent_course = loop_ids_to_course[parent_id]
                     x = nodes_to_positions[original_parent_id]['x']
