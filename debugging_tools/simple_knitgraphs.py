@@ -70,7 +70,7 @@ def add_hole_on_tube(tube_width, tube_height, hole_start_course, hole_start_wale
     # yarn = Yarn("yarn", knitGraph, carrier_id=carrier)
     # knitGraph.add_yarn(yarn)
     knitGraph, yarn = tube(height = hole_start_course, width = tube_width, carrier = carrier)
-    loop_ids_to_course, course_to_loop_ids = knitGraph.get_courses()
+    loop_ids_to_course, course_to_loop_ids, loop_ids_to_wale, wale_to_loop_ids = knitGraph.get_courses()
     top_course_index = max(*course_to_loop_ids.keys())
     top_course = course_to_loop_ids[top_course_index]
     hole_end_wale = hole_start_wale + hole_width
@@ -369,7 +369,7 @@ def hole_by_short_row(hole_position: List[int], hole_width: int = 1, hole_height
     # print('[*knit_graph.yarns.values()][0]', [*knit_graph.yarns.values()][0])
     yarn = [*knit_graph.yarns.values()][0]
 
-    loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
+    loop_ids_to_course, course_to_loop_ids, loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_courses()
     if len(course_to_loop_ids) == 1:
         top_course = course_to_loop_ids[0]
     else:
@@ -713,7 +713,7 @@ def short_rows(width: int = 10, buffer_height: int = 2) -> Knit_Graph:
     # print('[*knit_graph.yarns.values()][0]', [*knit_graph.yarns.values()][0])
     yarn = [*knit_graph.yarns.values()][0]
 
-    loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
+    loop_ids_to_course, course_to_loop_ids, loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_courses()
     if len(course_to_loop_ids) == 1:
         top_course = course_to_loop_ids[0]
     else:

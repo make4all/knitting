@@ -89,7 +89,7 @@ class Knit_Graph:
         # print(child_loop, parent_loop)
         child_loop.add_parent_loop(parent_loop, stack_position)
 
-    def get_courses(self) -> Tuple[Dict[int, int], Dict[int, List[int]]]:
+    def get_courses(self, unmodified: Optional[bool] = False) -> Tuple[Dict[int, int], Dict[int, List[int]]]:
         """
         :return: A dictionary of loop_ids to the course they are on,
         a dictionary or course ids to the loops on that course in the order of creation
@@ -97,7 +97,9 @@ class Knit_Graph:
         A course change occurs when a loop has a parent loop that is in the last course.
         """
         loop_ids_to_course = {}
+        loop_ids_to_wale = {}
         course_to_loop_ids = {}
+        wale_to_loop_ids = {}
         current_course_set = set()
         current_course = []
         course = 0
@@ -118,8 +120,28 @@ class Knit_Graph:
                 course += 1
             loop_ids_to_course[loop_id] = course
         course_to_loop_ids[course] = current_course
-        # print('course_to_loop_ids', course_to_loop_ids)
-        return loop_ids_to_course, course_to_loop_ids
+        
+        if unmodified == True:
+            first_course_loop_ids = course_to_loop_ids[0] 
+            wale = 0
+            for loop_id in first_course_loop_ids:
+                loop_ids_to_wale[loop_id] = loop_id
+                wale_to_loop_ids[wale] = [loop_id]
+                wale += 1
+            
+            for course_id in [*course_to_loop_ids.keys()][1:]:
+                next_row_loop_ids = course_to_loop_ids[course_id]
+                for loop_id in next_row_loop_ids:
+                    for parent_id in self.graph.predecessors(loop_id):
+                        parent_offset = self.graph[parent_id][loop_id]['parent_offset']
+                        wale = loop_ids_to_wale[parent_id] - parent_offset
+                        loop_ids_to_wale[loop_id] = wale
+                        wale_to_loop_ids[wale].append(loop_id)
+                        break
+        else:
+            loop_ids_to_wale, wale_to_loop_ids = None, None
+
+        return loop_ids_to_course, course_to_loop_ids, loop_ids_to_wale, wale_to_loop_ids
 
     # @deprecated("Deprecated because this only works in rows, but not round construction")
     def deprecated_get_course(self) -> Tuple[Dict[int, int], Dict[int, List[int]]]:

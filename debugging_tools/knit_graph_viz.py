@@ -14,7 +14,9 @@ def visualize_knitGraph(knit_graph: Knit_Graph, is_tube: bool = False, indicator
     :param height: the height of the html window
     :param width: the width of the html window
     """
-    loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
+    loop_ids_to_course, course_to_loop_ids, loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_courses()
+    print('loop_ids_to_wale', loop_ids_to_wale)
+    print('wale_to_loop_ids', wale_to_loop_ids)
     # print('course_to_loop_ids', course_to_loop_ids)
     # print('knit_graph.graph.nodes', knit_graph.graph.nodes)
     # knit_graph.deprecated_get_course()
@@ -62,9 +64,9 @@ def visualize_knitGraph(knit_graph: Knit_Graph, is_tube: bool = False, indicator
                     parent_course = loop_ids_to_course[parent_id]
                     x = nodes_to_positions[original_parent_id]['x']
                     # To better express shaping effect, use below one
-                    y = nodes_to_positions[original_parent_id]['y'] + h_course
+                    # y = nodes_to_positions[original_parent_id]['y'] + h_course
                     # To avoid visual confusion, use below one to locate node
-                    # y = nodes_to_positions[original_parent_id]['y'] + (course - parent_course)*h_course
+                    y = nodes_to_positions[original_parent_id]['y'] + (course - parent_course)*h_course
                     break
             #find carrier_id of the node
             #first identify the yarn of the node
