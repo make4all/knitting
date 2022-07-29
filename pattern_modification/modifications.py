@@ -20,33 +20,33 @@ def test_cable():
 def test_stst():
     pattern = "all rs rows k. all ws rows p."
     compiler = Knitspeak_Compiler()
-    knit_graph = compiler.compile(8, 8, pattern)
+    knit_graph = compiler.compile(8, 6, pattern)
     # visualize_knitGraph(knit_graph, "stst.html")
     # visualize_knitGraph(knit_graph)
     return knit_graph
 
 
-def add_hole(knit_graph: Knit_Graph):
+def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, hole_height:int, hole_width:int):
     yarns = [*knit_graph.yarns.values()]
     yarn = yarns[0]
     node_to_delete = []
-    hole_start_row = 3
-    hole_start_wale = 3
-    hole_height = 3
-    hole_width =2
     new_yarn_course_to_loop_ids= {}
     old_yarn_course_to_margin_loop_ids = {}
     loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
     pattern_height = len(course_to_loop_ids)
     pattern_width = max([len(i) for i in [*course_to_loop_ids.values()]])
+    assert hole_start_row + hole_height < pattern_height, f'hole height is too large that it is exceeding the knit graph border'
     #first remove nodes in hole
     for course_id in range(hole_start_row, hole_start_row + hole_height):
-        loop_ids = course_to_loop_ids[course_id][hole_start_wale:(hole_start_wale+hole_width)]
+        if course_id % 2 == 0:
+            loop_ids = course_to_loop_ids[course_id][hole_start_wale:(hole_start_wale+hole_width)]
+        elif course_id % 2 == 1:
+            loop_ids = course_to_loop_ids[course_id][pattern_width-(hole_start_wale+hole_width):pattern_width - hole_start_wale]
         node_to_delete.extend(loop_ids)
     knit_graph.graph.remove_nodes_from(node_to_delete)
     yarn.yarn_graph.remove_nodes_from(node_to_delete)
-    # print('node_to_delete', node_to_delete)
-    # print('course_to_loop_ids', course_to_loop_ids)
+    print('node_to_delete', node_to_delete)
+    print('course_to_loop_ids', course_to_loop_ids)
     
     if hole_start_row % 2 == 0:
         for course_id in range(hole_start_row, hole_start_row + hole_height):
@@ -54,8 +54,8 @@ def add_hole(knit_graph: Knit_Graph):
                 old_yarn_course_to_margin_loop_ids[course_id] = course_to_loop_ids[course_id][hole_start_wale-1]
                 new_yarn_course_to_loop_ids[course_id] = course_to_loop_ids[course_id][hole_start_wale + hole_width:]
             else:
-                old_yarn_course_to_margin_loop_ids[course_id] = course_to_loop_ids[course_id][hole_start_wale + hole_width]
-                new_yarn_course_to_loop_ids[course_id] = course_to_loop_ids[course_id][:hole_start_wale]
+                old_yarn_course_to_margin_loop_ids[course_id] = course_to_loop_ids[course_id][pattern_width - hole_start_wale]
+                new_yarn_course_to_loop_ids[course_id] = course_to_loop_ids[course_id][:pattern_width - (hole_start_wale + hole_width)]
         if hole_height % 2 == 0:
             pass
         elif hole_height % 2 == 1:
@@ -74,8 +74,8 @@ def add_hole(knit_graph: Knit_Graph):
                 old_yarn_course_to_margin_loop_ids[course_id] = course_to_loop_ids[course_id][hole_start_wale-1]
                 new_yarn_course_to_loop_ids[course_id] = course_to_loop_ids[course_id][:hole_start_wale]
             else:
-                old_yarn_course_to_margin_loop_ids[course_id] = course_to_loop_ids[course_id][hole_start_wale + hole_width]
-                new_yarn_course_to_loop_ids[course_id] = course_to_loop_ids[course_id][hole_start_wale + hole_width:]
+                old_yarn_course_to_margin_loop_ids[course_id] = course_to_loop_ids[course_id][pattern_width - hole_start_wale]
+                new_yarn_course_to_loop_ids[course_id] = course_to_loop_ids[course_id][-hole_start_wale:]
         if hole_height % 2 == 0:
             pass
         elif hole_height % 2 == 1:
@@ -88,8 +88,8 @@ def add_hole(knit_graph: Knit_Graph):
                 next_node = old_yarn_course_to_margin_loop_ids[course_id+1]
                 yarn.yarn_graph.add_edge(start_node, next_node)
 
-    # print('old_yarn_course_to_margin_loop_ids', old_yarn_course_to_margin_loop_ids)
-    # print('new_yarn_course_to_loop_ids', new_yarn_course_to_loop_ids)
+    print('old_yarn_course_to_margin_loop_ids', old_yarn_course_to_margin_loop_ids)
+    print('new_yarn_course_to_loop_ids', new_yarn_course_to_loop_ids)
     
     # remove loop_ids from old yarn and add loop_ids to new yarn and connect them
     new_carrier = 4
@@ -106,5 +106,6 @@ def add_hole(knit_graph: Knit_Graph):
 
 if __name__ == '__main__':
     knit_graph = test_stst()
-    knitGraph = add_hole(knit_graph)
+    # knit_graph = test_cable()
+    knitGraph = add_hole(knit_graph, hole_start_row=1, hole_start_wale=2, hole_height=6, hole_width=2)
     visualize_knitGraph(knitGraph)
