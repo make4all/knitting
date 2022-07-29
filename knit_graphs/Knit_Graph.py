@@ -103,6 +103,9 @@ class Knit_Graph:
         current_course_set = set()
         current_course = []
         course = 0
+        yarns = [*self.yarns.values()]
+        #since given knit graph has only one yarn before being modified
+        yarn = yarns[0]
         for loop_id in self.graph.nodes:
             no_parents_in_course = True
             for parent_id in self.graph.predecessors(loop_id):
@@ -132,12 +135,30 @@ class Knit_Graph:
             for course_id in [*course_to_loop_ids.keys()][1:]:
                 next_row_loop_ids = course_to_loop_ids[course_id]
                 for loop_id in next_row_loop_ids:
-                    for parent_id in self.graph.predecessors(loop_id):
-                        parent_offset = self.graph[parent_id][loop_id]['parent_offset']
-                        wale = loop_ids_to_wale[parent_id] - parent_offset
-                        loop_ids_to_wale[loop_id] = wale
-                        wale_to_loop_ids[wale].append(loop_id)
-                        break
+                    parent_ids = [*self.graph.predecessors(loop_id)]
+                    if len(parent_ids) > 0:
+                        for parent_id in self.graph.predecessors(loop_id):
+                            parent_offset = self.graph[parent_id][loop_id]['parent_offset']
+                            wale = loop_ids_to_wale[parent_id] - parent_offset
+                            loop_ids_to_wale[loop_id] = wale
+                            wale_to_loop_ids[wale].append(loop_id)
+                            
+                            break
+                    else:
+                        #If its predecessor node on yarn has wale, then combined with corresponding course_id, its wale can be inferred
+                        #Since a node on yarn always has one predecessor, except that starting node has 0 predecessor.
+                        yarn_predecessor = [*yarn.yarn_graph.predecessors(loop_id)][0]
+                        if yarn_predecessor in loop_ids_to_wale.keys():
+                            wale = loop_ids_to_wale[yarn_predecessor]
+                            if course_id % 2 == 1:
+                                loop_ids_to_wale[loop_id] = wale - 1
+                            else: 
+                                loop_ids_to_wale[loop_id] = wale + 1
+                            wale_to_loop_ids[wale].append(loop_id)
+                        else:
+                            print(f'Error: wale of node {loop_id} cannot be determined')
+                            exit()
+
         else:
             loop_ids_to_wale, wale_to_loop_ids = None, None
 

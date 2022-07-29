@@ -11,6 +11,11 @@ def test_short_rows():
     # visualize_knitGraph(knit_graph)
     return knit_graph
 
+def test_lace():
+    knit_graph = lace(6, 6)
+    visualize_knitGraph(knit_graph)
+    return knit_graph
+
 def test_cable():
     pattern = r"""
         1st row k, lc2|2, k, rc2|2, [k] to end.
@@ -33,8 +38,9 @@ def test_stst():
     return knit_graph
 
 
-def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, hole_height:int, hole_width:int, unmodified: bool = True):
+def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, hole_height:int, hole_width:int, unmodified: bool = True, new_carrier: int = None):
     yarns = [*knit_graph.yarns.values()]
+    #since given knit graph has only one yarn before being modified
     yarn = yarns[0]
     node_to_delete = []
     new_yarn_course_to_loop_ids= {}
@@ -54,7 +60,7 @@ def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, ho
     course_and_wale_to_node = {tuple(v): k for k, v in node_to_course_and_wale.items()}
     # print('loop_ids_to_course', loop_ids_to_course)
     print('course_and_wale_to_node', course_and_wale_to_node)
-    # print('node_to_course_and_wale', node_to_course_and_wale)
+    print('node_to_course_and_wale', node_to_course_and_wale)
 
     #identify location of the nodes to delte
     locations_to_delete_node = []
@@ -176,7 +182,6 @@ def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, ho
     print('new_yarn_course_to_loop_ids', new_yarn_course_to_loop_ids)
     
     # remove loop_ids from old yarn and add loop_ids to new yarn and connect them
-    new_carrier = 4
     assert new_carrier != None, f'new carrier is needed to introduce new yarn'
     new_yarn = Yarn("new_yarn", knit_graph, carrier_id=new_carrier)
     knit_graph.add_yarn(new_yarn)
@@ -189,8 +194,9 @@ def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, ho
     return knit_graph
 
 if __name__ == '__main__':
-    knit_graph = test_stst()
+    # knit_graph = test_stst()
     # knit_graph = test_cable()
-    knit_graph = test_short_rows()
-    knitGraph = add_hole(knit_graph, hole_start_row=3, hole_start_wale=5, hole_height=2, hole_width=1, unmodified = True)
+    # knit_graph = test_short_rows()
+    knit_graph = test_lace()
+    knitGraph = add_hole(knit_graph, hole_start_row=3, hole_start_wale=3, hole_height=2, hole_width=1, unmodified = True, new_carrier = 4)
     visualize_knitGraph(knitGraph)

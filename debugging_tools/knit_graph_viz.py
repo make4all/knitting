@@ -15,8 +15,8 @@ def visualize_knitGraph(knit_graph: Knit_Graph, is_tube: bool = False, indicator
     :param width: the width of the html window
     """
     loop_ids_to_course, course_to_loop_ids, loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_courses()
-    print('loop_ids_to_wale', loop_ids_to_wale)
-    print('wale_to_loop_ids', wale_to_loop_ids)
+    # print('loop_ids_to_wale', loop_ids_to_wale)
+    # print('wale_to_loop_ids', wale_to_loop_ids)
     # print('course_to_loop_ids', course_to_loop_ids)
     # print('knit_graph.graph.nodes', knit_graph.graph.nodes)
     # knit_graph.deprecated_get_course()
