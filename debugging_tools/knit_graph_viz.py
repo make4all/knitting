@@ -84,20 +84,29 @@ def visualize_knitGraph(knit_graph: Knit_Graph, is_tube: bool = False, indicator
                 edge_color_property[(prior_node, next_node)]['color'] = carrier_id_to_color[carrier_id]
                
         #add stitch edges and create edge labels
+        
         for parent_id, child_id in knit_graph.graph.edges:
             edge_color_property[(parent_id, child_id)] = {}
             stitch_labels[(parent_id, child_id)] = knit_graph.graph[parent_id][child_id]["pull_direction"]
+            flag = False
             for yarn in yarns:
                 if child_id in yarn:
+                    flag = True
                     carrier_id = yarn.carrier.carrier_ids
                     edge_color_property[(parent_id, child_id)]['color'] = carrier_id_to_color[carrier_id]
                     break
+            # color the edge based on cabling depth
             if knit_graph.graph[parent_id][child_id]["depth"] < 0:
                 depth = -1
                 edge_color_property[(parent_id, child_id)]['color'] = cable_depth_to_color[depth]
             elif knit_graph.graph[parent_id][child_id]["depth"] > 0:
                 depth = 1
                 edge_color_property[(parent_id, child_id)]['color'] = cable_depth_to_color[depth]
+            #if nodes not on any yarns, then it will be colored 'maroon'
+            if flag == False:
+                edge_color_property[(parent_id, child_id)]['color'] = 'maroon'
+            # print('parent_id, child_id', parent_id, child_id)
+            # print('parent_id, child_id', parent_id, child_id, edge_color_property[(parent_id, child_id)]['color'])
 
         #create a graph
         G = nx.DiGraph()

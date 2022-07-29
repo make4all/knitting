@@ -36,18 +36,6 @@ def test_cable():
     # visualize_knitGraph(knit_graph, "cables.html")
     visualize_knitGraph(knit_graph)
 
-def test_cable1_hole():
-    pattern = r"""
-        1st row k, lc2|2, k, rc2|2, [k] to end.
-        all ws rows p.
-        3rd row k 2, lc2|1, k, rc1|2, [k] to end.
-        5th row k 3, lc1|1, k, rc1|1, [k] to end.
-    """
-    compiler = Knitspeak_Compiler()
-    knit_graph = compiler.compile_with_hole(11, 6, pattern, hole_start_row = 2, hole_start_wale = 5, hole_width=1, hole_height=2)
-    # visualize_knitGraph(knit_graph, "cables.html")
-    visualize_knitGraph(knit_graph)
-
 
 def test_lace():
     pattern = r"""
@@ -94,6 +82,5 @@ if __name__ == "__main__":
     # test_rib()
 #     test_write_slipped_rib()
     # test_write_slipped_rib_even()
-    # test_cable()
-    test_cable1_hole()
+    test_cable()
     # test_lace()
