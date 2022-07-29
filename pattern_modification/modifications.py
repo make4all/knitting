@@ -1,4 +1,5 @@
 from typing import Optional, List
+import xxlimited
 from knit_graphs.Yarn import Yarn
 from knit_graphs.Knit_Graph import Knit_Graph
 from debugging_tools.knit_graph_viz import visualize_knitGraph
@@ -45,6 +46,7 @@ def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, ho
     node_to_delete = []
     new_yarn_course_to_loop_ids= {}
     old_yarn_course_to_margin_loop_ids = {}
+    new_yarn_course_to_margin_loop_ids = {}
     loop_ids_to_course, course_to_loop_ids, loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_courses(unmodified)
     pattern_height = len(course_to_loop_ids)
     pattern_width = max([len(i) for i in [*course_to_loop_ids.values()]])
@@ -117,9 +119,12 @@ def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, ho
             if loop_ids_to_course[parent_id] != loop_ids_to_course[child_id]:
                 print(f'Error: node {node} is not qualified for a hole for having parent node and child node that are not on the same course')
                 exit()
+        #Fifth, nodes on the margin should have both child and parent, otherwise, when the neighbor node is deleted for 
+        #a hole, (tbd it will be a isolete node, which is impossible)
+        
 
     hole_location_constraints()
-
+    #remove the nodes for hole from both knit graph and yarn
     knit_graph.graph.remove_nodes_from(node_to_delete)
     yarn.yarn_graph.remove_nodes_from(node_to_delete)
     print('course_to_loop_ids', course_to_loop_ids)
@@ -127,8 +132,10 @@ def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, ho
     if hole_start_row % 2 == 0:
         #old yarn is on left side 
         for course_id in range(hole_start_row, hole_start_row + hole_height):
-            assert (course_id, hole_start_wale - 1) in course_and_wale_to_node.keys(), f'no node is found on the margin {(course_id, hole_start_wale + hole_width)}'
+            assert (course_id, hole_start_wale - 1) in course_and_wale_to_node.keys(), f'no node is found on the old yarn margin {(course_id, hole_start_wale - 1)}'
             old_yarn_course_to_margin_loop_ids[course_id] = course_and_wale_to_node[(course_id, hole_start_wale - 1)]
+            assert (course_id, hole_start_wale + hole_width) in course_and_wale_to_node.keys(), f'no node is found on the new yarn margin {(course_id, hole_start_wale + hole_width)}'
+            new_yarn_course_to_margin_loop_ids[course_id] = course_and_wale_to_node[(course_id, hole_start_wale + hole_width)]
             new_yarn_course_to_loop_ids[course_id] = []
             if course_id % 2 == 0:
                 for wale_id in range(hole_start_wale+hole_width, pattern_width):
@@ -156,6 +163,8 @@ def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, ho
         for course_id in range(hole_start_row, hole_start_row + hole_height):
             assert (course_id, hole_start_wale + hole_width) in course_and_wale_to_node.keys(), f'no node is found on the margin {(course_id, hole_start_wale + hole_width)}'
             old_yarn_course_to_margin_loop_ids[course_id] = course_and_wale_to_node[(course_id, hole_start_wale + hole_width)]
+            assert (course_id, hole_start_wale - 1) in course_and_wale_to_node.keys(), f'no node is found on the new yarn margin {(course_id, hole_start_wale - 1)}'
+            new_yarn_course_to_margin_loop_ids[course_id] = course_and_wale_to_node[(course_id, hole_start_wale - 1)]
             new_yarn_course_to_loop_ids[course_id] = []
             if course_id % 2 == 0:
                 for wale_id in range(0, hole_start_wale):
@@ -180,7 +189,23 @@ def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, ho
 
     print('old_yarn_course_to_margin_loop_ids', old_yarn_course_to_margin_loop_ids)
     print('new_yarn_course_to_loop_ids', new_yarn_course_to_loop_ids)
-    
+
+    #Fifth, nodes on the margin should have both child and parent, otherwise, when the neighbor node is deleted for 
+    #a hole, (tbd it will be a isolete node, which is impossible)
+    for node in old_yarn_course_to_margin_loop_ids.values():
+        parent_ids = [*knit_graph.graph.predecessors(node)]
+        child_ids = [*knit_graph.graph.successors(node)]
+        if len(parent_ids) == 0 or len(child_ids) == 0:
+            print(f'Error: unqualified hole location for margin node {node} not having both child and parent')
+            exit()
+
+    for node in new_yarn_course_to_margin_loop_ids.values():
+        parent_ids = [*knit_graph.graph.predecessors(node)]
+        child_ids = [*knit_graph.graph.successors(node)]
+        if len(parent_ids) == 0 or len(child_ids) == 0:
+            print(f'Error: unqualified hole location for margin node {node} not having both child and parent')
+            exit()
+        
     # remove loop_ids from old yarn and add loop_ids to new yarn and connect them
     assert new_carrier != None, f'new carrier is needed to introduce new yarn'
     new_yarn = Yarn("new_yarn", knit_graph, carrier_id=new_carrier)
@@ -195,8 +220,8 @@ def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, ho
 
 if __name__ == '__main__':
     # knit_graph = test_stst()
-    # knit_graph = test_cable()
+    knit_graph = test_cable()
     # knit_graph = test_short_rows()
-    knit_graph = test_lace()
-    knitGraph = add_hole(knit_graph, hole_start_row=3, hole_start_wale=3, hole_height=2, hole_width=1, unmodified = True, new_carrier = 4)
+    # knit_graph = test_lace()
+    knitGraph = add_hole(knit_graph, hole_start_row=4, hole_start_wale=5, hole_height=2, hole_width=1, unmodified = True, new_carrier = 4)
     visualize_knitGraph(knitGraph)
