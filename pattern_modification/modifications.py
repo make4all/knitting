@@ -50,10 +50,10 @@ def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, ho
         course = loop_ids_to_course[node]
         wale = loop_ids_to_wale[node]
         node_to_course_and_wale[node] = [course, wale]
-    #reverse the keys and values of node_to_course_and_wale
+    #reverse the keys and values of node_to_course_and_wale to build course_and_wale_to_node
     course_and_wale_to_node = {tuple(v): k for k, v in node_to_course_and_wale.items()}
     # print('loop_ids_to_course', loop_ids_to_course)
-    # print('course_and_wale_to_node', course_and_wale_to_node)
+    print('course_and_wale_to_node', course_and_wale_to_node)
     # print('node_to_course_and_wale', node_to_course_and_wale)
 
     #identify location of the nodes to delte
@@ -63,6 +63,9 @@ def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, ho
             locations_to_delete_node.append((course, wale))
     print('locations_to_delete_node', locations_to_delete_node)
     for location in locations_to_delete_node:
+        if location not in course_and_wale_to_node.keys():
+            print(f'Error: no node is found at given location {location}')
+            exit()
         node = course_and_wale_to_node[location]
         node_to_delete.append(node)
     print('node_to_delete', node_to_delete)
@@ -78,42 +81,41 @@ def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, ho
             parent_ids = [*knit_graph.graph.predecessors(node)]
             child_ids = [*knit_graph.graph.successors(node)]
             if len(parent_ids) != 1:
-                print(f'node {node} is not qualified for a hole for having {len(parent_ids)} parents')
+                print(f'Error: node {node} is not qualified for a hole for having {len(parent_ids)} parents')
                 exit()
             if len(child_ids) != 1:
-                print(f'node {node} is not qualified for a hole for having {len(child_ids)} parents')
+                print(f'Error: node {node} is not qualified for a hole for having {len(child_ids)} parents')
                 exit()
             #Second, on knit graph, any edge related to the node must have a parent offset that is 0
             parent_id = parent_ids[0]
             parent_offset = knit_graph.graph[parent_id][node]["parent_offset"]
             if parent_offset != 0:
-                print(f'node {node} is not qualified for a hole for having parent offset of {parent_offset}')
+                print(f'Error: node {node} is not qualified for a hole for having parent offset of {parent_offset}')
                 exit()
             child_id = child_ids[0]
             child_offset = knit_graph.graph[node][child_id]["parent_offset"]
             if parent_offset != 0:
-                print(f'node {node} is not qualified for a hole for having child offset of {child_offset}')
+                print(f'Error: node {node} is not qualified for a hole for having child offset of {child_offset}')
                 exit()
             #Third, on yarn graph, the number of yarn edges related to the node must be 2
             #If less than one, it can be node on the border, or part of a short row
             parent_ids = [*yarn.yarn_graph.predecessors(node)]
             child_ids = [*yarn.yarn_graph.successors(node)]
             if len(parent_ids) != 1 or len(child_ids) != 1:
-                print(f'node {node} is not qualified for a hole for having no parent node or child node on yarn')
+                print(f'Error: node {node} is not qualified for a hole for having no parent node or child node on yarn')
                 exit()
             #Fourth, on yarn graph, parent node and child node of the node should be on the same course
             #If not, it can be a slip on sheet
             parent_id = parent_ids[0]
             child_id = child_ids[0]
             if loop_ids_to_course[parent_id] != loop_ids_to_course[child_id]:
-                print(f'node {node} is not qualified for a hole for having parent node and child node that are not on the same course')
+                print(f'Error: node {node} is not qualified for a hole for having parent node and child node that are not on the same course')
                 exit()
 
     hole_location_constraints()
 
     knit_graph.graph.remove_nodes_from(node_to_delete)
     yarn.yarn_graph.remove_nodes_from(node_to_delete)
-    # print('node_to_delete', node_to_delete)
     print('course_to_loop_ids', course_to_loop_ids)
     
     if hole_start_row % 2 == 0:
@@ -130,18 +132,12 @@ def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, ho
                 for wale_id in range(hole_start_wale+hole_width, pattern_width):
                     if (course_id, wale_id) in course_and_wale_to_node.keys():
                         new_yarn_course_to_loop_ids[course_id].insert(0, course_and_wale_to_node[(course_id, wale_id)])
-
-            # if course_id % 2 == 0:
-            #     # old_yarn_course_to_margin_loop_ids[course_id] = course_to_loop_ids[course_id][hole_start_wale-1]
-            #     new_yarn_course_to_loop_ids[course_id] = course_to_loop_ids[course_id][hole_start_wale + hole_width:]
-            # else:
-            #     # old_yarn_course_to_margin_loop_ids[course_id] = course_to_loop_ids[course_id][pattern_width - hole_start_wale]
-            #     new_yarn_course_to_loop_ids[course_id] = course_to_loop_ids[course_id][:pattern_width - (hole_start_wale + hole_width)]
         if hole_height % 2 == 0:
             pass
         elif hole_height % 2 == 1:
             for course_id in range(hole_start_row + hole_height, pattern_height):
                 new_yarn_course_to_loop_ids[course_id] = course_to_loop_ids[course_id]
+
         # reconnect old yarn at its margin
         for course_id in old_yarn_course_to_margin_loop_ids:
             if course_id%2==0 and course_id + 1 in old_yarn_course_to_margin_loop_ids:
@@ -160,21 +156,15 @@ def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, ho
                     if (course_id, wale_id) in course_and_wale_to_node.keys():
                         new_yarn_course_to_loop_ids[course_id].append(course_and_wale_to_node[(course_id, wale_id)])
             elif course_id % 2 == 1:
-                print('lala', course_and_wale_to_node)
                 for wale_id in range(0, hole_start_wale):
                     if (course_id, wale_id) in course_and_wale_to_node.keys():
                         new_yarn_course_to_loop_ids[course_id].insert(0, course_and_wale_to_node[(course_id, wale_id)])
-            # if course_id % 2 == 0:
-            #     old_yarn_course_to_margin_loop_ids[course_id] = course_to_loop_ids[course_id][hole_start_wale-1]
-            #     new_yarn_course_to_loop_ids[course_id] = course_to_loop_ids[course_id][:hole_start_wale]
-            # else:
-            #     old_yarn_course_to_margin_loop_ids[course_id] = course_to_loop_ids[course_id][pattern_width - hole_start_wale]
-            #     new_yarn_course_to_loop_ids[course_id] = course_to_loop_ids[course_id][-hole_start_wale:]
         if hole_height % 2 == 0:
             pass
         elif hole_height % 2 == 1:
             for course_id in range(hole_start_row + hole_height, pattern_height):
                 new_yarn_course_to_loop_ids[course_id] = course_to_loop_ids[course_id]
+
         # reconnect old yarn at its margin
         for course_id in old_yarn_course_to_margin_loop_ids:
             if course_id%2==1 and course_id + 1 in old_yarn_course_to_margin_loop_ids:
@@ -199,8 +189,8 @@ def add_hole(knit_graph: Knit_Graph, hole_start_row:int, hole_start_wale:int, ho
     return knit_graph
 
 if __name__ == '__main__':
-    # knit_graph = test_stst()
-    knit_graph = test_cable()
-    # knit_graph = test_short_rows()
-    knitGraph = add_hole(knit_graph, hole_start_row=3, hole_start_wale=5, hole_height=3, hole_width=1, unmodified = True)
+    knit_graph = test_stst()
+    # knit_graph = test_cable()
+    knit_graph = test_short_rows()
+    knitGraph = add_hole(knit_graph, hole_start_row=3, hole_start_wale=5, hole_height=2, hole_width=1, unmodified = True)
     visualize_knitGraph(knitGraph)
