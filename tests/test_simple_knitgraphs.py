@@ -42,7 +42,7 @@ def test_lace():
 
 def test_short_rows():
     knit_graph = short_rows(5, buffer_height=1)
-    _, __ = knit_graph.get_courses()
+    _, _, _, _ = knit_graph.get_courses()
     visualize_knitGraph(knit_graph)
 
 def test_add_hole_on_tube():
@@ -55,9 +55,8 @@ if __name__ == "__main__":
     # test_rib()
     # test_seed()
     # test_twisted_stripes()
-    # test_hole()
     # test_lace()
-    # test_short_rows()
+    test_short_rows()
     # test_hole_by_short_row()
     # test_tube()
-    test_add_hole_on_tube()
+    # test_add_hole_on_tube()

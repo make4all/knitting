@@ -1,31 +1,39 @@
 """A method for visualizing KnitGraphs as a graph structure, mostly for debugging"""
-from typing import Optional
+from typing import Optional, Dict
 from pyvis import network as nw
 import networkx as nx
 from knit_graphs.Knit_Graph import Knit_Graph
 import matplotlib.pyplot as plt
 
 
-def visualize_knitGraph(knit_graph: Knit_Graph, is_tube: bool = False, indicator: Optional[int] = 0, hole_end_wale: Optional[int] = 0):
+def visualize_knitGraph(knit_graph: Knit_Graph, unmodified: bool = True, is_tube: bool = False, indicator: Optional[int] = 0, hole_end_wale: Optional[int] = 0, yarn_start_direction: str = 'left to right', node_to_course_and_wale: Optional[Dict] = None):
     """
     Runs an html file in browser to visualize the given knitgraph
     :param display_name: The html file name to display from
     :param knit_graph: the knit graph to visualize
     :param height: the height of the html window
     :param width: the width of the html window
+    :param yarn_start_direction: the starting direction of the yarn, value include 'left to right' or 'right to left'.
     """
-    loop_ids_to_course, course_to_loop_ids, loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_courses()
+    loop_ids_to_course, course_to_loop_ids, loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_courses(unmodified)
+    if node_to_course_and_wale == None:
+        # get the [course, wale] coordinate of each node in the knit graph
+        node_to_course_and_wale = {}
+        for node in knit_graph.graph.nodes:
+            course = loop_ids_to_course[node]
+            wale = loop_ids_to_wale[node]
+            node_to_course_and_wale[node] = [course, wale]
     # print('loop_ids_to_wale', loop_ids_to_wale)
     # print('wale_to_loop_ids', wale_to_loop_ids)
     # print('course_to_loop_ids', course_to_loop_ids)
     # print('knit_graph.graph.nodes', knit_graph.graph.nodes)
-    # knit_graph.deprecated_get_course()
+    #   
     loop_ids_row_index = {}
     loops_in_first_course = course_to_loop_ids[0]
     for loop_id in loops_in_first_course:
         loop_ids_row_index[loop_id] = loops_in_first_course.index(loop_id)
     nodes_to_positions = {} 
-    #we assume different carrier carry yarns of differnt color, though practically they can be the same.
+    # we assume different carrier carry yarns of differnt color, though practically they can be the same.
     carrier_id_to_color = {1:'black', 2:'skyblue', 3:'orange', 4:'green', 5: 'yellow', 6:'blue', 7: 'pink', 8: 'purple', 9:'cyan', 10:'red'}
     cable_depth_to_color = {1:'grey', -1:'magenta'}
     alpha_front = 1
@@ -35,8 +43,7 @@ def visualize_knitGraph(knit_graph: Knit_Graph, is_tube: bool = False, indicator
     edge_color_property = {}
     stitch_labels = {}
     yarns = [*knit_graph.yarns.values()]
-    x = 0
-    y0 = y = 0
+    #distance related param for tube
     h_back2front, w_back2front, w_between_node, h_course = 0.4, 0.1, 0.5, 1
     row_length = len(loops_in_first_course)
     hole_height = [len(row)<row_length for row in [*course_to_loop_ids.values()]].count(True)
@@ -45,91 +52,133 @@ def visualize_knitGraph(knit_graph: Knit_Graph, is_tube: bool = False, indicator
 
     #visualization for non-tube/sheets
     def visualize_sheet():
-        x = 0
-        y0 = y = 0
-        for node in knit_graph.graph.nodes:
-            nodes_to_positions[node] = {}
-            node_color_property[node] = {}
-            course = loop_ids_to_course[node]
-            parent_ids = [*knit_graph.graph.predecessors(node)]
-            if len(parent_ids) == 0:
-                if course % 2 == 0:
-                    x += w_between_node
-                else:
-                    x -= w_between_node
-            else:
-                for parent_id in parent_ids:
-                    parent_offset = knit_graph.graph[parent_id][node]["parent_offset"]
-                    original_parent_id = parent_id - parent_offset
-                    parent_course = loop_ids_to_course[parent_id]
-                    x = nodes_to_positions[original_parent_id]['x']
-                    # To better express shaping effect, use below one
-                    # y = nodes_to_positions[original_parent_id]['y'] + h_course
-                    # To avoid visual confusion, use below one to locate node
-                    y = nodes_to_positions[original_parent_id]['y'] + (course - parent_course)*h_course
-                    break
-            #find carrier_id of the node
-            #first identify the yarn of the node
-            for yarn in yarns:
-                if node in yarn:
-                    carrier_id = yarn.carrier.carrier_ids
-            #store node position and color property
-            nodes_to_positions[node]['x'] = x
-            nodes_to_positions[node]['y'] = y
-            node_color_property[node]['color'] = carrier_id_to_color[carrier_id]
-        
-        #add yarn edges
-        for yarn in yarns:
-            for prior_node, next_node in yarn.yarn_graph.edges:
-                edge_color_property[(prior_node, next_node)] = {}
-                carrier_id = yarn.carrier.carrier_ids
-                edge_color_property[(prior_node, next_node)]['color'] = carrier_id_to_color[carrier_id]
-               
-        #add stitch edges and create edge labels
-        
-        for parent_id, child_id in knit_graph.graph.edges:
-            edge_color_property[(parent_id, child_id)] = {}
-            stitch_labels[(parent_id, child_id)] = knit_graph.graph[parent_id][child_id]["pull_direction"]
-            flag = False
-            for yarn in yarns:
-                if child_id in yarn:
-                    flag = True
-                    carrier_id = yarn.carrier.carrier_ids
-                    edge_color_property[(parent_id, child_id)]['color'] = carrier_id_to_color[carrier_id]
-                    break
-            # color the edge based on cabling depth
-            if knit_graph.graph[parent_id][child_id]["depth"] < 0:
-                depth = -1
-                edge_color_property[(parent_id, child_id)]['color'] = cable_depth_to_color[depth]
-            elif knit_graph.graph[parent_id][child_id]["depth"] > 0:
-                depth = 1
-                edge_color_property[(parent_id, child_id)]['color'] = cable_depth_to_color[depth]
-            #if nodes not on any yarns, then it will be colored 'maroon'
-            if flag == False:
-                edge_color_property[(parent_id, child_id)]['color'] = 'maroon'
-            # print('parent_id, child_id', parent_id, child_id)
-            # print('parent_id, child_id', parent_id, child_id, edge_color_property[(parent_id, child_id)]['color'])
+        #set node postion 
+        def get_nodes_position():
+            x0 = 0
+            y0 = 0
+            for node in knit_graph.graph.nodes:
+                nodes_to_positions[node] = {}
+                node_color_property[node] = {}
+                course = node_to_course_and_wale[node][0]
+                wale = node_to_course_and_wale[node][1]
+                #store node position 
+                if yarn_start_direction == 'left to right':
+                    nodes_to_positions[node]['x'] = x0 + wale * w_between_node
+                elif yarn_start_direction == 'right to left':
+                    nodes_to_positions[node]['x'] = x0 - wale * w_between_node
+                nodes_to_positions[node]['y'] = y0 + course * h_course
+        #set node color
+        def get_nodes_color():
+            for node in knit_graph.graph.nodes:
+                #find carrier_id of the node
+                #first identify the yarn of the node
+                for yarn in yarns:
+                    if node in yarn:
+                        carrier_id = yarn.carrier.carrier_ids
+                #store node color property
+                node_color_property[node]['color'] = carrier_id_to_color[carrier_id]
 
-        #create a graph
-        G = nx.DiGraph()
-        #derive position of nodes
-        pos ={}
-        for node in nodes_to_positions:
-            pos[node] = [*nodes_to_positions[node].values()]
-        #add nodes
-        G.add_nodes_from(pos.keys())
-        #draw nodes
-        for node in G.nodes():
-            nx.draw_networkx_nodes(G, pos, nodelist=[node], node_size = 600, node_color=node_color_property[node]['color'])
-        #draw edges
-        for edge in [*edge_color_property.keys()]:
-            nx.draw_networkx_edges(G, pos, edgelist=[edge], width=5.0, edge_color=edge_color_property[edge]['color'], style='solid')
-        #draw node labels
-        node_labels = {x: x for x in G.nodes}
-        nx.draw_networkx_labels(G, pos, labels=node_labels, font_size=12, font_color='w')
-        #draw edge labels
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=stitch_labels, label_pos=0.5, font_size=10, font_color='k', rotate=False)
-        plt.show()
+        # @deprecated("Deprecated because this infers x coordinate by x -= w_between_node or x += w_between_node, do not work for
+        # a node that sits in between, and not only has no parent but also has less than two neighbors") 
+        def deprecated_get_nodes_position():
+            x = 0
+            y = 0
+            for node in knit_graph.graph.nodes:
+                nodes_to_positions[node] = {}
+                node_color_property[node] = {}
+                course = loop_ids_to_course[node]
+                parent_ids = [*knit_graph.graph.predecessors(node)]
+                if len(parent_ids) == 0:
+                    def yarn_layout(yarn_start_direction, x):
+                        #set the yarn start from left to right
+                        if yarn_start_direction == 'left to right':
+                            if course % 2 == 0:
+                                x += w_between_node
+                            else:
+                                x -= w_between_node
+                        #set the yarn start from right to left
+                        elif yarn_start_direction == 'right to left':
+                            if course % 2 == 0:
+                                x -= w_between_node
+                            else:
+                                x += w_between_node
+                        return x
+                    x = yarn_layout(yarn_start_direction, x)
+                else:
+                    for parent_id in parent_ids:
+                        parent_offset = knit_graph.graph[parent_id][node]["parent_offset"]
+                        original_parent_id = parent_id - parent_offset
+                        parent_course = loop_ids_to_course[parent_id]
+                        x = nodes_to_positions[original_parent_id]['x']
+                        # To better express shaping effect, use below one
+                        # y = nodes_to_positions[original_parent_id]['y'] + h_course
+                        # To avoid visual confusion, use below one to locate node
+                        y = nodes_to_positions[original_parent_id]['y'] + (course - parent_course)*h_course
+                        break
+                nodes_to_positions[node]['x'] = x
+                nodes_to_positions[node]['y'] = y
+
+        #get yarn edges color
+        def get_yarn_edges():
+            #add yarn edges and set edge color
+            for yarn in yarns:
+                for prior_node, next_node in yarn.yarn_graph.edges:
+                    edge_color_property[(prior_node, next_node)] = {}
+                    carrier_id = yarn.carrier.carrier_ids
+                    edge_color_property[(prior_node, next_node)]['color'] = carrier_id_to_color[carrier_id]
+        #get stitch edges color
+        def get_stitch_edges():
+            #add stitch edges and set edge color
+            for parent_id, child_id in knit_graph.graph.edges:
+                edge_color_property[(parent_id, child_id)] = {}
+                stitch_labels[(parent_id, child_id)] = knit_graph.graph[parent_id][child_id]["pull_direction"]
+                flag = False
+                for yarn in yarns:
+                    if child_id in yarn:
+                        flag = True
+                        carrier_id = yarn.carrier.carrier_ids
+                        edge_color_property[(parent_id, child_id)]['color'] = carrier_id_to_color[carrier_id]
+                        break
+                # color the edge based on cabling depth
+                if knit_graph.graph[parent_id][child_id]["depth"] < 0:
+                    depth = -1
+                    edge_color_property[(parent_id, child_id)]['color'] = cable_depth_to_color[depth]
+                elif knit_graph.graph[parent_id][child_id]["depth"] > 0:
+                    depth = 1
+                    edge_color_property[(parent_id, child_id)]['color'] = cable_depth_to_color[depth]
+                #if nodes not on any yarns, then it will be colored 'maroon'
+                if flag == False:
+                    edge_color_property[(parent_id, child_id)]['color'] = 'maroon'
+                # print('parent_id, child_id', parent_id, child_id)
+                # print('parent_id, child_id', parent_id, child_id, edge_color_property[(parent_id, child_id)]['color'])
+
+        def draw_graph():
+            #create a graph
+            G = nx.DiGraph()
+            #derive position of nodes
+            pos ={}
+            for node in nodes_to_positions:
+                pos[node] = [*nodes_to_positions[node].values()]
+            #add nodes
+            G.add_nodes_from(pos.keys())
+            #draw nodes
+            for node in G.nodes():
+                nx.draw_networkx_nodes(G, pos, nodelist=[node], node_size = 600, node_color=node_color_property[node]['color'])
+            #draw edges
+            for edge in [*edge_color_property.keys()]:
+                nx.draw_networkx_edges(G, pos, edgelist=[edge], width=5.0, edge_color=edge_color_property[edge]['color'], style='solid')
+            #draw node labels
+            node_labels = {x: x for x in G.nodes}
+            nx.draw_networkx_labels(G, pos, labels=node_labels, font_size=12, font_color='w')
+            #draw edge labels
+            nx.draw_networkx_edge_labels(G, pos, edge_labels=stitch_labels, label_pos=0.5, font_size=10, font_color='k', rotate=False)
+            plt.show()
+
+        get_nodes_position()
+        get_nodes_color()
+        get_yarn_edges()
+        get_stitch_edges()
+        draw_graph()
 
     #visualization for tube
     def visualize_tube():
@@ -161,7 +210,11 @@ def visualize_knitGraph(knit_graph: Knit_Graph, is_tube: bool = False, indicator
             if len(parent_ids) == 0:
                 if course == 0:
                     if loop_ids_row_index[node] <= tube_width - 1:
-                        x += w_between_node
+                        # x += w_between_node
+                        if yarn_start_direction == 'left to right':
+                            x += w_between_node
+                        elif yarn_start_direction == 'right to left':
+                            x -= w_between_node
                         y = y0
                         front_side_x_pos.append(x)
                     else:
@@ -269,5 +322,6 @@ def visualize_knitGraph(knit_graph: Knit_Graph, is_tube: bool = False, indicator
         visualize_tube()
     else:
         visualize_sheet()
+
     
     

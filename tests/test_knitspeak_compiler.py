@@ -80,7 +80,7 @@ def test_write_short_rows():
 if __name__ == "__main__":
     # test_stst()
     # test_rib()
-#     test_write_slipped_rib()
-    # test_write_slipped_rib_even()
-    test_cable()
+    # test_write_slipped_rib()
+    test_write_slipped_rib_even()
+    # test_cable()
     # test_lace()
