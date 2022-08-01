@@ -1,5 +1,4 @@
 from typing import Optional, List, Dict
-import xxlimited
 from knit_graphs.Yarn import Yarn
 from knit_graphs.Knit_Graph import Knit_Graph
 from debugging_tools.knit_graph_viz import visualize_knitGraph
@@ -126,7 +125,7 @@ class Hole_Generator:
     def hole_location_errors(self, node_to_course_and_wale):
         for node in self._node_to_delete:
             #First, if a node has no child and is not a node on top course/top border 
-            #it would be an error node in the knit graph signaling something wrong with the program.
+            #it would be an error node in the knit graph signaling something wrong with the given knitgraph.
             parent_ids = [*self._knit_graph.graph.predecessors(node)]
             child_ids = [*self._knit_graph.graph.successors(node)]
             course_id = node_to_course_and_wale[node][0]
@@ -306,46 +305,6 @@ class Hole_Generator:
         self.connect_bottom_nodes(course_and_wale_to_node)
         visualize_knitGraph(self._knit_graph, node_to_course_and_wale = node_to_course_and_wale, unmodified = False)
         return self._knit_graph
-
-def test_short_rows():
-    knit_graph = short_rows(5, buffer_height=1)
-    # _, __ = knit_graph.get_courses()
-    # visualize_knitGraph(knit_graph)
-    return knit_graph
-
-def test_lace():
-    knit_graph = lace(8, 8)
-    visualize_knitGraph(knit_graph)
-    return knit_graph
-
-def test_cable():
-    pattern = r"""
-        1st row k, lc2|2, k, rc2|2, [k] to end.
-        all ws rows p.
-        3rd row k 2, lc2|1, k, rc1|2, [k] to end.
-        5th row k 3, lc1|1, k, rc1|1, [k] to end.
-    """
-    compiler = Knitspeak_Compiler()
-    knit_graph = compiler.compile(11, 6, pattern)
-    visualize_knitGraph(knit_graph)
-    return knit_graph
-    
-def test_stst():
-    pattern = "all rs rows k. all ws rows p."
-    compiler = Knitspeak_Compiler()
-    knit_graph = compiler.compile(8, 6, pattern)
-    visualize_knitGraph(knit_graph)
-    return knit_graph
-
-if __name__ == '__main__':
-    # knit_graph = test_stst()
-    knit_graph = test_cable()
-    # knit_graph = test_short_rows()
-    # knit_graph = test_lace()
-    generator = Hole_Generator(knit_graph, node_to_delete = [26, 27, 28], new_carrier = 4, unmodified = True)
-    knitGraph = generator.add_hole()
-
-  
 
 
 
