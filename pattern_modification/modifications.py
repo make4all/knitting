@@ -274,23 +274,29 @@ class Hole_Generator:
             else:
                 node = course_and_wale_to_node[(hole_bottom_course_id, wale_id)]
                 child_ids = [*self._knit_graph.graph.successors(node)] 
+                #if both connected node don't exist, throw an error
+                connected_node_start_position = (connected_course_id, connected_wale_id_start)
+                connected_node_end_position = (connected_course_id, connected_wale_id_end)
+                assert connected_node_start_position in course_and_wale_to_node.keys() or connected_node_end_position in course_and_wale_to_node.keys(),\
+                    f'both connected_node_start and connected_node_end do not exist'
                 if len(child_ids) == 0:
-                    if (connected_course_id, connected_wale_id_start) not in course_and_wale_to_node.keys():
-                        print(f'connected_node_start at position {(connected_course_id, connected_wale_id_start)} not exist')
+                    if connected_node_start_position not in course_and_wale_to_node.keys():
+                        print(f'connected_node_start at position {connected_node_start_position} not exist')
                     else:
-                        connected_node_start = course_and_wale_to_node[(connected_course_id, connected_wale_id_start)]
+                        connected_node_start = course_and_wale_to_node[connected_node_start_position]
                         if (wale_id - connected_wale_id_start) <= 3:
                             parent_offset = wale_id - connected_wale_id_start
                             self._knit_graph.connect_loops(node, connected_node_start, parent_offset = parent_offset)
                             connected_flag = True
-                        
-                    if (connected_course_id, connected_wale_id_end) not in course_and_wale_to_node.keys():
-                        print(f'connected_node_start at position {(connected_course_id, connected_wale_id_end)} not exist')
+            
+                    if connected_node_end_position not in course_and_wale_to_node.keys():
+                        print(f'connected_node_start at position {connected_node_end_position} not exist')
                     else:       
-                        connected_node_end = course_and_wale_to_node[(connected_course_id, connected_wale_id_end)]
+                        connected_node_end = course_and_wale_to_node[connected_node_end_position]
                         if (connected_wale_id_end - wale_id) <= 3 and connected_flag == False:
                             parent_offset = connected_wale_id_end - wale_id
                             self._knit_graph.connect_loops(node, connected_node_end, parent_offset = -parent_offset)
+                
 
     def add_hole(self):
         node_to_course_and_wale, course_and_wale_to_node = self.get_nodes_course_and_wale()

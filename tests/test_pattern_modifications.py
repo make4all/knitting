@@ -4,7 +4,7 @@ from knitspeak_compiler.knitspeak_compiler import Knitspeak_Compiler
 from debugging_tools.simple_knitgraphs import *
 
 def test_short_rows():
-    knit_graph = short_rows(5, buffer_height=1)
+    knit_graph = short_rows(8, buffer_height=1)
     visualize_knitGraph(knit_graph)
     return knit_graph
 
@@ -34,10 +34,12 @@ def test_stst():
 
 if __name__ == '__main__':
     # knit_graph = test_stst()
-    knit_graph = test_cable()
-    # knit_graph = test_short_rows()
+    # knit_graph = test_cable()
+    knit_graph = test_short_rows()
     # knit_graph = test_lace()
-    generator = Hole_Generator(knit_graph, node_to_delete = [38, 49, 60], new_carrier = 4, unmodified = True)
+    # generator = Hole_Generator(knit_graph, node_to_delete = [38, 49, 60], new_carrier = 4, unmodified = True)
+    generator = Hole_Generator(knit_graph, node_to_delete = [15, 16, 17, 18, 19, 20], new_carrier = 4, unmodified = True)
+    # generator = Hole_Generator(knit_graph, node_to_delete = [14, 15, 16, 17], new_carrier = 4, unmodified = True)
     knitGraph = generator.add_hole()
 
   
