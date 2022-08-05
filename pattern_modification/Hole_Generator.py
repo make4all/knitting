@@ -85,18 +85,21 @@ class Hole_Generator:
         self._hole_width = self._hole_end_wale - self._hole_start_wale + 1
 
     def hole_location_warnings(self):
-        #check if any node violates the constraint for a node to be part of a hole
+        """
+        check if any ready-to-be-hole node might break any special stitch or suspicious for lacking some property,
+        signaling something might go wrong with the given knit graph.
+        """
         for node in self._node_to_delete:
             #first, each node should have exactly one parent. 
             #If more than one, it is part of a decrease; If less than one, it itself is an increase.
-            #Likewise, each node should have exactly one child (it can only be one or zero child).
-            #If no child, it might be a node on top course/top border, which we do not consider. 
-            #Or simply it can be an error node in the knit graph signaling something wrong with the program.
             parent_ids = [*self._knit_graph.graph.predecessors(node)]
             child_ids = [*self._knit_graph.graph.successors(node)]
             if len(parent_ids) != 1:
                 # warnings.warn("xxx")
                 print(f'Warning: node {node} might break a special stitch for having {len(parent_ids)} parents')
+            #Likewise, each node should have exactly one child (it can only be one or zero child).
+            #If no child, it might be a node on top course/top border, which we do not consider. 
+            #Or simply it can be an error node in the knit graph signaling something wrong with the program.
             if len(child_ids) != 1:
                 print(f'Warning: node {node} is suspicious or a node on border for for having {len(child_ids)} child')
             #Second, on knit graph, any edge related to the node must have a parent offset that is 0.
@@ -142,6 +145,9 @@ class Hole_Generator:
                 if len(yarn_parent_ids) != 1 or len(yarn_child_ids) != 1:
                     print(f'Error: node {node} is suspicious for having no parent node or child node on yarn')
                     exit()
+    #Todo
+    def hole_shape_and_number_constraints():
+        xxx
 
     def remove_hole_nodes_from_graph(self):
         """
@@ -153,6 +159,11 @@ class Hole_Generator:
 
     
     def get_new_yarn_loop_ids(self, course_and_wale_to_node):
+        """
+        Provided the hole_start_course, no matter what the yarn starting direction is, i.e., from left to right or from right
+        to left, the loop ids that should be re-assigned to a new yarn can be determined by if the hole_start_course is an 
+        odd number or even number, though the use of wale id and course id.
+        """
         new_yarn_course_to_loop_ids: Dict[float, List[int]]= {}
         old_yarn_course_to_margin_loop_ids: Dict[float, List[int]]= {}
         new_yarn_course_to_margin_loop_ids: Dict[float, List[int]]= {}
@@ -219,21 +230,21 @@ class Hole_Generator:
         return new_yarn_course_to_loop_ids, old_yarn_course_to_margin_loop_ids
     
     def reconnect_old_yarn_at_margin(self, old_yarn_course_to_margin_loop_ids):
-            """
-            reconnect old yarn at its margin.
-            """
-            if self._hole_start_course % 2 == 0:
-                for course_id in old_yarn_course_to_margin_loop_ids: 
-                    if course_id%2 == 0 and course_id + 1 in old_yarn_course_to_margin_loop_ids:
-                        start_node = old_yarn_course_to_margin_loop_ids[course_id]
-                        next_node = old_yarn_course_to_margin_loop_ids[course_id+1]
-                        self._old_yarn.yarn_graph.add_edge(start_node, next_node)
-            elif self._hole_start_course % 2 == 1:
-                for course_id in old_yarn_course_to_margin_loop_ids: 
-                    if course_id%2 == 1 and course_id + 1 in old_yarn_course_to_margin_loop_ids:
-                        start_node = old_yarn_course_to_margin_loop_ids[course_id]
-                        next_node = old_yarn_course_to_margin_loop_ids[course_id+1]
-                        self._old_yarn.yarn_graph.add_edge(start_node, next_node)
+        """
+        reconnect nodes on old yarn margin (margin refers to the left wale and right wale around the hole).
+        """
+        if self._hole_start_course % 2 == 0:
+            for course_id in old_yarn_course_to_margin_loop_ids: 
+                if course_id%2 == 0 and course_id + 1 in old_yarn_course_to_margin_loop_ids:
+                    start_node = old_yarn_course_to_margin_loop_ids[course_id]
+                    next_node = old_yarn_course_to_margin_loop_ids[course_id+1]
+                    self._old_yarn.yarn_graph.add_edge(start_node, next_node)
+        elif self._hole_start_course % 2 == 1:
+            for course_id in old_yarn_course_to_margin_loop_ids: 
+                if course_id%2 == 1 and course_id + 1 in old_yarn_course_to_margin_loop_ids:
+                    start_node = old_yarn_course_to_margin_loop_ids[course_id]
+                    next_node = old_yarn_course_to_margin_loop_ids[course_id+1]
+                    self._old_yarn.yarn_graph.add_edge(start_node, next_node)
 
     def bring_new_yarn(self):
         """
@@ -255,6 +266,10 @@ class Hole_Generator:
         print(f'new yarn edges are {self._new_yarn.yarn_graph.edges}')
     
     def connect_bottom_nodes(self, course_and_wale_to_node):
+        """
+        connect bottom nodes below the hole to the nearest top neighbor to prevent them from falling off the parent loops,
+        leading the hole bigger and bigger.
+        """
         hole_bottom_course_id = self._hole_start_course - 1
         connected_course_id = self._hole_start_course 
         connected_wale_id_start = self._hole_start_wale - 1
@@ -296,18 +311,31 @@ class Hole_Generator:
                         if (connected_wale_id_end - wale_id) <= 3 and connected_flag == False:
                             parent_offset = connected_wale_id_end - wale_id
                             self._knit_graph.connect_loops(node, connected_node_end, parent_offset = -parent_offset)
+                            connected_flag = True
+                    #throw an error if any node can not be connected to any neighbor node
+                    if connected_flag == False:
+                        print(f'node {node} can not be connected with any neighbor node')
+                        exit()
                 
 
     def add_hole(self):
         node_to_course_and_wale, course_and_wale_to_node = self.get_nodes_course_and_wale()
+        #return info including hole_start_wale, hole_end_wale, hole_start_course, hole_end_course, hole_height and hole_width.
         self.get_hole_size(node_to_course_and_wale)
+        #send out warning to user if special stitch might be broken or if hole node is set at places like top course.
         self.hole_location_errors(node_to_course_and_wale)
         self.hole_location_warnings()
+        #remove nodes for hole from both knit graph and yarn graph.
         self.remove_hole_nodes_from_graph()
         new_yarn_course_to_loop_ids, old_yarn_course_to_margin_loop_ids = self.get_new_yarn_loop_ids(course_and_wale_to_node)
+        #create a new yarn object.
         self.bring_new_yarn()
+        #reconnect nodes on old yarn margin (margin refers to the left wale and right wale around the hole).
         self.reconnect_old_yarn_at_margin(old_yarn_course_to_margin_loop_ids)
+        #remove nodes in "new_yarn_course_to_loop_ids" from old yarn and add these nodes to the new yarn.
         self.remove_old_and_add_new_yarn(new_yarn_course_to_loop_ids) 
+        #connect bottom nodes below the hole to the nearest top neighbor to prevent them from falling off the parent loops,
+        #leading the hole bigger and bigger.
         self.connect_bottom_nodes(course_and_wale_to_node)
         visualize_knitGraph(self._knit_graph, node_to_course_and_wale = node_to_course_and_wale, unmodified = False)
         return self._knit_graph
