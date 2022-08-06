@@ -37,7 +37,7 @@ class Pocket_Generator:
         """
         assert len(self.left_keynodes) == len(self.right_keynodes), f'num of left keynodes is not equal to num of right keynodes'
         self.num_of_nodes_each_side = len(self.left_keynodes) 
-        print('self.num_of_nodes_each_side', self.num_of_nodes_each_side)
+        # print('self.num_of_nodes_each_side', self.num_of_nodes_each_side)
         for i in range(1, self.num_of_nodes_each_side):
             curr_right_keynode = self.right_keynodes[i]
             last_right_keynode = self.right_keynodes[i-1]
@@ -98,11 +98,9 @@ class Pocket_Generator:
                     if course_id % 2 == 1:
                         for _ in range(cur_width):
                             loop_id, loop = self.yarn.add_loop_to_end()
-                            # print('lo',loop_id)
                             next_row.append(loop_id)
                             self._knit_graph.add_loop(loop)
                             if _ == 0:
-                                print('prior', prior_row)
                                 parent_loop_id = prior_row[-1]
                                 parent_offset = -1 
                                 self._knit_graph.connect_loops(parent_loop_id, loop_id, parent_offset = parent_offset)
@@ -114,10 +112,6 @@ class Pocket_Generator:
                                 parent_loop_id = [*reversed(prior_row)][i]
                                 self._knit_graph.connect_loops(parent_loop_id, loop_id)
                                 i += 1
-                                print('hit')
-                            print('parent_loop_id', parent_loop_id)
-                            print('i', i)
-                            print('prior width', prior_width)
                     elif course_id % 2 == 0:
                         for _ in range(cur_width):
                             loop_id, loop = self.yarn.add_loop_to_end()
@@ -135,7 +129,6 @@ class Pocket_Generator:
                                 parent_loop_id = [*reversed(prior_row)][i]
                                 self._knit_graph.connect_loops(parent_loop_id, loop_id)
                                 i += 1
-                    print('haha', i, prior_width, next_row)
                     assert i == prior_width, f'loops in prior row has not been fully consumed' 
                     prior_row = next_row
                     prior_width = cur_width
