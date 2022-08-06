@@ -346,8 +346,7 @@ def seed(width: int = 4, height=4) -> Knit_Graph:
             grand_parent = [*knitGraph.graph.predecessors(parent_id)][0]
             parent_pull_direction = knitGraph.graph[grand_parent][parent_id]["pull_direction"]
             knitGraph.connect_loops(parent_id, child_id, pull_direction=parent_pull_direction.opposite())
-    print('parent_pull_direction',parent_pull_direction)
-    print('parent_pull_direction.opposite()', parent_pull_direction.opposite())
+  
     return knitGraph
 
 def hole_by_short_row(hole_position: List[int], hole_width: int = 1, hole_height: int = 1, width: int = 5, height: int = 5) -> Knit_Graph:
@@ -405,7 +404,7 @@ def hole_by_short_row(hole_position: List[int], hole_width: int = 1, hole_height
         current_row.extend(reserved_top_right)
     else: 
         current_row.extend(reserved_top_left)
-    print('current_row', current_row)
+    # print('current_row', current_row)
 
     next_course = []
     if (hole_course_index + hole_height) % 2 == 1:
@@ -418,7 +417,7 @@ def hole_by_short_row(hole_position: List[int], hole_width: int = 1, hole_height
         knit_graph.add_loop(child)
         next_course.append(child_id)
         if _ not in range(left, left + hole_width):
-            print('{} not in range {}'.format(_, (left, left + hole_width)))
+            # print('{} not in range {}'.format(_, (left, left + hole_width)))
             parent_id = current_row.pop(0)
             knit_graph.connect_loops(parent_id, child_id)
 
@@ -479,20 +478,20 @@ def twisted_stripes(width: int = 4, height=5, left_twists: bool = True) -> Knit_
         next_course = []
         reversed_prior_course = [*reversed(prior_course)]
 
-        print('reversed_prior_course', reversed_prior_course)
+        # print('reversed_prior_course', reversed_prior_course)
         for col, parent_id in enumerate(reversed_prior_course):
             #if course % 2 == 0 or col % 4 == 0 or col % 4 == 3:  # knit on even rows and before and after twists
             if course % 2 == 0 or col % 4 == 0 or col % 4 == 3:
                 add_loop_and_knit(parent_id)
             elif col % 4 == 1:
                 next_parent_id = reversed_prior_course[col + 1]
-                print('col',col, col+1, next_parent_id)
+                # print('col',col, col+1, next_parent_id)
                 # add_loop_and_knit(next_parent_id, depth=twist_depth, parent_offset=1)
                 add_loop_and_knit(next_parent_id, depth=twist_depth, parent_offset=-1)
                 twist_depth = -1 * twist_depth  # switch depth for neighbor
             elif col % 4 == 2:
                 next_parent_id = reversed_prior_course[col - 1]
-                print('col',col, col-1, next_parent_id)
+                # print('col',col, col-1, next_parent_id)
                 # add_loop_and_knit(next_parent_id, depth=twist_depth, parent_offset=-1)
                 add_loop_and_knit(next_parent_id, depth=twist_depth, parent_offset=1)
                 twist_depth = -1 * twist_depth  # switch depth for next twist
@@ -719,8 +718,8 @@ def short_rows(width: int = 10, buffer_height: int = 2) -> Knit_Graph:
     else:
         top_course_index = max(*course_to_loop_ids.keys())
         top_course = course_to_loop_ids[top_course_index]
-    print(course_to_loop_ids, course_to_loop_ids.keys(), *course_to_loop_ids.keys())
-    print('top course', top_course)
+    # print(course_to_loop_ids, course_to_loop_ids.keys(), *course_to_loop_ids.keys())
+    # print('top course', top_course)
     # Knit to last two loops and reserve on left
     next_row = []
     reversed_top_course = [*reversed(top_course)]

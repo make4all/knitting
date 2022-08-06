@@ -141,7 +141,11 @@ class Knit_Graph:
                             parent_offset = self.graph[parent_id][loop_id]['parent_offset']
                             wale = loop_ids_to_wale[parent_id] - parent_offset
                             loop_ids_to_wale[loop_id] = wale
-                            wale_to_loop_ids[wale].append(loop_id)
+                            if wale not in wale_to_loop_ids:
+                                wale_to_loop_ids[wale] = []
+                                wale_to_loop_ids[wale].append(loop_id)
+                            else:
+                                wale_to_loop_ids[wale].append(loop_id)
                             break
                     else:
                         #If its predecessor node on yarn has wale, then combined with corresponding course_id, its wale can be inferred
@@ -178,8 +182,13 @@ class Knit_Graph:
         #                 parent_offset = self.graph[parent_id][loop_id]['parent_offset']
         #                 wale = loop_ids_to_wale[parent_id] - parent_offset
         #                 loop_ids_to_wale[loop_id] = wale
-        #                 wale_to_loop_ids[wale].append(loop_id)
+        #                 if wale not in wale_to_loop_ids:
+        #                         wale_to_loop_ids[wale] = []
+        #                         wale_to_loop_ids[wale].append(loop_id)
+        #                 else:
+        #                     wale_to_loop_ids[wale].append(loop_id)
         #                 break
+                
         #         else:
         #             #If its predecessor node on yarn has wale, then combined with corresponding course_id, its wale can be inferred
         #             #Since a node on yarn always has one predecessor, except that starting node has 0 predecessor.

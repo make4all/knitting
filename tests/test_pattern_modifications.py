@@ -1,10 +1,10 @@
-from pattern_modification.modifications import Hole_Generator
+from pattern_modification.Hole_Generator import Hole_Generator
 from debugging_tools.knit_graph_viz import visualize_knitGraph
 from knitspeak_compiler.knitspeak_compiler import Knitspeak_Compiler
 from debugging_tools.simple_knitgraphs import *
 
 def test_short_rows():
-    knit_graph = short_rows(8, buffer_height=1)
+    knit_graph = short_rows(12, buffer_height=1)
     visualize_knitGraph(knit_graph)
     return knit_graph
 

@@ -23,9 +23,10 @@ def visualize_knitGraph(knit_graph: Knit_Graph, unmodified: bool = True, is_tube
             course = loop_ids_to_course[node]
             wale = loop_ids_to_wale[node]
             node_to_course_and_wale[node] = [course, wale]
-    # print('loop_ids_to_wale', loop_ids_to_wale)
-    # print('wale_to_loop_ids', wale_to_loop_ids)
-    # print('course_to_loop_ids', course_to_loop_ids)
+    print('loop_ids_to_wale', loop_ids_to_wale)
+    print('wale_to_loop_ids', wale_to_loop_ids)
+    print('course_to_loop_ids', course_to_loop_ids)
+    print('node_to_course_and_wale', node_to_course_and_wale)
     # print('knit_graph.graph.nodes', knit_graph.graph.nodes)
     #   
     loop_ids_row_index = {}
@@ -75,11 +76,12 @@ def visualize_knitGraph(knit_graph: Knit_Graph, unmodified: bool = True, is_tube
                 for yarn in yarns:
                     if node in yarn:
                         carrier_id = yarn.carrier.carrier_ids
+                        break
                 #store node color property
                 node_color_property[node]['color'] = carrier_id_to_color[carrier_id]
 
         # @deprecated("Deprecated because this infers x coordinate by x -= w_between_node or x += w_between_node, do not work for
-        # a node that sits in between, and not only has no parent but also has less than two neighbors") 
+        # a node that sits in between that not only has no parent but also has less than two neighbors") 
         def deprecated_get_nodes_position():
             x = 0
             y = 0
