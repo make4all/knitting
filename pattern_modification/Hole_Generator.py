@@ -185,7 +185,7 @@ class Hole_Generator:
                     for wale_id in range(self._hole_end_wale + 1, self._pattern_width):
                         if (course_id, wale_id) in course_and_wale_to_node.keys():
                             new_yarn_course_to_loop_ids[course_id].append(course_and_wale_to_node[(course_id, wale_id)])
-                elif course_id % 2 ==1:
+                elif course_id % 2 == 1:
                     for wale_id in range(self._hole_end_wale + 1, self._pattern_width):
                         if (course_id, wale_id) in course_and_wale_to_node.keys():
                             new_yarn_course_to_loop_ids[course_id].insert(0, course_and_wale_to_node[(course_id, wale_id)])
