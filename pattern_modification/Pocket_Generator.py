@@ -29,7 +29,7 @@ class Pocket_Generator:
         self.shaping_trend: Dict[str, Dict[Tuple(int, int), str]] = {}
         self.course_id_to_width: Dict[str, Dict[int, int]] = {}
         self.course_id_to_shaping: Dict[str, Dict[int, str]] = {}
-        self._knit_graph: Knit_Graph
+        self._knit_graph: Knit_Graph = Knit_Graph()
         self.old_yarn: Yarn
         self.new_yarn: Yarn
         self._loop_id_to_course: Dict[int, float] 
@@ -41,7 +41,6 @@ class Pocket_Generator:
         self.spliting_nodes: List[int] = spliting_nodes
         self.spliting_width: int = len(self.spliting_nodes)
         self.split_starting_course_id: int = split_starting_course_id
-        self.max_width_child_fabric: int
 
         self.cur_width_parent_fabric: int
         self.prior_width_parent_fabric: int
@@ -82,9 +81,94 @@ class Pocket_Generator:
             else:
                 assert width_change_right == width_change_right == 0, f'width change: {width_change_left} on the left side is not equal to width change: {width_change_right} on the right side'
 
-    def generate_polygon_from_keynodes(self):
-        xx
+    def generate_polygon_from_keynodes(self, old_carrier):
+        # first process given keynodes on each side, to get starting node coordinate and ending node coordinate on each course.
+        starting_nodes_coor = []
+        ending_nodes_coor = []
+        num_of_nodes_left_side = len(self.left_keynodes_child_fabric) 
+        num_of_nodes_right_side = len(self.right_keynodes_child_fabric) 
+        # for keynodes on the left side
+        starting_nodes_coor_on_first_course = ((self.left_keynodes_child_fabric[0][0], self.left_keynodes_child_fabric[0][1]))
+        starting_nodes_coor.append(starting_nodes_coor_on_first_course)
+        for i in range(1, num_of_nodes_left_side):
+            curr_left_keynode = self.left_keynodes_child_fabric[i]
+            last_left_keynode = self.left_keynodes_child_fabric[i-1]
+            # if 
+            if curr_left_keynode[1] - last_left_keynode[1] == 0:
+                #wale_id keeps the same between this course range
+                wale_id = last_left_keynode[1]
+                for course_id in range(last_left_keynode[0] + 1, curr_left_keynode[0] + 1):
+                    starting_nodes_coor.append((course_id, wale_id))
+            elif curr_left_keynode[1] - last_left_keynode[1] != 0:
+                wale_id = last_left_keynode[1]
+                wale_change_per_course = int((curr_left_keynode[1] - last_left_keynode[1]) / (curr_left_keynode[0] - last_left_keynode[0]))
+                for course_id in range(last_left_keynode[0] + 1, curr_left_keynode[0] + 1):
+                    wale_id += wale_change_per_course
+                    starting_nodes_coor.append((course_id, wale_id))
+        # for keynodes on the right side
+        ending_nodes_coor_on_first_course = ((self.right_keynodes_child_fabric[0][0], self.right_keynodes_child_fabric[0][1]))
+        ending_nodes_coor.append(ending_nodes_coor_on_first_course)
+        for i in range(1, num_of_nodes_right_side):
+            curr_right_keynode = self.right_keynodes_child_fabric[i]
+            last_right_keynode = self.right_keynodes_child_fabric[i-1]
+            # if 
+            if curr_right_keynode[1] - last_right_keynode[1] == 0:
+                #wale_id keeps the same between this course range
+                wale_id = last_right_keynode[1]
+                for course_id in range(last_right_keynode[0] + 1, curr_right_keynode[0] + 1):
+                    ending_nodes_coor.append((course_id, wale_id))
+            elif curr_right_keynode[1] - last_right_keynode[1] != 0:
+                wale_id = last_right_keynode[1]
+                wale_change_per_course = int((curr_right_keynode[1] - last_right_keynode[1]) / (curr_right_keynode[0] - last_right_keynode[0]))
+                for course_id in range(last_right_keynode[0] + 1, curr_right_keynode[0] + 1):
+                    wale_id += wale_change_per_course
+                    ending_nodes_coor.append((course_id, wale_id))
+        print(f'starting_nodes_coor is {starting_nodes_coor}, ending_nodes_coor is {ending_nodes_coor}')
 
+        #derive node_to_course_and_wale from above starting_nodes_coor and ending_nodes_coor
+        node = 0
+        node_to_course_and_wale = {}
+        for i in range(len(starting_nodes_coor)):
+            staring_node_wale_id = starting_nodes_coor[i][1]
+            ending_node_wale_id = ending_nodes_coor[i][1]
+            course_id = starting_nodes_coor[i][0]
+            if course_id % 2 == 0:
+                for wale_id in range(staring_node_wale_id, ending_node_wale_id + 1):
+                    node_to_course_and_wale[node] = (course_id, wale_id)
+                    node += 1
+            elif course_id % 2 == 1:
+                for wale_id in range(ending_node_wale_id, staring_node_wale_id - 1, -1):
+                    node_to_course_and_wale[node] = (course_id, wale_id)
+                    node += 1
+        print(f'node_to_course_and_wale is {node_to_course_and_wale}')
+
+        #connect nodes on yarn
+        self.old_yarn = Yarn("old_yarn", self._knit_graph, carrier_id=old_carrier)
+        self._knit_graph.add_yarn(self.old_yarn)
+        for node in node_to_course_and_wale.keys():
+            loop_id, loop = self.old_yarn.add_loop_to_end()
+            self._knit_graph.add_loop(loop)
+        #get course_to_loop_ids
+        course_to_loop_ids = {}
+        for course_id in range(starting_nodes_coor_on_first_course[0], starting_nodes_coor[-1][0]+1):
+            course_to_loop_ids[course_id] = []
+        for node in self._knit_graph.graph.nodes:
+            course_id = node_to_course_and_wale[node][0]
+            course_to_loop_ids[course_id].append(node)
+        #reverse node_to_course_and_wale to get course_and_wale_to_node
+        course_and_wale_to_node = {}
+        course_and_wale_to_node = {tuple(v): k for k, v in node_to_course_and_wale.items()}
+        #connect node stitches
+        print(f'course_to_loop_ids is {course_to_loop_ids}')
+        for course_id in [*course_to_loop_ids.keys()][:-1]:
+            for node in course_to_loop_ids[course_id]:
+                wale_id = node_to_course_and_wale[node][1]
+                #find upper neighbor node
+                if (course_id + 1, wale_id) in course_and_wale_to_node.keys():
+                    child_loop = course_and_wale_to_node[(course_id + 1, wale_id)]
+                    self._knit_graph.connect_loops(node, child_loop)
+        visualize_knitGraph(self._knit_graph, node_to_course_and_wale = node_to_course_and_wale, object_type = 'sheet', unmodified = False)
+        
     def extract_shaping_trend(self, is_parent_fabric: bool) -> List[str]:
         """
         return a list recording shaping trend of the pattern.
@@ -180,8 +264,7 @@ class Pocket_Generator:
         self.extract_shaping_trend(is_parent_fabric = True)
         #extract shaping info for parent fabric before splitting course_id + 1 to build the graph first
         shaping_trend_before_splitting = self.shaping_before_course_id()
-        self._knit_graph = Knit_Graph()
-        self.old_yarn = Yarn("yarn", self._knit_graph, carrier_id=old_carrier)
+        self.old_yarn = Yarn("old_yarn", self._knit_graph, carrier_id=old_carrier)
         self._knit_graph.add_yarn(self.old_yarn)
         #for parent fabric, add rows for old yarns until reaching the row just above the splitting row
         first_row_parent_fabric = []
@@ -851,7 +934,7 @@ class Pocket_Generator:
                         self.cur_width_child_fabric = self.prior_width_child_fabric - 2
         
         return self._knit_graph
-
+    
     def get_nodes_course_and_wale(self):
         """
         Get the [course, wale] coordinate of each node in the knit graph.
@@ -937,77 +1020,85 @@ class Pocket_Generator:
         print(f'bigger_wale_target_edge_nodes is {bigger_wale_target_edge_nodes}, smaller_wale_target_edge_nodes is {smaller_wale_target_edge_nodes}')
         return smaller_wale_target_edge_nodes, bigger_wale_target_edge_nodes
 
-    def actions_around_target_edge_node(self, smaller_wale_target_edge_nodes, bigger_wale_target_edge_nodes, node_to_course_and_wale, course_and_wale_to_node_on_yarn, smaller_wale_edge_connected: bool, bigger_wale_edge_connected: bool):
+    def actions_around_target_edge_node(self, smaller_wale_target_edge_nodes, bigger_wale_target_edge_nodes, smaller_wale_edge_connected: bool, bigger_wale_edge_connected: bool):
         #first remove target edge node
         #then operate connections involving surrounding five nodes
-        carrier_id_parent_fabric = self.old_yarn.carrier.carrier_ids
-        carrier_id_child_fabric = self.new_yarn.carrier.carrier_ids
         if bigger_wale_edge_connected == True:
             for node in bigger_wale_target_edge_nodes:
                 self._knit_graph.graph.remove_node(node) 
                 self.old_yarn.yarn_graph.remove_node(node)
-                print('haha',node, node_to_course_and_wale[node], course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_parent_fabric)])
-                del course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_parent_fabric)][node_to_course_and_wale[node]]
-                course_id = node_to_course_and_wale[node][0]
-                wale_id = node_to_course_and_wale[node][1]
-                target_node_on_child_fabric = course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_child_fabric)][(course_id, wale_id - 1)]
-                if (course_id, wale_id + 1) in course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_parent_fabric)]:
-                    in_neighbor_node_horizontal = course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_parent_fabric)][(course_id, wale_id - 1)]
-                    if course_id % 2 == 0:
-                        self._knit_graph.connect_loops(in_neighbor_node_horizontal, target_node_on_child_fabric)
-                    elif course_id % 2 == 1:
-                        self._knit_graph.connect_loops(target_node_on_child_fabric, in_neighbor_node_horizontal)
+                del self.parent_graph_course_and_wale_to_node[self.parent_graph_node_to_course_and_wale[node]]
+                course_id = self.parent_graph_node_to_course_and_wale[node][0]
+                wale_id = self.parent_graph_node_to_course_and_wale[node][1]
+                target_node_on_child_fabric = self.child_graph_course_and_wale_to_node[(course_id, wale_id - 1)]
+                #see if in_neighbor_node_horizontal exists
+                if (course_id, wale_id - 1) in self.parent_graph_course_and_wale_to_node:
+                    in_neighbor_node_horizontal = self.parent_graph_course_and_wale_to_node[(course_id, wale_id - 1)]
+                    if self._knit_graph.graph.has_edge(in_neighbor_node_horizontal, node):
+                        if course_id % 2 == 0:
+                            self._knit_graph.connect_loops(in_neighbor_node_horizontal, target_node_on_child_fabric)
+                        elif course_id % 2 == 1:
+                            self._knit_graph.connect_loops(target_node_on_child_fabric, in_neighbor_node_horizontal)
+                    else:
+                        print(f'in_neighbor_node_horizontal: {in_neighbor_node_horizontal} exists but not connected to node: {node}')
                 else:
                     print(f'in_neighbor_node_horizontal does not exist at position {(course_id, wale_id - 1)}')
-                out_neighbor_node_horizontal = course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_parent_fabric)][(course_id, wale_id + 1)]
-                upper_neighbor = course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_parent_fabric)][(course_id + 1, wale_id)]
-                if course_id % 2 == 0:
-                    self._knit_graph.connect_loops(target_node_on_child_fabric, out_neighbor_node_horizontal)
-                elif course_id % 2 == 1:
-                    self._knit_graph.connect_loops(out_neighbor_node_horizontal, target_node_on_child_fabric)
-                #see if lower node exists
-                if (course_id - 1, wale_id) in course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_parent_fabric)]:
-                    lower_neighbor = course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_parent_fabric)][(course_id - 1, wale_id)]
+                #see if out_neighbor_node_horizontal exists
+                if (course_id, wale_id + 1) in self.parent_graph_course_and_wale_to_node:
+                    out_neighbor_node_horizontal = self.parent_graph_course_and_wale_to_node[(course_id, wale_id + 1)]
+                    if self._knit_graph.graph.has_edge(node, out_neighbor_node_horizontal):
+                        if course_id % 2 == 0:
+                            self._knit_graph.connect_loops(target_node_on_child_fabric, out_neighbor_node_horizontal)
+                        elif course_id % 2 == 1:
+                            self._knit_graph.connect_loops(out_neighbor_node_horizontal, target_node_on_child_fabric)
+                    else:
+                        print(f'out_neighbor_node_horizontal: {out_neighbor_node_horizontal} exists but not connected from node: {node}')
+                else:
+                    print(f'out_neighbor_node_horizontal does not exist at position {(course_id, wale_id + 1)}')
+                #see if lower neighbor node exists
+                if (course_id - 1, wale_id) in self.parent_graph_course_and_wale_to_node:
+                    lower_neighbor = self.parent_graph_course_and_wale_to_node[(course_id - 1, wale_id)]
                     self._knit_graph.connect_loops(lower_neighbor, target_node_on_child_fabric, parent_offset = 1)
                 else:
                     print(f'lower_neighbor does not exist at position {(course_id - 1, wale_id)}')
+                #see if upper_neighbor node exists
+                upper_neighbor = self.parent_graph_course_and_wale_to_node[(course_id + 1, wale_id)]
                 self._knit_graph.connect_loops(target_node_on_child_fabric, upper_neighbor, parent_offset = -1)
+
                 # print('nodes need action on include', in_neighbor_node_horizontal, out_neighbor_node_horizontal, upper_neighbor, lower_neighbor, target_node_on_child_fabric)
                 #update dictionary that stores nodes for visualization
-                del node_to_course_and_wale[node]
+                del self.pocket_graph_node_to_course_and_wale[node]
         if smaller_wale_edge_connected == True:
             for node in smaller_wale_target_edge_nodes:
                 self._knit_graph.graph.remove_node(node)
                 self.old_yarn.yarn_graph.remove_node(node)
-                print('haha',node_to_course_and_wale[node], course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_parent_fabric)])
-                del course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_parent_fabric)][node_to_course_and_wale[node]]
-                course_id = node_to_course_and_wale[node][0]
-                wale_id = node_to_course_and_wale[node][1]
-                target_node_on_child_fabric = course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_child_fabric)][(course_id, wale_id + 1)]
-                if (course_id, wale_id - 1) in course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_parent_fabric)]:
-                    in_neighbor_node_horizontal = course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_parent_fabric)][(course_id, wale_id - 1)]
+                del self.parent_graph_course_and_wale_to_node[self.parent_graph_node_to_course_and_wale[node]]
+                course_id = self.parent_graph_node_to_course_and_wale[node][0]
+                wale_id = self.parent_graph_node_to_course_and_wale[node][1]
+                target_node_on_child_fabric = self.child_graph_course_and_wale_to_node[(course_id, wale_id + 1)]
+                if (course_id, wale_id - 1) in self.parent_graph_course_and_wale_to_node:
+                    in_neighbor_node_horizontal = self.parent_graph_course_and_wale_to_node[(course_id, wale_id - 1)]
                     if course_id % 2 == 0:
                         self._knit_graph.connect_loops(in_neighbor_node_horizontal, target_node_on_child_fabric)
                     elif course_id % 2 == 1:
                         self._knit_graph.connect_loops(target_node_on_child_fabric, in_neighbor_node_horizontal)
                 else:
                     print(f'in_neighbor_node_horizontal does not exist at position {(course_id, wale_id - 1)}')
-                out_neighbor_node_horizontal = course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_parent_fabric)][(course_id, wale_id + 1)]
-                upper_neighbor = course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_parent_fabric)][(course_id + 1, wale_id)]
+                out_neighbor_node_horizontal = self.parent_graph_course_and_wale_to_node[(course_id, wale_id + 1)]
+                upper_neighbor = self.parent_graph_course_and_wale_to_node[(course_id + 1, wale_id)]
                 if course_id % 2 == 0:
                     self._knit_graph.connect_loops(target_node_on_child_fabric, out_neighbor_node_horizontal)
                 elif course_id % 2 == 1:
                     self._knit_graph.connect_loops(out_neighbor_node_horizontal, target_node_on_child_fabric)
                 #see if lower node exists
-                if (course_id - 1, wale_id) in course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_parent_fabric)]:
-                    lower_neighbor = course_and_wale_to_node_on_yarn['yarn on carrier' + str(carrier_id_parent_fabric)][(course_id - 1, wale_id)]
-                    print('lw', lower_neighbor, target_node_on_child_fabric)
+                if (course_id - 1, wale_id) in self.parent_graph_course_and_wale_to_node:
+                    lower_neighbor = self.parent_graph_course_and_wale_to_node[(course_id - 1, wale_id)]
                     self._knit_graph.connect_loops(lower_neighbor, target_node_on_child_fabric, parent_offset = -1)
                 else:
                     print(f'lower_neighbor does not exist at position {(course_id - 1, wale_id)}')
                 self._knit_graph.connect_loops(target_node_on_child_fabric, upper_neighbor, parent_offset = 1)
-                del node_to_course_and_wale[node]
-        print(f'updated node dict is {node_to_course_and_wale}')
+                del self.pocket_graph_node_to_course_and_wale[node]
+        print(f'updated node dict is {self.pocket_graph_node_to_course_and_wale}')
         visualize_knitGraph(self._knit_graph, node_to_course_and_wale = node_to_course_and_wale, object_type = 'pocket', unmodified = False)      
         
 
@@ -1055,13 +1146,17 @@ class Pocket_Generator:
 
 if __name__ == '__main__':
     #rectangle for both parent fabric and child fabric
-    # generator = Pocket_Generator(left_keynodes_parent_fabric = [(0, 0), (6, 0)], right_keynodes_parent_fabric = [(0, 7), (6, 7)], left_keynodes_child_fabric = [(2, 2), (5, 2)], right_keynodes_child_fabric = [(2, 5), (5, 5)], split_starting_course_id = 1, spliting_nodes = [13, 12, 11, 10])
+    generator = Pocket_Generator(left_keynodes_parent_fabric = [(0, 0), (6, 0)], right_keynodes_parent_fabric = [(0, 7), (6, 7)], left_keynodes_child_fabric = [(2, 2), (5, 2)], right_keynodes_child_fabric = [(2, 5), (5, 5)], split_starting_course_id = 1, spliting_nodes = [13, 12, 11, 10])
     #wider for child fabric, rectangle for parent fabric
-    generator = Pocket_Generator(left_keynodes_parent_fabric = [(0, -5), (5, -5)], right_keynodes_parent_fabric = [(0, 5), (5, 5)], left_keynodes_child_fabric = [(2, 2), (4, 0)], right_keynodes_child_fabric = [(2, 5), (4, 7)], split_starting_course_id = 1, spliting_nodes = [18, 17, 16, 15])
+    # generator = Pocket_Generator(left_keynodes_parent_fabric = [(0, -5), (5, -5)], right_keynodes_parent_fabric = [(0, 5), (5, 5)], left_keynodes_child_fabric = [(2, 2), (4, 0)], right_keynodes_child_fabric = [(2, 5), (4, 7)], split_starting_course_id = 1, spliting_nodes = [18, 17, 16, 15])
     #wider for child fabric, rectangle then wider for parent fabric
     # generator = Pocket_Generator(left_keynodes_parent_fabric = [(0, -5), (5, -5), (7, -7)], right_keynodes_parent_fabric = [(0, 5), (5, 5), (7, 7)], left_keynodes_child_fabric = [(2, 2), (4, 0)], right_keynodes_child_fabric = [(2, 5), (4, 7)], split_starting_course_id = 1, spliting_nodes = [18, 17, 16, 15])
     #change spliting_course_id
     # generator = Pocket_Generator(left_keynodes_parent_fabric = [(0, -5), (5, -5)], right_keynodes_parent_fabric = [(0, 5), (5, 5)], left_keynodes_child_fabric = [(1, 2), (3, 0)], right_keynodes_child_fabric = [(1, 5), (3, 7)], split_starting_course_id = 0, spliting_nodes = [6, 5, 4, 3]) #[3, 4, 5, 6]
     
     generator.generate_pocket_graph(old_carrier = 3, new_carrier = 4, close_top = False, smaller_wale_edge_connected = True, bigger_wale_edge_connected = True)
-   
+    
+    # generator = Pocket_Generator(left_keynodes_parent_fabric = [(0, 0), (6, 0)], right_keynodes_parent_fabric = [(0, 7), (6, 7)], left_keynodes_child_fabric = [(0, 0), (2, 4), (3, 4)], right_keynodes_child_fabric = [(0, 6), (1, 5), (3, 5)], split_starting_course_id = 1, spliting_nodes = [13, 12, 11, 10])
+    # generator = Pocket_Generator(left_keynodes_parent_fabric = [(0, 0), (6, 0)], right_keynodes_parent_fabric = [(0, 7), (6, 7)], left_keynodes_child_fabric = [(0, 0), (3, 3)], right_keynodes_child_fabric = [(0, 5), (1, 4), (2, 4), (3, 3)], split_starting_course_id = 1, spliting_nodes = [13, 12, 11, 10])
+    # generator = Pocket_Generator(left_keynodes_parent_fabric = [(0, 0), (6, 0)], right_keynodes_parent_fabric = [(0, 7), (6, 7)], left_keynodes_child_fabric = [(0, 0), (9, 0)], right_keynodes_child_fabric = [(0, 3), (3, 6), (6, 6), (9, 3)], split_starting_course_id = 1, spliting_nodes = [13, 12, 11, 10])
+

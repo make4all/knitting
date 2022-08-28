@@ -109,7 +109,7 @@ class Knit_Graph:
         for loop_id in self.graph.nodes:
             no_parents_in_course = True
             for parent_id in self.graph.predecessors(loop_id):
-                # print('parent_id', parent_id)
+                # print('predecessors', [*self.graph.predecessors(loop_id)], len([*self.graph.predecessors(loop_id)]))
                 if parent_id in current_course_set:
                     no_parents_in_course = False
                     break
@@ -152,12 +152,18 @@ class Knit_Graph:
                         #Since a node on yarn always has one predecessor, except that starting node has 0 predecessor.
                         yarn_predecessor = [*yarn.yarn_graph.predecessors(loop_id)][0]
                         if yarn_predecessor in loop_ids_to_wale.keys():
-                            wale = loop_ids_to_wale[yarn_predecessor]
+                            pre_wale = loop_ids_to_wale[yarn_predecessor]
                             if course_id % 2 == 1:
-                                loop_ids_to_wale[loop_id] = wale - 1
+                                wale = pre_wale - 1
+                                loop_ids_to_wale[loop_id] = wale
                             else: 
-                                loop_ids_to_wale[loop_id] = wale + 1
-                            wale_to_loop_ids[wale].append(loop_id)
+                                wale = pre_wale + 1
+                                loop_ids_to_wale[loop_id] = wale
+                            if wale not in wale_to_loop_ids:
+                                wale_to_loop_ids[wale] = []
+                                wale_to_loop_ids[wale].append(loop_id)
+                            else:
+                                wale_to_loop_ids[wale].append(loop_id)
                         else:
                             print(f'Error: wale of node {loop_id} cannot be determined')
                             exit()
