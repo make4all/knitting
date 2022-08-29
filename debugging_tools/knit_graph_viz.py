@@ -136,13 +136,13 @@ def visualize_knitGraph(knit_graph: Knit_Graph, unmodified: bool = True, is_poly
             for parent_id, child_id in knit_graph.graph.edges:
                 edge_color_property[(parent_id, child_id)] = {}
                 stitch_labels[(parent_id, child_id)] = knit_graph.graph[parent_id][child_id]["pull_direction"]
-                flag = False
+                flag_for_on_yarn = False
                 for yarn in yarns:
                     #if stitch edge color is determined by child_id, use below one
                     # if child_id in yarn:
                     #if stitch edge color is determined by parent_id, use below one
                     if parent_id in yarn:
-                        flag = True
+                        flag_for_on_yarn = True
                         carrier_id = yarn.carrier.carrier_ids
                         edge_color_property[(parent_id, child_id)]['color'] = carrier_id_to_color[carrier_id]
                         break
@@ -154,7 +154,7 @@ def visualize_knitGraph(knit_graph: Knit_Graph, unmodified: bool = True, is_poly
                     depth = 1
                     edge_color_property[(parent_id, child_id)]['color'] = cable_depth_to_color[depth]
                 #if nodes not on any yarns, then it will be colored 'maroon'
-                if flag == False:
+                if flag_for_on_yarn == False:
                     edge_color_property[(parent_id, child_id)]['color'] = 'maroon'
                 # print('parent_id, child_id', parent_id, child_id)
                 # print('parent_id, child_id', parent_id, child_id, edge_color_property[(parent_id, child_id)]['color'])
@@ -195,8 +195,10 @@ def visualize_knitGraph(knit_graph: Knit_Graph, unmodified: bool = True, is_poly
                 y0 = 0
             elif yarn == yarns[1]:
                 x0 = 0.15
-                y0 = 0.2
-                # h_course = 0.8*h_course 
+                # to make close top stitch more easily be seen on the graph, change "y0 = 0.2" to "y0 = -0.6". (thus the nodes on the child fabric would appear a bit lower than corresponding nodes sharing the same course on parent knitgraph)
+                y0 = 0
+                # found that even adjust to y0 = -0.5, close top stitch  can be seen now, however, bottom spliting edge will become unseen anymore. Thus, try to use the below method to solve the issue.
+                h_course = 0.9*h_course 
             for node in yarn.yarn_graph.nodes:
                 nodes_to_positions[node] = {}
                 node_color_property[node] = {}
@@ -238,25 +240,27 @@ def visualize_knitGraph(knit_graph: Knit_Graph, unmodified: bool = True, is_poly
                 edge_color_property[(parent_id, child_id)]['alpha'] = alpha_front if parent_id in yarns[0].yarn_graph.nodes and child_id in yarns[0].yarn_graph.nodes else alpha_back
                 stitch_labels[(parent_id, child_id)] = knit_graph.graph[parent_id][child_id]["pull_direction"]
                 flag_for_on_yarn = False
-                flag_for_stitch_color = False
+                # flag_for_stitch_color = False
                 for yarn in yarns:
                     # #if stitch edge color is determined by child_id, use below one
                     # # if child_id in yarn:
                     # #if stitch edge color is determined by parent_id, use below one
                     if parent_id in yarn:
                         flag_for_on_yarn = True
-        
-                    if child_id in yarn and parent_id in yarn:
                         carrier_id = yarn.carrier.carrier_ids
                         edge_color_property[(parent_id, child_id)]['color'] = carrier_id_to_color[carrier_id]
-                        flag_for_stitch_color = True
                         break
-                if flag_for_stitch_color == False:
-                    for yarn in yarns:
-                        if yarn.yarn_id == 'old_yarn':
-                            #get carrier_id of old yarn, whose yarn_id is "yarn".
-                            carrier_id = yarn.carrier.carrier_ids
-                            edge_color_property[(parent_id, child_id)]['color'] = carrier_id_to_color[carrier_id]
+                #     if child_id in yarn and parent_id in yarn:
+                #         carrier_id = yarn.carrier.carrier_ids
+                #         edge_color_property[(parent_id, child_id)]['color'] = carrier_id_to_color[carrier_id]
+                #         flag_for_stitch_color = True
+                #         break
+                # if flag_for_stitch_color == False:
+                #     for yarn in yarns:
+                #         if yarn.yarn_id == 'old_yarn':
+                #             #get carrier_id of old yarn, whose yarn_id is "yarn".
+                #             carrier_id = yarn.carrier.carrier_ids
+                #             edge_color_property[(parent_id, child_id)]['color'] = carrier_id_to_color[carrier_id]
                             
                 # color the edge based on cabling depth
                 if knit_graph.graph[parent_id][child_id]["depth"] < 0:

@@ -8,6 +8,7 @@ import warnings
 
 class Hole_Generator:
     """
+    Compared to "Hole_Generator" version, this version can work on polygon shaped fabric rather then only a rectangle.
     Biggest assumption: the function currently only apply for hole that are rectagular and only one hole. More yarns are needed if 
     the above condition is not satisfied.
     """

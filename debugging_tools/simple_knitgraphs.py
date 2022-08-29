@@ -39,7 +39,7 @@ def tube(width: int = 4, height: int = 4, carrier:int=3) -> Knit_Graph:
     :param carrier:
     :param width: the number of stitches of the swatch
     :param height:  the number of courses of the swatch
-    :return: a knitgraph of stockinette on one yarn of width stitches by height course
+    :return: a knitgraph of tube on one yarn of width stitches by height course
     """
     knitGraph = Knit_Graph()
     yarn = Yarn("yarn", knitGraph, carrier_id=carrier)
