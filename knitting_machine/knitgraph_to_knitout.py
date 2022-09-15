@@ -1,6 +1,6 @@
 """Script used to create knitout instructions from a knitgraph"""
 from typing import Dict, List, Tuple
-
+from debugging_tools.new_knit_graph_viz import visualize_knitGraph
 from knit_graphs.Knit_Graph import Knit_Graph, Pull_Direction
 from knitting_machine.Machine_State import Machine_State, Needle, Pass_Direction
 from knitting_machine.machine_operations import outhook
@@ -17,9 +17,10 @@ class Knitout_Generator:
         :param knit_graph: the knitgraph to generate instructions for
         """
         self._knit_graph = knit_graph
+        visualize_knitGraph(self._knit_graph, unmodified = False)
         assert len(self._knit_graph.yarns) == 1, "This only supports single color graphs"
         self._carrier = [*self._knit_graph.yarns.values()][0].carrier
-        loop_id_to_course, courses_to_loop_ids = self._knit_graph.get_courses()
+        loop_id_to_course, courses_to_loop_ids, loop_ids_to_wale, wale_to_loop_ids = self._knit_graph.get_courses()
         self._loop_id_to_courses: Dict[int, float] = loop_id_to_course
         self._courses_to_loop_ids: Dict[float, List[int]] = courses_to_loop_ids
         self._sorted_courses = sorted([*self._courses_to_loop_ids.keys()])
@@ -172,7 +173,7 @@ class Knitout_Generator:
                 parent_id = [*parent_ids][0]
                 # print(type(parent_id),parent_id,[*parent_ids])
                 #update below, from "parent_offset = self._knit_graph.graph[parent_id][loop_id]["parent_offset"]"
-                parent_offset = - self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
+                parent_offset =  self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
                 if parent_offset != 0:
                     cable_depth = self._knit_graph.graph[parent_id][loop_id]["depth"]
                     assert cable_depth != 0, f"cables must have a non-zero depth to cross at"

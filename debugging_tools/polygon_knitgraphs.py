@@ -1,8 +1,8 @@
 from typing import Optional, List, Dict, Tuple
 from knit_graphs.Yarn import Yarn
 from knit_graphs.Knit_Graph import Knit_Graph
-from debugging_tools.knit_graph_viz import visualize_knitGraph
-from debugging_tools.simple_knitgraphs import *
+from debugging_tools.new_knit_graph_viz import visualize_knitGraph
+from debugging_tools.new_simple_knitgraphs import *
 
 class Polygon_Generator:
     def __init__(self, left_keynodes_child_fabric, right_keynodes_child_fabric):

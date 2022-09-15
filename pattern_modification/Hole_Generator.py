@@ -9,7 +9,9 @@ import warnings
 class Hole_Generator:
     """
     Biggest assumption: the function currently only apply for hole that are rectagular and only one hole. More yarns are needed if 
-    the above condition is not satisfied.
+    the above condition is not satisfied. Another restriction of this version is that this only works for adding hole to a given
+    rectangle, while New_Hole_Generator.py work for adding hole to a polygon as well, which requires the coordinate info of the
+    nodes on a polygon, thus more params in that version compared to this one.
     """
     def __init__(self, knit_graph: Knit_Graph, node_to_delete: List[int], new_carrier: int, unmodified: bool = True):
         self._knit_graph: Knit_Graph = knit_graph

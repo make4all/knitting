@@ -1,8 +1,8 @@
 from typing import Optional, List, Dict, Tuple
 from knit_graphs.Yarn import Yarn
 from knit_graphs.Knit_Graph import Knit_Graph
-from debugging_tools.knit_graph_viz import visualize_knitGraph
-from debugging_tools.simple_knitgraphs import *
+from debugging_tools.new_knit_graph_viz import visualize_knitGraph
+from debugging_tools.new_simple_knitgraphs import *
 from knitspeak_compiler.knitspeak_compiler import Knitspeak_Compiler
 import warnings
 
@@ -48,7 +48,7 @@ class Hole_Generator:
         self._pattern_height: int = len(self._course_to_loop_ids)
         #pattern_width is the total number of wales
         # self._pattern_width: int = len(self._wale_to_loop_ids)
-        self._pattern_width_per_course: Dict[int, int] 
+        # self._pattern_width_per_course: Dict[int, int] 
         self._node_to_delete: List[int] = node_to_delete
         self._hole_start_course: int = self._pattern_height - 1
         self._hole_end_course: int = 0
@@ -60,6 +60,7 @@ class Hole_Generator:
         self._hole_end_wale: int = 0
         self._hole_height: int = None
         self._hole_width: int = None
+        self._hole_course_to_wale_ids: Dict[int, List[int]] = {}
    
     def get_nodes_course_and_wale(self):
         """
@@ -69,7 +70,7 @@ class Hole_Generator:
         for node in self._knit_graph.graph.nodes:
             course = self._loop_id_to_course[node]
             wale = self._loop_id_to_wale[node]
-            node_to_course_and_wale[node] = [course, wale]
+            node_to_course_and_wale[node] = (course, wale)
         #reverse the keys and values of node_to_course_and_wale to build course_and_wale_to_node
         course_and_wale_to_node = {tuple(v): k for k, v in node_to_course_and_wale.items()}
         # print('loop_ids_to_course', loop_ids_to_course)
@@ -79,6 +80,40 @@ class Hole_Generator:
         self.course_and_wale_to_node = course_and_wale_to_node
         return node_to_course_and_wale, course_and_wale_to_node
     
+    def hole_shape_and_number_constraints(self):
+        # first, get the wale_id for hole nodes on each course
+        course_id_to_wale_ids = {}
+        for node in self._node_to_delete:
+            course_id = self.node_to_course_and_wale[node][0]
+            wale_id = self.node_to_course_and_wale[node][1]
+            if course_id not in course_id_to_wale_ids:
+                course_id_to_wale_ids[course_id] = [wale_id]
+            else:
+                course_id_to_wale_ids[course_id].append(wale_id)
+        print('course_id_to_wale_ids', course_id_to_wale_ids)
+        # special case to consider
+        if len(self._node_to_delete) == 2:
+            node1 = self._node_to_delete[0]
+            node2 = self._node_to_delete[1]
+            course_id1 = self.node_to_course_and_wale[node1][0]
+            course_id2 = self.node_to_course_and_wale[node2][0]
+            wale_id1 = self.node_to_course_and_wale[node1][1]
+            wale_id2 = self.node_to_course_and_wale[node2][1]
+            if course_id1 != course_id2 and wale_id1 != wale_id2:
+                print(f'hole nodes {self._node_to_delete} is detected to be non-rectangular, more than two yarns will be needed, which is not yet supported in our project')
+                exit()
+        # second, get the smallest wale id and biggest wale id on each course
+        smallest_wale_ids = []
+        biggest_wale_ids = []
+        for course_id, wale_ids in course_id_to_wale_ids.items():
+            smallest_wale_ids.append(min(wale_ids))
+            biggest_wale_ids.append(max(wale_ids))
+        print(f'set(smallest_wale_ids) is {set(smallest_wale_ids)}, set(biggest_wale_ids) is {set(biggest_wale_ids)}')
+        # finally, ensure wale id in smallest_wale_ids and those in biggest_wale_ids are consistent
+        if len(set(smallest_wale_ids)) != 1 or len(set(biggest_wale_ids)) != 1:
+            print(f'hole nodes {self._node_to_delete} is detected to be non-rectangular, more than two yarns will be needed, which is not yet supported in our project')
+            exit()
+
     def get_hole_size(self):
         """
         hole_start_course = self._pattern_height - 1
@@ -103,12 +138,23 @@ class Hole_Generator:
                 self._hole_end_wale = wale_id
         print(f'hole_start_course is {self._hole_start_course}, hole_end_course is {self._hole_end_course}, hole_start_wale is {self._hole_start_wale}, hole_end_wale is {self._hole_end_wale}')
         #number of unique wale id can not exceed 6 to make it a feasible to knit on knittimg machine taking into account racking constraint
-        assert len(wale_involved) <= 6, f'hole width is too large to achieve the racking bound by 3 on the machine'
+        assert len(wale_involved) <= 5, f'hole width is too large to achieve the racking bound by 2 on the machine'
         assert self._hole_end_course < self._pattern_height - 1, f'hole height is too large that it is exceeding the knit graph border'
         #hole_height: the height of the hole
         self._hole_height = self._hole_end_course - self._hole_start_course + 1
         #hole_width
         self._hole_width = self._hole_end_wale - self._hole_start_wale + 1
+
+    # use self._hole_course_to_wale_ids to help with "connect hole bottom node ()"
+    def get_hole_course_to_wale_ids(self):
+        for node in self._node_to_delete:
+            course_id = self.node_to_course_and_wale[node][0]
+            wale_id = self.node_to_course_and_wale[node][1]
+            if course_id not in self._hole_course_to_wale_ids:
+                self._hole_course_to_wale_ids[course_id] = [wale_id]
+            else:
+                self._hole_course_to_wale_ids[course_id].append(wale_id)
+        print(f'hole_course_to_wale_ids is {self._hole_course_to_wale_ids}')
         
 
     def hole_location_warnings(self):
@@ -164,7 +210,7 @@ class Hole_Generator:
             child_ids = [*self._knit_graph.graph.successors(node)]
             course_id = self.node_to_course_and_wale[node][0]
             top_course_id = self._pattern_height - 1
-            if len(child_ids) != 1 and course_id != top_course_id:
+            if len(child_ids) < 1 and course_id != top_course_id:
                 print(f'Error: node {node} is suspicious for for having {len(child_ids)} child')
                 exit()
         #Second, on yarn graph, the number of yarn edges related to the node must be 2
@@ -176,10 +222,7 @@ class Hole_Generator:
                 if len(yarn_parent_ids) != 1 or len(yarn_child_ids) != 1:
                     print(f'Error: node {node} is suspicious for having no parent node or child node on yarn')
                     exit()
-    #Todo
-    def hole_shape_and_number_constraints():
-        xxx
-
+  
     def remove_hole_nodes_from_graph(self):
         """
         remove the nodes for hole from both knit graph and yarn
@@ -331,7 +374,7 @@ class Hole_Generator:
     
     def remove_old_and_add_new_yarn(self, new_yarn_course_to_loop_ids):    
         """
-        remove loop_ids from old yarn and add loop_ids to new yarn and connect them.
+        remove loop_ids from old yarn and add loop_ids to new yarn.
         """
         for course_id in new_yarn_course_to_loop_ids:
             loop_ids = new_yarn_course_to_loop_ids[course_id]
@@ -347,9 +390,9 @@ class Hole_Generator:
         leading the hole bigger and bigger.
         """
         hole_bottom_course_id = self._hole_start_course - 1
-        connected_course_id = self._hole_start_course 
-        connected_wale_id_start = self._hole_start_wale - 1
-        connected_wale_id_end = self._hole_end_wale + 1
+        connected_node_course_id = self._hole_start_course 
+        connected_node_small_wale_id = self._hole_start_wale - 1
+        connected_node_big_wale_id = self._hole_end_wale + 1
         #the reason why the searching range for bottom nodes is increased 3 respectively on each side is because there might be
         # a case where decrease happens on the node we delete for hole, check knitgraph slide pp. 57 for an example.
         
@@ -371,28 +414,42 @@ class Hole_Generator:
                 node = self.course_and_wale_to_node[(hole_bottom_course_id, wale_id)]
                 child_ids = [*self._knit_graph.graph.successors(node)] 
                 #if both connected node don't exist, throw an error
-                connected_node_start_position = (connected_course_id, connected_wale_id_start)
-                connected_node_end_position = (connected_course_id, connected_wale_id_end)
-                assert connected_node_start_position in self.course_and_wale_to_node.keys() or connected_node_end_position in self.course_and_wale_to_node.keys(),\
-                    f'both connected_node_start and connected_node_end do not exist'
+                connected_node_small_wale_position = (connected_node_course_id, connected_node_small_wale_id)
+                connected_node_big_wale_position = (connected_node_course_id, connected_node_big_wale_id)
+                connected_node_small_wale_predecessor_position = (connected_node_course_id - 1, connected_node_small_wale_id)
+                connected_node_big_wale_predecessor_position = (connected_node_course_id - 1, connected_node_big_wale_id)
+                assert connected_node_small_wale_position in self.course_and_wale_to_node.keys() or connected_node_big_wale_position in self.course_and_wale_to_node.keys(),\
+                    f'both connected_node_small_wale and connected_node_big_wale do not exist'
                 # only connect node that have no child, i.e., unstable
                 if len(child_ids) == 0:
-                    if connected_node_start_position not in self.course_and_wale_to_node.keys():
-                        print(f'connected_node_start at position {connected_node_start_position} not exist')
+                    if connected_node_small_wale_position not in self.course_and_wale_to_node.keys():
+                        print(f'connected_node_small_wale at position {connected_node_small_wale_position} not exist')
                     else:
-                        connected_node_start = self.course_and_wale_to_node[connected_node_start_position]
-                        if (wale_id - connected_wale_id_start) <= 3:
-                            parent_offset = wale_id - connected_wale_id_start
-                            self._knit_graph.connect_loops(node, connected_node_start, parent_offset = parent_offset)
+                        connected_node_small_wale = self.course_and_wale_to_node[connected_node_small_wale_position]
+                        if (wale_id - connected_node_small_wale_id) <= 3:
+                            parent_offset = wale_id - connected_node_small_wale_id
+                            if connected_node_small_wale_predecessor_position in self.course_and_wale_to_node.keys():
+                                connected_node_small_wale_predeccessor = self.course_and_wale_to_node[connected_node_small_wale_predecessor_position]
+                                if (connected_node_small_wale_predeccessor, connected_node_small_wale) in self._knit_graph.graph.edges:
+                                    pull_direction = self._knit_graph.graph[connected_node_small_wale_predeccessor][connected_node_small_wale]["pull_direction"]
+                                else: 
+                                    pull_direction = Pull_Direction.BtF
+                            self._knit_graph.connect_loops(node, connected_node_small_wale, parent_offset = parent_offset, pull_direction = pull_direction)
                             connected_flag = True
             
-                    if connected_node_end_position not in self.course_and_wale_to_node.keys():
-                        print(f'connected_node_start at position {connected_node_end_position} not exist')
+                    if connected_node_big_wale_position not in self.course_and_wale_to_node.keys():
+                        print(f'connected_node_big_wale at position {connected_node_big_wale_position} not exist')
                     else:       
-                        connected_node_end = self.course_and_wale_to_node[connected_node_end_position]
-                        if (connected_wale_id_end - wale_id) <= 3 and connected_flag == False:
-                            parent_offset = connected_wale_id_end - wale_id
-                            self._knit_graph.connect_loops(node, connected_node_end, parent_offset = -parent_offset)
+                        connected_node_big_wale = self.course_and_wale_to_node[connected_node_big_wale_position]
+                        if (connected_node_big_wale_id - wale_id) <= 3 and connected_flag == False:
+                            parent_offset = connected_node_big_wale_id - wale_id
+                            if connected_node_big_wale_predecessor_position in self.course_and_wale_to_node.keys():
+                                connected_node_big_wale_predeccessor = self.course_and_wale_to_node[connected_node_big_wale_predecessor_position]
+                                if (connected_node_big_wale_predeccessor, connected_node_big_wale) in self._knit_graph.graph.edges:
+                                    pull_direction = self._knit_graph.graph[connected_node_big_wale_predeccessor][connected_node_big_wale]["pull_direction"]
+                                else: 
+                                    pull_direction = Pull_Direction.BtF
+                            self._knit_graph.connect_loops(node, connected_node_big_wale, parent_offset = -parent_offset)
                             connected_flag = True
                     #throw an error if any node can not be connected to any neighbor node
                     if connected_flag == False:
@@ -403,11 +460,15 @@ class Hole_Generator:
     def add_hole(self):
         if self.is_polygon == False:
             node_to_course_and_wale, course_and_wale_to_node = self.get_nodes_course_and_wale()
+        #first determine the validity of the input hole
+        # self.hole_shape_and_number_constraints()
         #return info including hole_start_wale, hole_end_wale, hole_start_course, hole_end_course, hole_height and hole_width.
         self.get_hole_size()
         #send out warning to user if special stitch might be broken or if hole node is set at places like top course.
         self.hole_location_errors()
         self.hole_location_warnings()
+        # get course_to_wale_ids for hole area
+        self.get_hole_course_to_wale_ids()
         #remove nodes for hole from both knit graph and yarn graph.
         self.remove_hole_nodes_from_graph()
         #get the start wale id and end wale id for each course, which can be used in get_new_yarn_loop_ids() to get new yarn loop ids.
@@ -422,7 +483,7 @@ class Hole_Generator:
         self.remove_old_and_add_new_yarn(new_yarn_course_to_loop_ids) 
         #connect bottom nodes below the hole to the nearest top neighbor to prevent them from falling off the parent loops,
         #leading the hole bigger and bigger.
-        self.connect_bottom_nodes()
+        # self.connect_bottom_nodes()
         visualize_knitGraph(self._knit_graph, node_to_course_and_wale = self.node_to_course_and_wale, yarn_start_direction = 'left to right', unmodified = False, is_polygon = self.is_polygon)
         return self._knit_graph
 

@@ -70,7 +70,7 @@ class Needle:
         :param offset: the amount to offset the needle from
         :return: the needle offset spaces away on the same bed
         """
-        return Needle(is_front=self.is_front, position=self.position + offset)
+        return Needle(is_front=self.is_front, position=self.position - offset)
 
     def __str__(self):
         if self.is_front:

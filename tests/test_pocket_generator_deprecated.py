@@ -52,7 +52,7 @@ if __name__ == '__main__':
     generator = Pocket_Generator(parent_knitgraph, old_carrier_id=3, new_carrier_id=4, left_keynodes_child_fabric=[(3, 3), (6, 3)], right_keynodes_child_fabric=[(3, 4), (6, 4)], spliting_nodes = [19, 20], parent_graph_is_polygon= False, unmodified = True, child_graph_is_polygon = True)
     generator.deprecated_build_pocket_graph(close_top=False, smaller_wale_edge_connected = True, bigger_wale_edge_connected = True)
     
-    #4 use polygon
+    #4 use polygon: bottom narrow, top wider
     # polygon_generator = Polygon_Generator(left_keynodes_child_fabric = [(0, 0), (9, 0)], right_keynodes_child_fabric = [(0, 9), (9, 9)])
     # parent_knitgraph = polygon_generator.generate_polygon_from_keynodes(yarn_id = 'yarn', carrier_id = 3)
     # generator = Pocket_Generator(parent_knitgraph, old_carrier_id=3, new_carrier_id=4, left_keynodes_child_fabric=[(4, 3), (6, 1)], right_keynodes_child_fabric=[(4, 5), (6, 7)], spliting_nodes = [36, 35, 34], parent_graph_course_to_loop_ids = polygon_generator.course_to_loop_ids, parent_graph_node_to_course_and_wale = polygon_generator.node_to_course_and_wale, parent_graph_course_and_wale_to_node = polygon_generator.course_and_wale_to_node, parent_graph_is_polygon= True, unmodified = True, child_graph_is_polygon = True)

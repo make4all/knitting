@@ -1,6 +1,6 @@
 """The graph structure used to represent knitted objects"""
 from enum import Enum
-from typing import Dict, Optional, List, Tuple
+from typing import Dict, Optional, List, Tuple, Union
 
 import networkx
 
@@ -55,6 +55,7 @@ class Knit_Graph:
         """
         :param loop: the loop to be added in as a node in the graph
         """
+        # below we can see "loop" is added as an attribute in add_node, corresponds to the get_item() down below
         self.graph.add_node(loop.loop_id, loop=loop)
         assert loop.yarn_id in self.yarns, f"No yarn {loop.yarn_id} in this graph"
       
@@ -89,7 +90,7 @@ class Knit_Graph:
         # print(child_loop, parent_loop)
         child_loop.add_parent_loop(parent_loop, stack_position)
 
-    def get_courses(self, unmodified: Optional[bool] = False) -> Tuple[Dict[int, int], Dict[int, List[int]]]:
+    def get_courses(self, unmodified: Optional[bool] = False) -> Union[Tuple[Dict[int, int], Dict[int, List[int]]], Tuple[bool, bool]]:
         """
         :return: A dictionary of loop_ids to the course they are on,
         a dictionary or course ids to the loops on that course in the order of creation
@@ -151,6 +152,7 @@ class Knit_Graph:
                         #If its predecessor node on yarn has wale, then combined with corresponding course_id, its wale can be inferred
                         #Since a node on yarn always has one predecessor, except that starting node has 0 predecessor.
                         yarn_predecessor = [*yarn.yarn_graph.predecessors(loop_id)][0]
+                        # yarn_successor = [*yarn.yarn_graph.successors(loop_id)][0]
                         if yarn_predecessor in loop_ids_to_wale.keys():
                             pre_wale = loop_ids_to_wale[yarn_predecessor]
                             if course_id % 2 == 1:
@@ -160,10 +162,21 @@ class Knit_Graph:
                                 wale = pre_wale + 1
                                 loop_ids_to_wale[loop_id] = wale
                             if wale not in wale_to_loop_ids:
-                                wale_to_loop_ids[wale] = []
-                                wale_to_loop_ids[wale].append(loop_id)
+                                wale_to_loop_ids[wale] = [loop_id]
                             else:
                                 wale_to_loop_ids[wale].append(loop_id)
+                        # elif yarn_successor in loop_ids_to_wale.keys():
+                        #     after_wale = loop_ids_to_wale[yarn_successor]
+                        #     if course_id % 2 == 1:
+                        #         wale = after_wale + 1
+                        #         loop_ids_to_wale[loop_id] = wale
+                        #     else: 
+                        #         wale = after_wale - 1
+                        #         loop_ids_to_wale[loop_id] = wale
+                        #     if wale not in wale_to_loop_ids:
+                        #         wale_to_loop_ids[wale] = [loop_id]
+                        #     else:
+                        #         wale_to_loop_ids[wale].append(loop_id)
                         else:
                             print(f'Error: wale of node {loop_id} cannot be determined')
                             exit()
@@ -171,7 +184,6 @@ class Knit_Graph:
         else:
             loop_ids_to_wale, wale_to_loop_ids = None, None
         
-    
         # first_course_loop_ids = course_to_loop_ids[0] 
         # wale = 0
         # for loop_id in first_course_loop_ids:

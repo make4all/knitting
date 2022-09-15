@@ -1,6 +1,6 @@
 """Sets of Operations that happen in groups of carriage passes"""
 from enum import Enum
-from typing import Optional, Dict, Set, List
+from typing import Optional, Dict, Set, List, Tuple
 
 from knitting_machine.Machine_State import Needle
 from knitting_machine.machine_operations import *
@@ -111,8 +111,8 @@ class Carriage_Pass:
         The needles each operation starts on mapped to either or both the loop_id created and the second needle involved
     """
 
-    def __init__(self, instruction_type: Instruction_Type, direction: Optional[Pass_Direction],
-                 needles_to_instruction_parameters: Dict[Needle, Instruction_Parameters],
+    def __init__(self, direction: Optional[Pass_Direction],
+                 needles_to_instruction_parameters_and_types: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]],
                  machine_state: Machine_State):
         """
         :param instruction_type: The type of instruction to be done in this pass
@@ -123,27 +123,34 @@ class Carriage_Pass:
         """
         self.machine_state: Machine_State = machine_state
         self._carrier_set: Set[Yarn_Carrier] = set()
-        self.needles_to_instruction_parameters: \
-            Dict[Needle, Instruction_Parameters] = needles_to_instruction_parameters
-        for params in self.needles_to_instruction_parameters.values():
+        self.needles_to_instruction_parameters_and_types: \
+            Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = needles_to_instruction_parameters_and_types
+        params_list  = []
+        for (param, param_type) in self.needles_to_instruction_parameters_and_types.values():
+            params_list.append(param)
+        for params in params_list:
             if not params.no_yarn:
                 self._carrier_set.add(params.carrier)
         self._direction = direction
-        self._instruction_type: Instruction_Type = instruction_type
-        if self.direction is None:
-            if self.instruction_type.direction_must_be_Left_to_Right():
+        # randomly pick an instruction type to assign below, the reason we can do this is because we put instuction of same type in terms of required direction for carriage pass
+        # print('test', [*self.needles_to_instruction_parameters_and_types.values()])
+        self._instruction_type: Instruction_Type = None
+        if len([*self.needles_to_instruction_parameters_and_types.values()])!= 0:
+            self._instruction_type = [*self.needles_to_instruction_parameters_and_types.values()][0][1]
+        if self.direction is None and self._instruction_type != None:
+            if self._instruction_type.direction_must_be_Left_to_Right():
                 self._direction = Pass_Direction.Left_to_Right
-            elif self.instruction_type.direction_must_be_consistent():
+            elif self._instruction_type.direction_must_be_consistent():
                 self._direction = self.machine_state.last_carriage_direction.opposite()  # switch from last pass
-        elif self.instruction_type.direction_must_be_Left_to_Right():
-            assert self.direction.value == Pass_Direction.Left_to_Right.value, "Can only Drop on + (left to right) pass"
+            elif self._instruction_type.direction_must_be_Left_to_Right():
+                assert self.direction.value == Pass_Direction.Left_to_Right.value, "Can only Drop on + (left to right) pass"
 
-    @property
-    def instruction_type(self) -> Instruction_Type:
+    # @property
+    def instruction_type(self, needle: Needle) -> Instruction_Type:
         """
         :return: The instruction type in this pass
         """
-        return self._instruction_type
+        return self.needles_to_instruction_parameters_and_types[needle][1]
 
     @property
     def direction(self) -> Pass_Direction:
@@ -160,30 +167,41 @@ class Carriage_Pass:
         return self._carrier_set
 
     def _sorted_needles(self) -> List[Needle]:
-        needles = [*self.needles_to_instruction_parameters]
-        sorted_left_to_right = sorted(needles)
-        if self.direction is Pass_Direction.Right_to_Left:
-            return [*reversed(sorted_left_to_right)]
+        needles = [*self.needles_to_instruction_parameters_and_types]
+        needles_to_involved_loop_id = {}
+        if self._instruction_type == Instruction_Type.Knit or self._instruction_type == Instruction_Type.Split:
+            for needle in needles:
+                needles_to_involved_loop_id[needle] = self.needles_to_instruction_parameters_and_types[needle][0]._involved_loop
+            sorted_needles_to_involved_loop_id = {k: v for k, v in sorted(needles_to_involved_loop_id.items(), key=lambda item: item[1])}
+            sorted_needle_by_loop_id = [*sorted_needles_to_involved_loop_id.keys()]
+            return sorted_needle_by_loop_id
         else:
-            return sorted_left_to_right
+            sorted_left_to_right = sorted(needles)
+            if self.direction is Pass_Direction.Right_to_Left:
+                return [*reversed(sorted_left_to_right)]
+            else:
+                return sorted_left_to_right
+            
+        return sorted_needle_by_loop_id
 
     def _write_instruction(self, needle: Needle) -> str:
         """
         :param needle: the first (or only) needle that an instruction uses
         :return: The string for the line of code executing the instruction
         """
-        if self.instruction_type.value == Instruction_Type.Knit.value:
-            return self.needles_to_instruction_parameters[needle].knit(self.machine_state, self.direction)
-        elif self.instruction_type.value == Instruction_Type.Tuck.value:
-            return self.needles_to_instruction_parameters[needle].tuck(self.machine_state, self.direction)
-        elif self.instruction_type.value == Instruction_Type.Split.value:
-            return self.needles_to_instruction_parameters[needle].split(self.machine_state, self.direction)
-        elif self.instruction_type.value == Instruction_Type.Drop.value:
-            return self.needles_to_instruction_parameters[needle].drop(self.machine_state)
-        elif self.instruction_type.value == Instruction_Type.Xfer.value:
-            return self.needles_to_instruction_parameters[needle].xfer(self.machine_state)
-        elif self.instruction_type.value == Instruction_Type.Miss.value:
-            return self.needles_to_instruction_parameters[needle].miss(self.direction)
+        # print(self.instruction_type(needle))
+        if self.instruction_type(needle).value == Instruction_Type.Knit.value:
+            return self.needles_to_instruction_parameters_and_types[needle][0].knit(self.machine_state, self.direction)
+        elif self.instruction_type(needle).value == Instruction_Type.Tuck.value:
+            return self.needles_to_instruction_parameters_and_types[needle][0].tuck(self.machine_state, self.direction)
+        elif self.instruction_type(needle).value == Instruction_Type.Split.value:
+            return self.needles_to_instruction_parameters_and_types[needle][0].split(self.machine_state, self.direction)
+        elif self.instruction_type(needle).value == Instruction_Type.Drop.value:
+            return self.needles_to_instruction_parameters_and_types[needle][0].drop(self.machine_state)
+        elif self.instruction_type(needle).value == Instruction_Type.Xfer.value:
+            return self.needles_to_instruction_parameters_and_types[needle][0].xfer(self.machine_state)
+        elif self.instruction_type(needle).value == Instruction_Type.Miss.value:
+            return self.needles_to_instruction_parameters_and_types[needle][0].miss(self.direction)
         else:
             assert False, "The instruction was not recognized"
 
@@ -203,12 +221,13 @@ class Carriage_Pass:
                     instructions.append(inhook(self.machine_state, sub_carrier))
 
         starting_needles = self._sorted_needles()
+        print('starting_needles(sorted)', starting_needles, self._instruction_type)
         for needle in starting_needles:
             if len(instructions) == 0:
                 c = first_comment
             else:
                 c = comment
-            self.needles_to_instruction_parameters[needle].comment = c
+            self.needles_to_instruction_parameters_and_types[needle][0].comment = c
             instruction = self._write_instruction(needle)
             instructions.append(instruction)
         self.machine_state.last_carriage_direction = self.direction

@@ -1,6 +1,8 @@
-from debugging_tools.knit_graph_viz import visualize_knitGraph
-from debugging_tools.simple_knitgraphs import *
-from knitting_machine.knitgraph_to_knitout import Knitout_Generator
+from debugging_tools.new_knit_graph_viz import visualize_knitGraph
+from tests.test_hole_generator import *
+from tests.test_pocket_generator import *
+from debugging_tools.new_simple_knitgraphs import *
+from knitting_machine.new_knitgraph_to_knitout import Knitout_Generator
 
 
 # def test_stst():
@@ -22,10 +24,10 @@ def test_rib():
 #     generator.write_instructions("test_seed.k")
 
 
-# def test_lace():
-#     knitGraph = lace(4,4)
-#     generator = Knitout_Generator(knitGraph)
-#     generator.write_instructions("test_lace.k")
+def test_lace():
+    knitGraph = lace(8,8)
+    generator = Knitout_Generator(knitGraph)
+    generator.write_instructions("test_lace.k")
 
 
 # def test_both_twists():
@@ -44,31 +46,37 @@ def test_hole_by_short_row():
     generator = Knitout_Generator(knitGraph)
     generator.write_instructions("test_hole_by_short_row.k")
 
-def test_round_stockinette1():
-    knitGraph = round_stockinette1(width = 4, height =  2)
-    generator = Knitout_Generator(knitGraph)
-    generator.write_instructions("test_round_stockinette1.k")
+def lace_with_hole():     
+    knitGraph, node_to_course_and_wale = test_lace_with_hole()
+    generator = Knitout_Generator(knitGraph, node_to_course_and_wale)
+    generator.write_instructions("test_lace_with_hole.k")
 
-def test_round_stockinette2():
-    knitGraph = round_stockinette2(width = 4, height =  2)
-    generator = Knitout_Generator(knitGraph)
-    generator.write_instructions("test_round_stockinette2.k")
+def cable_with_hole():     
+    knitGraph, node_to_course_and_wale = test_cable_with_hole()
+    generator = Knitout_Generator(knitGraph, node_to_course_and_wale)
+    generator.write_instructions("test_cable_with_hole.k")
 
-def test_test_parentsoffset():
-    knitGraph = test_parentsoffset(4, 2)
-    generator = Knitout_Generator(knitGraph)
-    generator.write_instructions("test_parentsoffset.k")
+def rib_with_hole():     
+    knitGraph, node_to_course_and_wale = test_rib_with_hole()
+    generator = Knitout_Generator(knitGraph, node_to_course_and_wale)
+    generator.write_instructions("test_rib_with_hole.k")
+
+# now test for pockets
+def rect_pocket():
+    knitGraph, node_to_course_and_wale = test_rectangle_pocket(spliting_nodes = [43, 44, 45, 46, 47, 48, 49, 50, 51, 52])
+    generator = Knitout_Generator(knitGraph, node_to_course_and_wale)
+    generator.write_instructions("test_rect_pocket.k")
 
 if __name__ == "__main__":
     # test_stockinette()
     # test_rib()
-    test_test_parentsoffset()
     # test_seed()
     # test_twisted_stripes()
-    # test_hole()
     # test_lace()
     # test_short_rows()
     # test_hole_by_short_row()
-    # test_round_stockinette1()
-    # test_round_stockinette2()
 
+    # lace_with_hole()
+    # cable_with_hole()
+    # rib_with_hole()
+    rect_pocket()

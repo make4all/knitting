@@ -1,8 +1,8 @@
 from typing import Optional, List, Dict, Tuple
 from knit_graphs.Yarn import Yarn
-from knit_graphs.Knit_Graph import Knit_Graph
-from debugging_tools.knit_graph_viz import visualize_knitGraph
-from debugging_tools.simple_knitgraphs import *
+from knit_graphs.Knit_Graph import Knit_Graph, Pull_Direction
+from debugging_tools.new_knit_graph_viz import visualize_knitGraph
+from debugging_tools.new_simple_knitgraphs import *
 from debugging_tools.polygon_knitgraphs import *
 from knitspeak_compiler.knitspeak_compiler import Knitspeak_Compiler
 import warnings
@@ -220,6 +220,7 @@ class Pocket_Generator:
             course_to_loop_ids[course_id].append(node)
         print(f'course_to_loop_ids is {course_to_loop_ids}')
         self.child_graph_course_to_loop_ids = course_to_loop_ids
+        assert max([*self.child_graph_course_to_loop_ids.keys()]) < max([*self.parent_graph_course_to_loop_ids.keys()]), f"the height of child fabric exceeds that of parent fabric"
         #reverse node_to_course_and_wale to get course_and_wale_to_node
         course_and_wale_to_node = {}
         course_and_wale_to_node = {tuple(v): k for k, v in node_to_course_and_wale.items()}
@@ -299,7 +300,10 @@ class Pocket_Generator:
     
     def grow_one_row(self, course_id, on_parent_graph: bool):
         if on_parent_graph == True:
+            # update course and wale info of each node for parent graph 
             self.parent_graph_course_to_loop_ids[course_id] = []
+            # print('test', len(self.parent_graph_course_id_to_wale_ids[course_id]))
+            print('test1', self.parent_graph_course_id_to_wale_ids)
             for i in range(len(self.parent_graph_course_id_to_wale_ids[course_id])):
                 loop_id, loop = self.old_yarn.add_loop_to_end()
                 self._knit_graph.add_loop(loop)
@@ -307,6 +311,7 @@ class Pocket_Generator:
                 self.parent_graph_node_to_course_and_wale[loop_id] = (course_id, wale_id)
                 self.parent_graph_course_to_loop_ids[course_id].append(loop_id)
         elif on_parent_graph == False:
+            # update course and wale info of each node for child graph.
             self.child_graph_course_to_loop_ids[course_id] = []
             for i in range(len(self.child_graph_course_id_to_wale_ids[course_id])):
                 loop_id, loop = self.new_yarn.add_loop_to_end()
@@ -320,7 +325,7 @@ class Pocket_Generator:
                 for i in range(self.spliting_width):
                     parent_loop_id = self.sorted_spliting_nodes[i]
                     loop_id = self.child_graph_course_to_loop_ids[course_id][i]
-                    self._knit_graph.connect_loops(parent_loop_id, loop_id)
+                    self._knit_graph.connect_loops(parent_loop_id, loop_id, pull_direction = Pull_Direction.FtB)
             # print('child', (course_id, wale_id), loop_id)
 
     # @deprecated("Deprecated because this simply divides edges into only left(smaller wale) and right side(bigger wale)")
@@ -419,7 +424,8 @@ class Pocket_Generator:
             pull_direction = attr_dict['pull_direction']
             depth = attr_dict['depth']
             parent_offset = attr_dict['parent_offset']
-            self._knit_graph.connect_loops(parent_node, child_node, pull_direction = pull_direction, depth = depth, parent_offset = parent_offset)
+            # pull_direction = pull_direction.opposite() since when we view the knitgraph created, we view from the back side of the child fabric.
+            self._knit_graph.connect_loops(parent_node, child_node, pull_direction = pull_direction.opposite(), depth = depth, parent_offset = parent_offset)
     
     def actions_around_target_edge_node(self, edge_nodes_smaller_wale_side_edges_parent, edge_nodes_bigger_wale_side_edges_parent):
         # first iterate over edge_connection_left_side to see which edge to connect
@@ -433,7 +439,7 @@ class Pocket_Generator:
                     target_node_on_child_fabric = self.child_graph_course_and_wale_to_node[(course_id, wale_id + 1)]
                     if (course_id-1, wale_id) in self.parent_graph_course_and_wale_to_node:
                         edge_split_node = self.parent_graph_course_and_wale_to_node[(course_id-1, wale_id)]
-                        self._knit_graph.connect_loops(edge_split_node, target_node_on_child_fabric)
+                        self._knit_graph.connect_loops(edge_split_node, target_node_on_child_fabric, pull_direction = Pull_Direction.FtB, parent_offset = -1)
         # then iterate over edge_connection_right_side to see which edge to connect
         num_of_right_edges = len(self.edge_connection_right_side)
         for edge_index in range(num_of_right_edges):
@@ -445,7 +451,7 @@ class Pocket_Generator:
                     target_node_on_child_fabric = self.child_graph_course_and_wale_to_node[(course_id, wale_id - 1)]
                     if (course_id-1, wale_id) in self.parent_graph_course_and_wale_to_node:
                         edge_split_node = self.parent_graph_course_and_wale_to_node[(course_id-1, wale_id)]
-                        self._knit_graph.connect_loops(edge_split_node, target_node_on_child_fabric)
+                        self._knit_graph.connect_loops(edge_split_node, target_node_on_child_fabric, pull_direction = Pull_Direction.FtB, parent_offset = 1)
 
     # @deprecated("Deprecated because this uses edges simply divided into left(smaller wale) and right side(bigger wale), while there might be case such as 
     #  a zipper jacket pocket where we connect only two edges on the right side as well as the left edge")
@@ -593,15 +599,19 @@ class Pocket_Generator:
         self.generate_polygon_from_keynodes()
         self.read_connectivity_from_knitgraph()
         self.get_course_id_to_wale_ids()
+        #first grow rows just above splitting_course_id on parent fabric
         self.build_rows_on_parent_graph_just_above_splitting_course_id()
         #clear old self.child_graph_node_to_course_and_wale
         self.child_graph_node_to_course_and_wale = {}
         self.grow_one_row(course_id = [*self.child_graph_course_to_loop_ids.keys()][0], on_parent_graph = False)
+        #grow the whole graph by adding one row to parent fabric, then adding one row to child fabric, until reaching the end of child fabric
+        print('self.child_graph_course_to_loop_ids.keys()', self.child_graph_course_to_loop_ids.keys())
         for course_id in [*self.child_graph_course_to_loop_ids.keys()][1:]:
             self.grow_one_row(course_id, on_parent_graph = True)
             self.grow_one_row(course_id, on_parent_graph = False)
         last_course_id_child_fabric = [*self.child_graph_course_to_loop_ids.keys()][-1]
         last_course_id_parent_fabric = [*self.parent_graph_course_to_loop_ids.keys()][-1]
+        #continue to grow row on parent fabric one by one
         for course_id in range(last_course_id_child_fabric + 1, last_course_id_parent_fabric + 1):
             self.grow_one_row(course_id, on_parent_graph = True)
         #get updated course_and_wale_to_node on child knitgraph and parent knitgraph
@@ -623,6 +633,6 @@ class Pocket_Generator:
         edge_nodes_smaller_wale_side_edges_parent, edge_nodes_bigger_wale_side_edges_parent = self.get_target_edge_nodes_on_parent_fabric(edge_nodes_smaller_wale_side_edges_child, edge_nodes_bigger_wale_side_edges_child)
         self.connect_stitches_on_knitgraph()
         self.actions_around_target_edge_node(edge_nodes_smaller_wale_side_edges_parent, edge_nodes_bigger_wale_side_edges_parent)
-        visualize_knitGraph(self._knit_graph, node_to_course_and_wale = self.pocket_graph_node_to_course_and_wale, object_type = 'pocket', unmodified = False) 
+        visualize_knitGraph(self._knit_graph, node_to_course_and_wale = self.pocket_graph_node_to_course_and_wale, object_type = 'pocket',  unmodified = False) 
         return self._knit_graph
   
