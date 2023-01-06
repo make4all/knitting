@@ -1,5 +1,6 @@
+from pattern_modification.New_Mul_Hole_Generator import Hole_Generator
 # from pattern_modification.New_Hole_Generator import Hole_Generator
-from pattern_modification.New_Hole_Generator_Path_Search import Hole_Generator
+# from pattern_modification.New_Hole_Generator_Path_Search import Hole_Generator
 from debugging_tools.new_knit_graph_viz import visualize_knitGraph
 from knitspeak_compiler.knitspeak_compiler import Knitspeak_Compiler
 from debugging_tools.new_simple_knitgraphs import *
@@ -12,7 +13,7 @@ def test_short_rows():
     return knit_graph
 
 def test_lace():
-    knit_graph = lace(8, 8)
+    knit_graph = lace(20, 20)
     visualize_knitGraph(knit_graph)
     return knit_graph
 
@@ -36,7 +37,7 @@ def test_rib():
 def test_stst():
     pattern = "all rs rows k. all ws rows p."
     compiler = Knitspeak_Compiler()
-    knit_graph = compiler.compile(5, 5, pattern)
+    knit_graph = compiler.compile(7, 15, pattern)
     visualize_knitGraph(knit_graph)
     return knit_graph
 
@@ -48,12 +49,20 @@ def test_stst_with_hole(node_to_delete = [6]):
     node_to_course_and_wale = hole_generator.node_to_course_and_wale
     return knitGraph, node_to_course_and_wale
 
-def test_lace_with_hole(node_to_delete = [19, 20, 28, 27]):
+def test_lace_with_hole(yarns_and_holes_to_add = {4:[19, 20, 28, 27], 2:[42, 37]}): #[26, 27, 28, 29]
     knit_graph = test_lace()
-    hole_generator = Hole_Generator(knit_graph, node_to_delete = node_to_delete , new_carrier = 4, unmodified = True)
-    knitGraph = hole_generator.add_hole()
+    hole_generator = Hole_Generator(knit_graph, yarns_and_holes_to_add = {4:[19, 20, 28, 27], 2:[42, 37]}, unmodified = True)
+    knitGraph = hole_generator.add_hole(object_type = "sheet")
     node_to_course_and_wale = hole_generator.node_to_course_and_wale
     return knitGraph, node_to_course_and_wale
+
+# below is for non-new_hole_generator_mul file
+# def test_lace_with_hole(node_to_delete = [50, 51, 52, 53]): #[26, 27, 28, 29]
+#     knit_graph = test_lace()
+#     hole_generator = Hole_Generator(knit_graph, node_to_delete = node_to_delete , new_carrier = 4, unmodified = True)
+#     knitGraph = hole_generator.add_hole(object_type = "sheet")
+#     node_to_course_and_wale = hole_generator.node_to_course_and_wale
+#     return knitGraph, node_to_course_and_wale
 
 def test_cable_with_hole(node_to_delete = [26, 39]):
     knit_graph = test_cable()
@@ -107,7 +116,7 @@ if __name__ == '__main__':
     # 2
     # knitGraph, node_to_course_and_wale = test_cable_with_hole()
     # 3
-    knitGraph, node_to_course_and_wale = test_rib_with_hole()
+    knitGraph, node_to_course_and_wale = test_lace_with_hole()
     # 4
     # knitGraph, node_to_course_and_wale = test_stst_with_hole(node_to_delete=[12])
     # 5 polygon: triangle

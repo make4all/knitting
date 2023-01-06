@@ -114,7 +114,9 @@ class Machine_Bed:
         """
         self._is_front: bool = is_front
         self._needle_count: int = needle_count
-        self.held_loops: Dict[int, List[int]] = {i: [] for i in range(0, self.needle_count)}  # increasing indices indicate needles moving from left to right
+        # self.held_loops: Dict[int, List[int]] = {i: [] for i in range(0, self.needle_count)}  # increasing indices indicate needles moving from left to right
+        # print(f'self.needle_count/2 is {self.needle_count/2}')
+        self.held_loops: Dict[int, List[int]] = {i: [] for i in range(int(-self.needle_count/2), int(self.needle_count/2))}
         # i.e., LEFT -> 0 1 2....N <- RIGHT of Machine
         self.loops_to_needle: Dict[int, Optional[int]] = {}
 
@@ -139,7 +141,8 @@ class Machine_Bed:
         :param loop_id: the loop_id to be held on the needle
         :param needle_position: the position of the needle
         """
-        assert 0 <= needle_position < self.needle_count, f"Cannot place a loop at position {needle_position}"
+        # change from: assert 0 <= needle_position < self.needle_count, f"Cannot place a loop at position {needle_position}" 
+        assert int(-self.needle_count/2) <= needle_position < int(self.needle_count/2), f"Cannot place a loop at position {needle_position}"
         if drop_prior_loops:
             self.drop_loop(needle_position)
         self.held_loops[needle_position].append(loop_id)
@@ -150,7 +153,8 @@ class Machine_Bed:
         Clears the loops held at this position as though a drop operation has been done
         :param needle_position:
         """
-        assert 0 <= needle_position < self.needle_count, f"Cannot drop a loop at position {needle_position}"
+        # assert 0 <= needle_position < self.needle_count, f"Cannot drop a loop at position {needle_position}"
+        assert int(-self.needle_count/2) <= needle_position < int(self.needle_count/2), f"Cannot drop a loop at position {needle_position}"
         current_loops = self.held_loops[needle_position]
         self.held_loops[needle_position] = []
         for loop in current_loops:
@@ -171,6 +175,12 @@ class Machine_Bed:
         if loop_id not in self.loops_to_needle:
             return None
         return self.loops_to_needle[loop_id]
+    
+    def get_latest_loop_on_needle(self, needle_pos: int) -> Optional[int]:
+        if self.held_loops[needle_pos] != None:
+            return self.held_loops[needle_pos][-1]
+        else:
+            return None
 
 
 class Yarn_Carrier:
@@ -374,6 +384,7 @@ class Machine_State:
             for front_loop in front_loops:
                 self.add_loop(front_loop, ending_pos, on_front=False, drop_prior_loops=False)
             self.drop_loop(starting_pos, on_front=True)
+            print(f'racking {self.racking} to xfer loops {front_loops} from front to back')
         else:
             assert self.valid_rack(ending_pos, starting_pos), f"racking {self.racking} does not match b{starting_pos} to f{ending_pos}"
             back_loops = self[(starting_pos, False)]
@@ -381,6 +392,7 @@ class Machine_State:
             for back_loop in back_loops:
                 self.add_loop(back_loop, ending_pos, on_front=True, drop_prior_loops=False)
             self.drop_loop(starting_pos, on_front=False)
+            print(f'racking {self.racking} to xfer loops {back_loops} from back to front')
 
     def update_rack(self, front_pos: int, back_pos: int) -> Tuple[int, bool]:
         """

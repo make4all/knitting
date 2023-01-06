@@ -29,8 +29,12 @@ def course_ids(context, nodes) -> List[Union[int, Num_Closure, Iterator_Closure]
             course_range = [1]
         else:
             course_range = [2]
-        context.parser.symbolTable[f"all_{nodes[1]}"] = course_range
-    assert "ow" in nodes[row_node], "Currently this parser only accepts rows (not rounds)"
+        # context.parser.symbolTable[f"all_{nodes[1]}"] = course_range
+        context.parser.symbolTable[f"all_{nodes[1]}_{nodes[2]}"] = course_range
+    elif len(nodes) == 2:
+        row_node = 1
+        context.parser.symbolTable[f"{nodes[1]}"] = 'true'
+    # assert "ow" in nodes[row_node], "Currently this parser only accepts rows (not rounds)"
     return course_range
 
 

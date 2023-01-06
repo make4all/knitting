@@ -100,3 +100,6 @@ class Symbol_Table:
 
     def __getitem__(self, item: str):
         return self._symbol_table[item.lower()]
+
+    def __str__(self):
+        return "haha"

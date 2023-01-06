@@ -62,6 +62,7 @@ def knit(machine_state: Machine_State, direction: Pass_Direction, needle: Needle
     machine_state.add_loop(loop_id, needle.position, needle.is_front, carrier_set)
     carriers = make_carrier_set(carrier_set, needle)
     return f"knit {direction} {needle}{carriers} ; knit loop {loop_id}, {comment}\n"
+    # return f"knit {direction} {needle}{carriers} ;\n"
 
 
 def tuck(machine_state: Machine_State, direction: Pass_Direction, needle: Needle, carrier_set: Yarn_Carrier,
@@ -80,6 +81,7 @@ def tuck(machine_state: Machine_State, direction: Pass_Direction, needle: Needle
     machine_state.add_loop(loop_id, needle.position, needle.is_front, carrier_set, drop_prior_loops=False)
     carriers = make_carrier_set(carrier_set, needle)
     return f"tuck {direction} {needle}{carriers} ; tuck loop {loop_id}, {comment}\n"
+    # return f"tuck {direction} {needle}{carriers} ;\n"
 
 
 def split(machine_state: Machine_State, direction: Pass_Direction, needle_1: Needle, needle_2,
@@ -124,6 +126,7 @@ def _prepare_xfer(machine_state, needle_1, needle_2) -> Tuple[bool, str]:
         racking = ""
     else:
         racking = rack(machine_state, updated_racking, comment=f"rack to xfer {needle_1} to {needle_2}")
+        # racking = rack(machine_state, updated_racking, comment="")
     machine_state.xfer_loops(needle_1.position, needle_2.position, front_to_back)
     return front_to_back, racking
 
@@ -138,6 +141,7 @@ def drop(machine_state: Machine_State, needle: Needle, comment: str = "") -> str
     :return: the drop instruction
     """
     machine_state.drop_loop(needle.position, needle.is_front)
+    # print(f'needle.position is {needle.position}, needle.is_front is {needle.is_front}')
     return f"drop {needle} ;{comment}\n"
 
 

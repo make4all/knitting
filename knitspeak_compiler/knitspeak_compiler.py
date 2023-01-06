@@ -40,7 +40,7 @@ class Knitspeak_Compiler:
         """
         return self.current_row % 2 == 0
 
-    def compile(self, starting_width: int, row_count: int, pattern: str, patternIsFile: bool = False) -> Knit_Graph:
+    def compile(self, starting_width: int, row_count: int, object_type: str, pattern: str, patternIsFile: bool = False) -> Knit_Graph:
         """
         Populates the knit_graph based on the compiled instructions. May throw errors from compilation
         :param row_count: the number of rows to knit before completing, pattern may repeat or be incomplete
@@ -49,24 +49,35 @@ class Knitspeak_Compiler:
         :param patternIsFile: True if pattern is provided in a file
         :return: the resulting compiled knit graph
         """
+        self.knit_graph.object_type = object_type
+        if object_type == 'tube':
+            assert starting_width % 2 ==0, f'starting width is required to be an even number for tube'
         self.parse_results = self._parser.interpret(pattern, patternIsFile)
+        print(f'self.parse_results is {self.parse_results}')
+        print(f'self._parser.parser.symbolTable is {self._parser.parser.symbolTable._symbol_table}, key is {self._parser.parser.symbolTable._symbol_table.keys()}')
         self._organize_courses()
+        print(f'self.course_ids_to_operations is {self.course_ids_to_operations}, len is {len(self.course_ids_to_operations)}')
         self.populate_0th_course(starting_width)
         while self.current_row < row_count:
             for course_id in sorted(self.course_ids_to_operations):
                 self._increment_current_row()
-                assert self.current_row % course_id == 0
+                print(f'self.current_row is {self.current_row}, row_count is {row_count}')
+                # print(f'self.current_row is {self.current_row}, course id is {course_id}')
+                # assert self.current_row % course_id == 0
                 course_instructions = self.course_ids_to_operations[course_id]
                 while len(self.loop_ids_consumed_by_current_course) < len(self.last_course_loop_ids):
                     for instruction in course_instructions:
                         self._process_instruction(instruction)
+                        print(f'self.loop_ids_consumed_by_current_course is {self.loop_ids_consumed_by_current_course}, self.last_course_loop_ids is {self.last_course_loop_ids}')
                         if len(self.loop_ids_consumed_by_current_course) == len(self.last_course_loop_ids):
                             break
                 self.last_course_loop_ids = self.cur_course_loop_ids
                 self.cur_course_loop_ids = []
                 self.loop_ids_consumed_by_current_course = set()
                 if self.current_row == row_count:
+                    # print(f'hahahaha cur_row is {self.current_row}')
                     break
+
         return self.knit_graph
 
     def populate_0th_course(self, starting_width: int):
@@ -106,14 +117,16 @@ class Knitspeak_Compiler:
                     self.course_ids_to_operations[course_id] = course_instructions
 
         max_course = max(*self.course_ids_to_operations)
-        if "all_rs" in self._parser.parser.symbolTable:
+    
+        if "all_rs_rows" in self._parser.parser.symbolTable or "all_rs_rounds" in self._parser.parser.symbolTable:
+            # print('hahaha')
             course_instructions = self.course_ids_to_operations[1]
             for course_id in range(3, max_course + 1, 2):
                 if course_id not in self.course_ids_to_operations:
                     self.course_ids_to_operations[course_id] = course_instructions
                 else:
                     print(f"KnitSpeak Warning: course {course_id} overrides rs-instructions")
-        if "all_ws" in self._parser.parser.symbolTable:
+        if "all_ws_rows" in self._parser.parser.symbolTable or "all_ws_rounds" in self._parser.parser.symbolTable:
             course_instructions = self.course_ids_to_operations[2]
             for course_id in range(4, max_course + 1, 2):
                 if course_id not in self.course_ids_to_operations:
@@ -124,7 +137,7 @@ class Knitspeak_Compiler:
         for course_id in range(1, max_course + 1):
             assert course_id in self.course_ids_to_operations, f"KnitSpeak Error: Course {course_id} is undefined"
 
-        if max_course % 2 == 1 and "all_ws" in self._parser.parser.symbolTable:  # ends on rs row
+        if max_course % 2 == 1 and ("all_ws_rows" in self._parser.parser.symbolTable or "all_ws_rounds" in self._parser.parser.symbolTable):  # ends on rs row
             self.course_ids_to_operations[max_course + 1] = self.course_ids_to_operations[2]
 
     def _process_instruction(self, instruction: Tuple[Union[tuple, Stitch_Definition, Cable_Definition, list],
@@ -183,10 +196,18 @@ class Knitspeak_Compiler:
         :param flipped_by_cable: if True, implies that this stitch came from a cable and has been flipped appropriately
         :param stitch_def: the stitch definition used to connect the new loop
         """
-        if self._working_ws and not flipped_by_cable:  # flips stitches following hand-knitting conventions
+        if self._working_ws and ("all_rs_rounds" not in self._parser.parser.symbolTable) and ("all_ws_rounds" not in self._parser.parser.symbolTable)and not flipped_by_cable:  # flips stitches following hand-knitting conventions
             stitch_def = stitch_def.copy_and_flip()
         course_index = len(self.cur_course_loop_ids)
-        prior_course_index = (len(self.last_course_loop_ids) - 1) - course_index
+        # if is a knitgraph for tube, i.e., "round" in symbol_table, then change the below line to add if else statement
+        is_row = False
+        is_round = False
+        if "all_rs_rows" in self._parser.parser.symbolTable or "all_ws_rows" in self._parser.parser.symbolTable or "row" in self._parser.parser.symbolTable:
+            is_row = True
+            prior_course_index = (len(self.last_course_loop_ids) - 1) - course_index
+        elif "all_rs_rounds" in self._parser.parser.symbolTable or "all_ws_rounds" in self._parser.parser.symbolTable or 'round' in self._parser.parser.symbolTable:
+            is_round = True
+            prior_course_index = course_index 
         if stitch_def.child_loops == 1:
             # Todo: Implement processing the stitch into the knitgraph
             #  add a new loop to the end of  self.yarn and add it to the self.knitgraph
@@ -197,22 +218,33 @@ class Knitspeak_Compiler:
             #  add the newly created loop to the end of self.cur_course_loop_ids
             loop_id, loop = self.yarn.add_loop_to_end()
             self.knit_graph.add_loop(loop)
+            print(f'loop_id is {loop_id}, stitch_def is {stitch_def}')
             for stack_position, parent_offset in enumerate(stitch_def.offset_to_parent_loops):
-                parent_index = prior_course_index + parent_offset
-                assert 0 <= parent_index < len(self.last_course_loop_ids), f"Knitspeak Error: Cannot find a loop at index {parent_index}"
+                if is_row:
+                    parent_index = prior_course_index + parent_offset
+                elif is_round:
+                    parent_index = prior_course_index - parent_offset
+                # parent_index = prior_course_index + parent_offset
+                # assert 0 <= parent_index < len(self.last_course_loop_ids), f"Knitspeak Error: Cannot find a loop at index {parent_index} with parent_offset {parent_offset}"
                 parent_loop_id = self.last_course_loop_ids[parent_index]
+                print(f'prior_course_index is {prior_course_index}, parent_offset is {parent_offset}, parent_index is {parent_index}, parent_loop_id is {parent_loop_id}')
                 assert parent_loop_id not in self.loop_ids_consumed_by_current_course, \
                     f"Knitspeak Error: Loop {parent_loop_id} has already been used"
                 self.loop_ids_consumed_by_current_course.add(parent_loop_id)
+                print(f'loop_ids_consumed_by_current_course is {self.loop_ids_consumed_by_current_course}')
                 self.knit_graph.connect_loops(parent_loop_id, loop_id, stitch_def.pull_direction,
                                               stack_position, stitch_def.cabling_depth, parent_offset)
             self.cur_course_loop_ids.append(loop_id)
         else:  # slip statement
             assert len(stitch_def.offset_to_parent_loops) == 1, "Cannot slip multiple loops"
             for stack_position, parent_offset in enumerate(stitch_def.offset_to_parent_loops):
-                parent_index = (len(self.last_course_loop_ids) - 1) - course_index + parent_offset
+                if is_row:
+                    parent_index = prior_course_index + parent_offset
+                elif is_round:
+                    parent_index = prior_course_index - parent_offset
                 assert 0 <= parent_index < len(self.last_course_loop_ids), f"Knitspeak Error: Cannot find a loop at index {parent_index}"
                 parent_loop_id = self.last_course_loop_ids[parent_index]
+                print(f'in slip prior_course_index is {prior_course_index}, parent_offset is {parent_offset}, parent_index is {parent_index}, parent_loop_id is {parent_loop_id}')
                 assert parent_loop_id not in self.loop_ids_consumed_by_current_course, \
                     f"Knitspeak Error: Loop {parent_loop_id} has already been used"
                 self.loop_ids_consumed_by_current_course.add(parent_loop_id)
@@ -223,7 +255,7 @@ class Knitspeak_Compiler:
         Uses a cable definition and compiler state to generate and connect a cable
         :param cable_def: the cable definition used to connect the cable into the knitgraph
         """
-        if self._working_ws:  # flips cable by hand-knitting convention
+        if self._working_ws and ("all_rs_rounds" not in self._parser.parser.symbolTable) and ("all_ws_rounds" not in self._parser.parser.symbolTable):  # flips cable by hand-knitting convention
             cable_def = cable_def.copy_and_flip()
         stitch_definitions = cable_def.stitch_definitions()
         for stitch_definition in stitch_definitions:
