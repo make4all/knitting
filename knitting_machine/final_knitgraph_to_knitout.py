@@ -95,6 +95,7 @@ class Knitout_Generator:
     # only needed for tube
     def get_min_and_max_wale_id_on_course_on_bed(self):
         # if self.object_type == 'tube':
+        print(f'self.node_to_course_and_wale is {self.node_to_course_and_wale}, len is {len(self.node_to_course_and_wale)}')
         for course_id, loop_ids in self._courses_to_loop_ids.items():
             max_wale_on_front = -10000
             min_wale_on_front = 10000
@@ -337,7 +338,7 @@ class Knitout_Generator:
                 min_wale = wale
             elif wale > max_wale:
                 max_wale = wale
-        return [min_wale, max_wale]
+        return min_wale, max_wale
 
     def generate_instructions(self):
         """
@@ -370,12 +371,11 @@ class Knitout_Generator:
         :param course_number: the course identifier for comments only
         """
         loops_not_home_yet = []
-        same_target_bed = False #a flag to show if any pass with the same target bed exists for the same course
         conflicted_passes = []
         for i, each_pass in enumerate(passes):
             knit_dir  = each_pass[0]
             loop_ids = each_pass[1]
-            loop_id_to_target_needle, split_offsets = self._do_xfers_for_row(loop_ids)
+            loop_id_to_target_needle, split_offsets = self._do_xfers_for_row(loop_ids, course_number)
             knit_and_split_data: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = {}
             for loop_id, target_needle in loop_id_to_target_needle.items():          
                 carrier = self.loop_id_to_carrier[loop_id]
@@ -384,7 +384,6 @@ class Knitout_Generator:
                     split_needle = target_needle.offset(offset).opposite()
                     knit_and_split_data[target_needle] = (Instruction_Parameters(target_needle, involved_loop=loop_id, needle_2 = split_needle, carrier=carrier), Instruction_Type.Split)
                 else:
-                    print(f'haha loop_id is {loop_id}, target needle is {target_needle}')
                     knit_and_split_data[target_needle] = (Instruction_Parameters(target_needle, involved_loop=loop_id, carrier=carrier), Instruction_Type.Knit)
             # print(f'course number is {course_number}, loop_id_to_target_needle is {loop_id_to_target_needle}, pass direction for this knit is {current_direction}')
             if knit_dir == '-':
@@ -397,55 +396,43 @@ class Knitout_Generator:
 
             if each_pass in conflicted_passes:
                 conflicted_passes.remove(each_pass)
+                print(f'conflicted_pass {each_pass} has been removed')
                 # assert len(conflicted_passes) == 0, f'conflicted_passes do not get to empty'
                 self.xfer_strayed_loops_back_home(loops_not_home_yet)
+                loops_not_home_yet = []
             for loop_id in loop_ids:
-                print(f'before strayed, loop id is {loop_id}')
                 is_strayed = not ((self.node_on_front_or_back[loop_id] == 'f') == self._machine_state.get_needle_of_loop(loop_id).is_front)
                 if is_strayed:
                     loops_not_home_yet.append(loop_id)
-            if each_pass == passes[-1]:
-                self.xfer_strayed_loops_back_home(loops_not_home_yet)
-                loops_not_home_yet = [] 
-            else:
-                passes_remained = passes[i+1:]
-                for the_pass in passes_remained:
-                    loop_ids_this_pass = the_pass[1]
-                    for loop_id in loop_ids_this_pass:
-                        if self.node_on_front_or_back[loop_id] == self.node_on_front_or_back[loops_not_home_yet[0]]: #randomly pick a loop from loops_not_home_yet because all loops in this list should have the same target bed for all supported knit objects in our pipeline.
-                            same_target_bed = True
-                            #note that as there are at most three layers in all of our supported knitted objects, so conflicted_passes
-                            #has one pass at most        
-                            conflicted_passes.append(the_pass)
-                            print(f'the pass put in conflicted_passes is {the_pass}')
-                            # assert len(conflicted_passes) == 1, f'conflicted_passes has one pass at most given the range of supported knitted objects in our pipeline' Ans: well tube with hole with bind-off on front bed may not satisfy this.
-                            break
-                if len(conflicted_passes)==0:
+            if len(loops_not_home_yet) > 0:      
+                min_wale1, max_wale1 = self.get_range_of_bed_for_the_pass(loops_not_home_yet)
+                if each_pass == passes[-1]:
                     self.xfer_strayed_loops_back_home(loops_not_home_yet)
-                    loops_not_home_yet = []
-            # considered below for debugging
-        #     for loop_id in loop_ids:
-        #         is_strayed = not ((self.node_on_front_or_back[loop_id] == 'f') == self._machine_state.get_needle_of_loop(loop_id).is_front)
-        #         if is_strayed:
-        #             loops_not_home_yet.append(loop_id)
-        #     if each_pass == passes[-1]:
-        #         self.xfer_strayed_loops_back_home(loops_not_home_yet)
-        #         loops_not_home_yet = [] 
-        #     else:
-        #         passes_remained = passes[i+1:]
-        #         for the_pass in passes_remained:
-        #             loop_ids_this_pass = the_pass[1]
-        #             for loop_id in loop_ids_this_pass:
-        #                 if self.node_on_front_or_back[loop_id] == self.node_on_front_or_back[loops_not_home_yet[0]]: #randomly pick a loop from loops_not_home_yet because all loops in this list should have the same target bed for all supported knit objects in our pipeline.
-        #                     same_target_bed = True
-        #                     #note that as there are at most three layers in all of our supported knitted objects, so conflicted_passes
-        #                     #has one pass at most   
-        #                     conflicted_passes.append(the_pass)
-        #                     assert len(conflicted_passes) == 1, f'conflicted_passes has one pass at most given the range of supported knitted objects in our pipeline'
-        #                     break
-        #         if same_target_bed == False:
-        #             self.xfer_strayed_loops_back_home(loops_not_home_yet)
-        #             loops_not_home_yet = []
+                    loops_not_home_yet = [] 
+                else:
+                    passes_remained = passes[i+1:]
+                    for the_pass in passes_remained:
+                        if len(loops_not_home_yet) > 0:  
+                            loop_ids_this_pass = the_pass[1]
+                            conflicted_loops = []
+                            for loop_id in loop_ids_this_pass:
+                                if self.node_on_front_or_back[loop_id] == self.node_on_front_or_back[loops_not_home_yet[0]]: #randomly pick a loop from loops_not_home_yet because all loops in this list should have the same target bed for all supported knit objects in our pipeline.
+                                    conflicted_loops.append(loop_id)
+                                    #note that as there are at most three layers in all of our supported knitted objects, so conflicted_passes
+                                    #has one pass at most 
+                            if len(conflicted_loops) > 0:  
+                                min_wale2, max_wale2 = self.get_range_of_bed_for_the_pass(conflicted_loops)
+                                if (min_wale1 < min_wale2 < max_wale1) or (min_wale2 < min_wale1 < max_wale2):
+                                    conflicted_passes.append(the_pass) 
+                                    print(f'the pass put in conflicted_passes is {the_pass}')
+                                    assert len(conflicted_passes) == 1, f'conflicted_passes has one pass at most given the range of supported knitted objects in our pipeline' #Ans: well.. tube with hole with bind-off on front bed may not satisfy this. 
+                                    # But with split_pass_with_loops_on_two_beds(), this assertion should be satisfied.
+                                else:
+                                    self.xfer_strayed_loops_back_home(loops_not_home_yet)
+                                    loops_not_home_yet = []     
+                    if len(conflicted_passes)==0:
+                        self.xfer_strayed_loops_back_home(loops_not_home_yet)
+                        loops_not_home_yet = []
         assert len(conflicted_passes) == 0, f'conflicted_passes do not get to empty'
 
     def _cast_on(self, carrier:Yarn_Carrier):
@@ -683,23 +670,25 @@ class Knitout_Generator:
         self._add_carriage_pass(carriage_pass)
 
     def xfer_strayed_loops_back_home(self, strayed_loop_ids: List[int]):
-        xfers: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = {}
-        for loop_id in strayed_loop_ids:
-            current_needle = self._machine_state.get_needle_of_loop(loop_id)
-            target_needle = current_needle.opposite()
-            xfers[current_needle] = (Instruction_Parameters(needle_1 = current_needle, needle_2 = target_needle), Instruction_Type.Xfer)
-        carriage_pass = Carriage_Pass(None, xfers, self._machine_state)
-        self._add_carriage_pass(carriage_pass, "xfer strayed loops back home")
+        if len(strayed_loop_ids) > 0:
+            print('---doing xfer_strayed_loops_back_home---')
+            xfers: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = {}
+            for loop_id in strayed_loop_ids:
+                current_needle = self._machine_state.get_needle_of_loop(loop_id)
+                target_needle = current_needle.opposite()
+                xfers[current_needle] = (Instruction_Parameters(needle_1 = current_needle, needle_2 = target_needle), Instruction_Type.Xfer)
+            carriage_pass = Carriage_Pass(None, xfers, self._machine_state)
+            self._add_carriage_pass(carriage_pass, "xfer strayed loops back home")
 
-    def _do_xfers_for_row(self, loop_ids: List[int]) -> Dict[int, Needle]:
+    def _do_xfers_for_row(self, loop_ids: List[int], course_number: int) -> Dict[int, Needle]:
         """
         Completes all the xfers needed to prepare a row
         :param loop_ids: the loop ids of a single course
         :param direction: the direction that the loops will be knit in
         :return:
         """
-        loop_id_to_target_needle, parent_loops_to_needles, lace_offsets, front_cable_offsets, back_cable_offsets, split_offsets, split_parents, bind_off_loops \
-            = self._find_target_needles(loop_ids)
+        loop_id_to_target_needle, parent_loops_to_needles, lace_offsets, front_cable_offsets, back_cable_offsets, split_offsets, bind_off_loops \
+            = self._find_target_needles(loop_ids, course_number)
         self._do_decrease_transfers(parent_loops_to_needles, lace_offsets)
         self._do_cable_transfers(parent_loops_to_needles, front_cable_offsets, back_cable_offsets)
         self._do_knit_purl_xfers(loop_id_to_target_needle)
@@ -710,7 +699,7 @@ class Knitout_Generator:
             self._add_carriage_pass(carriage_pass, "Rack to return back bed home")
         return loop_id_to_target_needle, split_offsets
 
-    def _find_target_needles(self, loop_ids: List[int]) -> \
+    def _find_target_needles(self, loop_ids: List[int], course_number: int) -> \
             Tuple[Dict[int, Needle], Dict[int, Needle], Dict[int, int], Dict[int, int], Dict[int, int], Dict[int, int], List[int], List[int]]:
         """
         Finds target needle information needed to do transfers
@@ -724,23 +713,21 @@ class Knitout_Generator:
         """
         parent_loops_to_needles: Dict[int, Needle] = {}  # key loop_ids to the needle they are currently on
         loop_id_to_target_needle: Dict[int, Needle] = {}  # key loop_ids to the needle they need to be on to knit
-        parents_to_offsets: Dict[int, int] = {}  # key parent loop_ids to their offset from their child
         # .... i.e., self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
-        front_cable_offsets: Dict[int, int] = {}  # key parent loop_id to the offset to their child
+        parents_to_offsets: Dict[int, int] = {}  # key parent loop_ids to their offset from their child
         # .... only include loops that cross in front. i.e., self._knit_graph.graph[parent_id][loop_id]["depth"] > 0
-        back_cable_offsets: Dict[int, int] = {}  # key parent loop_id to the offset to their child
+        front_cable_offsets: Dict[int, int] = {}  # key parent loop_id to the offset to their child
         # .... only include loops that cross in back. i.e., self._knit_graph.graph[parent_id][loop_id]["depth"] < 0
-        decrease_offsets: Dict[int, int] = {}  # key parent loop_id to the offset to their child
+        back_cable_offsets: Dict[int, int] = {}  # key parent loop_id to the offset to their child
         # .... only includes parents involved in a decrease
-        split_offsets: Dict[int, int] = {}  # key parent loop_id to the offset to their child
-        split_parents: List[int] = []
-        # .... only includes parents involved in a split
-        bind_off_loops: List[int] = []
+        decrease_offsets: Dict[int, int] = {}  # key parent loop_id to the offset to their child
+        # Dict[mirror_node: offset between rootnode and mirror_node], and 
+        # store dict[split_node: offset between rootnode and splitnode] because offset between split node and root node is always 0 in our setting.
+        split_offsets: Dict[int, int] = {} 
         # .... only includes parents involved in a bindoff
+        bind_off_loops: List[int] = []
         for loop_id in loop_ids:  # find target needle locations of each loop in the course
-            print('loop_id is ', loop_id)
             parent_ids = [*self._knit_graph.graph.predecessors(loop_id)]
-            print('parents of this loop id is ', parent_ids)
             if len(parent_ids) > 0:
                 for parent_id in parent_ids:  # find current needle of all parent loops
                     parent_needle = self._machine_state.get_needle_of_loop(parent_id)
@@ -755,56 +742,64 @@ class Knitout_Generator:
                         #because when number of successors > 1, it can only be 2 caused by split.
                         assert len(successors) == 2, f'wrong number of successors: {len(successors)}' 
                         # because split node and mirror node are supposed to be on two different yarns.
-                        assert successors[0].yarn_id != successors[1].yarn_id, f'split node and mirror node are supposed to be on two different yarns'
+                        successors0 = self._knit_graph.loops[successors[0]]
+                        successors1 = self._knit_graph.loops[successors[1]]
+                        assert successors0.yarn_id != successors1.yarn_id, f'split node and mirror node are supposed to be on two different yarns'
                         is_split = True
                 # because both split node and mirror node would satisfy the above condition, i.e., is_split would become True, thus we need to
                 # determine if it is a split node or mirror node below.
                 if is_split == True: 
-                    pull_direction = self._knit_graph.graph[parent_id][loop_id]["pull_direction"]
                     #detect the mirror node in split
-                    #because the direction of any edge between mirror node in split and its parent nodes are all Pull_Direction.FtB.
-                    if pull_direction == Pull_Direction.FtB: #then this loop is a mirror node instead of a split node in a split, 
-                        # if pull_direction == Pull_Direction.BtF, then this loop is a split node instead of a mirror node in a split (see elif below).
+                    if self._knit_graph.loops[loop_id].yarn_id == 'parent_yarn': #then this loop is a mirror node instead of a split node in a split, 
                         # get the target needle of the mirror ndoe
                         parent_needle = parent_loops_to_needles[parent_id]
-                        parent_offset =  self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
-                        offset_needle = parent_needle.offset(parent_offset)
-                        target_needle = Needle(is_front=front_bed, position=offset_needle.position)
+                        pull_direction = self._knit_graph.graph[parent_id][loop_id]["pull_direction"]
+                        if pull_direction == Pull_Direction.FtB:
+                            if self.node_on_front_or_back[parent_id] == 'f': 
+                                    front_bed = False
+                            elif self.node_on_front_or_back[parent_id] == 'b': 
+                                front_bed = True
+                        elif pull_direction == Pull_Direction.BtF:
+                            if self.node_on_front_or_back[parent_id] == 'f': 
+                                    front_bed = True
+                            elif self.node_on_front_or_back[parent_id] == 'b': 
+                                front_bed = False
+                        # the reason why we set position for target_needle below using "position=parent_needle.position" rather than
+                        # parent_offset then offset_needle.position is to avoid the error
+                        target_needle = Needle(is_front=front_bed, position=parent_needle.position)
                         loop_id_to_target_needle[loop_id] = target_needle
-                        # get the split node info
-                        split_node = list(set(successors).difference(set([loop_id])))
-                        assert len(split_node) == 1, f'the number of split node in a split should be 1'
-                        # note that split_offset and parent_offset are different value
-                        if self.node_on_front_or_back[loop_id] == 'b':
-                            split_offset = self._knit_graph.graph[parent_id][split_node[0]]["parent_offset"]
-                        else:
-                            split_offset = -self._knit_graph.graph[parent_id][split_node[0]]["parent_offset"]
+                        split_offset = self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
                         split_offsets[loop_id] = split_offset
-                        # used to help detect loop id on patch side that can easily disguise as decrease stitch because has two parents too, see "detect decrease" below.
-                        split_parents.append(parent_id)
+                        print(f'branch catched--loop id {loop_id} is a mirror node, and split offset is {split_offset}, parent_needle is {parent_needle}, target_needle is {target_needle}, parent_offset is {parent_offset}')
                     #detect the split node in split
-                    elif pull_direction == Pull_Direction.BtF: #then this loop is a split node instead of a mirror node in a split
+                    elif self._knit_graph.loops[loop_id].yarn_id == 'pocket_yarn' or self._knit_graph.loops[loop_id].yarn_id == 'handle_yarn': #then this loop is a split node instead of a mirror node in a split
                         parent_needle = parent_loops_to_needles[parent_id]
-                        parent_offset =  self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
-                        offset_needle = parent_needle.offset(parent_offset)
-                        target_needle = Needle(is_front = (not parent_needle.is_front), position=offset_needle.position)
+                        # parent_offset =  self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
+                        # offset_needle = parent_needle.offset(parent_offset)
+                        # bed = self.node_on_front_or_back[loop_id]
+                        # target_needle = Needle(is_front = (loop_bed == 'f'), position=offset_needle.position)
+                        if self._knit_graph.yarn_start_direction == 'right to left':    
+                            position = self.courses_to_max_wale_on_front[self._loop_id_to_courses[loop_id]] - self.node_to_course_and_wale[loop_id][1]
+                        else:
+                            position = self.node_to_course_and_wale[loop_id][1]
+                        bed = self.node_on_front_or_back[loop_id]
+                        target_needle = Needle(is_front = (bed == 'f'), position=position)
                         loop_id_to_target_needle[loop_id] = target_needle
                         self.nodes_on_patch_side.append(loop_id)
+                        print(f'branch catched--loop id {loop_id} is a split node, parent_needle is {parent_needle}, target_needle is {target_needle}')
             # detect yarn-over
             if len(parent_ids) == 0:  # yarn-over, yarn overs are made on front bed
                 # from below snippet we can see that using wale to identify position of target needle is quite tedious; but we can't 
                 # use parent_needle to identify target needle here because yarn over loop has no parent..
-                if self._knit_graph.yarn_start_direction == 'right to left':
-                    if self.node_on_front_or_back[loop_id] == 'f':
-                        position = self.courses_to_max_wale_on_front[self._loop_id_to_courses[loop_id]] - self.node_to_course_and_wale[loop_id][1]
-                    else:
-                        position = self.courses_to_max_wale_on_back[self._loop_id_to_courses[loop_id]] - self.node_to_course_and_wale[loop_id][1]
+                if self._knit_graph.yarn_start_direction == 'right to left':    
+                    position = self.courses_to_max_wale_on_front[self._loop_id_to_courses[loop_id]] - self.node_to_course_and_wale[loop_id][1]
                 else:
                     position = self.node_to_course_and_wale[loop_id][1]
+                print(f'yarn over detected! loop needle position is {position+1}') #position+1 is consistent with Needle class in Machine State.
                 bed = self.node_on_front_or_back[loop_id]
                 loop_id_to_target_needle[loop_id] = Needle(is_front = (bed == 'f'), position=position)
             # detect cable
-            if len(parent_ids) == 1:  # knit, purl, may be in cable
+            if len(parent_ids) == 1 and is_split == False:  # knit, purl, may be in cable
                 parent_id = [*parent_ids][0]
                 # detect loop id on patch side that can easily disguise as decrease stitch because has two parents too (if we split two nodes to the same needle)
                 if parent_id in self.nodes_on_patch_side:
@@ -821,17 +816,13 @@ class Knitout_Generator:
                     elif self.node_on_front_or_back[parent_id] == 'b': 
                         front_bed = False
                 parent_needle = parent_loops_to_needles[parent_id]
-                # if self._knit_graph.yarn_start_direction == 'right to left':
-                #     parent_offset = - self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
-                # else:
-                #     parent_offset = self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
                 parent_offset = self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
                 offset_needle = parent_needle.offset(parent_offset)
                 target_needle = Needle(is_front=front_bed, position=offset_needle.position)
-                print(f'parent_offset is {parent_offset}, target_needle is {target_needle}')
                 loop_id_to_target_needle[loop_id] = target_needle
                 parents_to_offsets[parent_id] = parent_offset
                 if parent_offset != 0 and parent_needle.is_front == target_needle.is_front:
+                    print(f'cable detected! loop id is {loop_id}, parent_offset is {parent_offset}, target_needle is {target_needle}')
                     cable_depth = self._knit_graph.graph[parent_id][loop_id]["depth"]
                     # update below to a warning rather than assertion, because for a decreased-tube, stitch on edge can disguise as cable stitch but the depth is 0, refer to
                     # pp. 219
@@ -841,19 +832,16 @@ class Knitout_Generator:
                             front_cable_offsets[parent_id] = parent_offset
                         else:
                             back_cable_offsets[parent_id] = parent_offset
+                else:
+                    print(f'k/p stitch detected! loop id is {loop_id}, parent_offset is {parent_offset}, target_needle is {target_needle}')
             # detect decrease
             if len(parent_ids) > 1: # decrease, the bottom parent loop in the stack  will be on the target needle
                 if self.node_to_course_and_wale[parent_ids[0]][0] != self.node_to_course_and_wale[parent_ids[1]][0]:
                     bind_off_loops.append(loop_id) 
-                loop = self._knit_graph.loops[loop_id]
                 target_needle = None  # re-assigned on first iteration to needle of first parent
                 for parent_id in parent_ids:
                     parent_needle = parent_loops_to_needles[parent_id]
                     loop_id_to_target_needle[loop_id] = target_needle
-                    # if self._knit_graph.yarn_start_direction == 'right to left':
-                    #     offset = - self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
-                    # else:
-                    #     offset = self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
                     offset = self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
                     offset_needle = parent_needle.offset(offset)
                     pull_direction = self._knit_graph.graph[parent_id][loop_id]["pull_direction"]
@@ -874,10 +862,6 @@ class Knitout_Generator:
                     offset = self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
                     print(f'parent_offset is {offset}')
                     if offset != 0:
-                        # if self._knit_graph.yarn_start_direction == 'right to left':
-                        #     offset = - self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
-                        # else:
-                        #     offset = self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
                         if self.node_on_front_or_back[loop_id] == 'b':
                             decrease_offsets[parent_id] = offset
                         else:
@@ -888,11 +872,10 @@ class Knitout_Generator:
         print('decrease_offsets', decrease_offsets)
         print('front_cable_offsets', front_cable_offsets)
         print('back_cable_offsets', back_cable_offsets)
-        print('split_offsets', split_offsets)
-        print('split_parents', split_parents)
+        print('split_offsets: Dict[mirror_node: offset]', split_offsets)
         print('bind_off_loops', bind_off_loops)
         return loop_id_to_target_needle, parent_loops_to_needles, decrease_offsets, \
-               front_cable_offsets, back_cable_offsets, split_offsets, split_parents, bind_off_loops
+               front_cable_offsets, back_cable_offsets, split_offsets, bind_off_loops
                
     def _do_cable_transfers(self, parent_loops_to_needles: Dict[int, Needle], front_cable_offsets: Dict[int, int],
                             back_cable_offsets: Dict[int, int]):
@@ -976,12 +959,16 @@ class Knitout_Generator:
         Transfers loops to bed needed for knit vs purl
         :param loop_id_to_target_needle: loops mapped to their target needles
         """
+        kn_xfer = False
         xfers: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = {}
         for loop_id, target_needle in loop_id_to_target_needle.items():
             opposite_needle = target_needle.opposite()
             loops_on_opposite = self._machine_state[opposite_needle]
             if len(loops_on_opposite) > 0:
                 xfers[opposite_needle] = (Instruction_Parameters(opposite_needle, needle_2=target_needle), Instruction_Type.Xfer)
+                kn_xfer = True
+        if kn_xfer == True:
+            print('----doing knit_purl_xfers----')
         carriage_pass = Carriage_Pass(None, xfers, self._machine_state)
         self._add_carriage_pass(carriage_pass, "kp-transfers")
 

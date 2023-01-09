@@ -384,7 +384,7 @@ class Machine_State:
             for front_loop in front_loops:
                 self.add_loop(front_loop, ending_pos, on_front=False, drop_prior_loops=False)
             self.drop_loop(starting_pos, on_front=True)
-            print(f'racking {self.racking} to xfer loops {front_loops} from front to back')
+            print(f'racking {self.racking} to xfer loops {front_loops} from front needle pos: f{starting_pos+1} to back needle pos: b{ending_pos+1}')
         else:
             assert self.valid_rack(ending_pos, starting_pos), f"racking {self.racking} does not match b{starting_pos} to f{ending_pos}"
             back_loops = self[(starting_pos, False)]
@@ -392,7 +392,7 @@ class Machine_State:
             for back_loop in back_loops:
                 self.add_loop(back_loop, ending_pos, on_front=True, drop_prior_loops=False)
             self.drop_loop(starting_pos, on_front=False)
-            print(f'racking {self.racking} to xfer loops {back_loops} from back to front')
+            print(f'racking {self.racking} to xfer loops {back_loops} from back needle pos: b{starting_pos+1} to front needle pos: f{ending_pos+1}')
 
     def update_rack(self, front_pos: int, back_pos: int) -> Tuple[int, bool]:
         """
