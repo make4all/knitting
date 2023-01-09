@@ -460,11 +460,6 @@ class Handle_Generator_on_Sheet:
         #merge node_to_course_and_wale on parent_knitgraph and child_knitgraph
         self.handle_graph.node_to_course_and_wale = self.parent_knitgraph.node_to_course_and_wale|self.child_knitgraph.node_to_course_and_wale
         #see if connect edges
-        # edge_nodes_smaller_wale_side_edges_child, edge_nodes_bigger_wale_side_edges_child = self.get_nodes_on_each_edge_on_child_fabric()
-        # edge_nodes_smaller_wale_side_edges_parent, edge_nodes_bigger_wale_side_edges_parent = self.get_target_edge_nodes_on_parent_fabric(edge_nodes_smaller_wale_side_edges_child, edge_nodes_bigger_wale_side_edges_child)
-        # self.connect_stitches_on_knitgraph()
-        # self.actions_around_target_edge_node(edge_nodes_smaller_wale_side_edges_parent, edge_nodes_bigger_wale_side_edges_parent)
-        
         edge_nodes_smaller_wale_side_child, edge_nodes_bigger_wale_side_child = self.get_split_nodes_on_each_edge_on_child_fabric()
         mirror_nodes_smaller_wale_side_parent, mirror_nodes_bigger_wale_side_parent = self.get_mirror_nodes_on_each_edge_on_parent_fabric(edge_nodes_smaller_wale_side_child, edge_nodes_bigger_wale_side_child)
         root_nodes_smaller_wale_side_parent, root_nodes_bigger_wale_side_parent = self.get_root_nodes_on_each_edge_on_parent_fabric(mirror_nodes_smaller_wale_side_parent, mirror_nodes_bigger_wale_side_parent, edge_nodes_smaller_wale_side_child, edge_nodes_bigger_wale_side_child)

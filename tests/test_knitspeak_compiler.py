@@ -18,10 +18,11 @@ def test_stst():
     note that if the generated polygon look weird, specifically wales are not align, probably caused by the improper gauge setting used
     below.
     """
-    sheet_pattern = "all rs rows k. all ws rows p."
-    # tube_pattern = "all rs rounds k. all ws rounds p."
+    # sheet_pattern = "all rs rows k. all ws rows p."
+    tube_pattern = "all rs rounds k. all ws rounds p."
     compiler = Knitspeak_Compiler()
-    knit_graph = compiler.compile(12, 10, object_type = 'sheet', pattern = sheet_pattern)
+    # knit_graph = compiler.compile(12, 10, object_type = 'sheet', pattern = sheet_pattern)
+    knit_graph = compiler.compile(12, 10, object_type = 'tube', pattern = tube_pattern)
     knit_graph.gauge = 1/2
     loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
     loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_wales() 
@@ -51,14 +52,14 @@ def test_stst():
     # hole_index_to_holes = {1: [51, 63]} tested! saved as tube_hole1 in local folder [latest_converted_knitouts] waited to be tested on machine.
     # # 2: [25, 26,  38], 4: [40, 28], 6:[51] tested! saved as tube_hole2 in local folder waited to be tested on machine.
     # # 2: [26, 38], 4: [28], 6:[40] tested! saved as tube_hole3 in local folder waited to be tested on machine.
-    # hole_generator = Hole_Generator_on_Tube(hole_index_to_holes = {2: [26, 38], 4: [28], 6:[40]}, knitgraph = knit_graph)
-    # knitGraph = hole_generator.add_hole()
-    # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
-    # KnitGraph_Visualizer.visualize()
+    hole_generator = Hole_Generator_on_Tube(hole_index_to_holes = {2: [26, 38], 4: [28], 6:[40]}, knitgraph = knit_graph)
+    knitGraph = hole_generator.add_hole()
+    KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+    KnitGraph_Visualizer.visualize()
 
     # add pocket on sheet
     # retangle pockect on stst
-    # pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = 3, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 3), (6, 3)], right_keynodes_child_fabric=[(3, 11), (6, 11)], close_top = True, edge_connection_left_side = [True], edge_connection_right_side = [True])
+    # pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = 3, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 3), (6, 3)], right_keynodes_child_fabric=[(3, 11), (6, 11)], close_top = True, edge_connection_left_side = [False], edge_connection_right_side = [False])
     # knitGraph = pocket_generator.build_pocket_graph() 
     # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
     # KnitGraph_Visualizer.visualize()
@@ -80,10 +81,10 @@ def test_stst():
     # add handle on tube
     # left_keynodes_child_fabric=[(3, 4), (6, 4)], right_keynodes_child_fabric=[(3, 10), (6, 10)]
     # left_keynodes_child_fabric=[(3, 4), (4, 1), (6, 1)], right_keynodes_child_fabric=[(3, 7), (4,10), (6, 10)]
-    handle_generator = Handle_Generator_on_Tube(parent_knitgraph = knit_graph, tube_yarn_carrier_id = 3, handle_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 4), (4, 1), (6, 1)], right_keynodes_child_fabric=[(3, 10), (4,13), (6, 13)])
-    knitGraph = handle_generator.build_handle_graph() 
-    KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
-    KnitGraph_Visualizer.visualize()
+    # handle_generator = Handle_Generator_on_Tube(parent_knitgraph = knit_graph, tube_yarn_carrier_id = 3, handle_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 4), (4, 1), (6, 1)], right_keynodes_child_fabric=[(3, 10), (4,13), (6, 13)])
+    # knitGraph = handle_generator.build_handle_graph() 
+    # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+    # KnitGraph_Visualizer.visualize()
 
     # add strap on tube
     # tube_yarn_carrier_id is set to 9 is because 
@@ -118,7 +119,6 @@ def test_rib():
  
 
 def test_cable():
-    object_type = 'tube'
     # sheet_pattern = r"""
     #     1st row k, lc2|2, k, rc2|2, [k] to end.
     #     all ws rows p.
@@ -132,36 +132,37 @@ def test_cable():
         5th round k 3, lc1|1, k, rc1|1, [k] to end.
     """
     compiler = Knitspeak_Compiler()
-    knit_graph = compiler.compile(12, 5, object_type, tube_pattern)
+    knit_graph = compiler.compile(12, 5, object_type= 'tube', pattern = tube_pattern)
     knit_graph.gauge = 0.5
     loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
-    loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_wales(object_type = object_type) 
-    node_to_course_and_wale = knit_graph.get_node_course_and_wale(object_type = object_type)
-    node_on_front_or_back = knit_graph.get_node_bed(object_type = object_type)
-    course_and_wale_and_bed_to_node = knit_graph.get_course_and_wale_and_bed_to_node(object_type = object_type)
-    KnitGraph_Visualizer = knitGraph_visualizer(knit_graph, object_type = object_type)
+    loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_wales() 
+    node_to_course_and_wale = knit_graph.get_node_course_and_wale()
+    node_on_front_or_back = knit_graph.get_node_bed()
+    course_and_wale_and_bed_to_node = knit_graph.get_course_and_wale_and_bed_to_node()
+    KnitGraph_Visualizer = knitGraph_visualizer(knit_graph)
     KnitGraph_Visualizer.visualize()
 
     # add hole on tube
     hole_generator = Hole_Generator_on_Tube(hole_index_to_holes = {3: [37]}, knitgraph = knit_graph)
     knitGraph = hole_generator.add_hole()
-    KnitGraph_Visualizer = knitGraph_visualizer(knitGraph, object_type = 'tube')
+    KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
     KnitGraph_Visualizer.visualize()
 
     # generator = Knitout_Generator(knit_graph)
     # generator.write_instructions(f"cable.k")
 
 def test_lace():
-    sheet_pattern = r"""
-        all rs rows k, k2tog, yo 2, sk2po, yo 2, skpo, k. 
-        all ws rows p 2, k, p 3, k, p 2.
-    """
-    # tube_pattern = r"""
-    #     all rs rounds k, k2tog, yo 2, sk2po, yo 2, skpo, k. 
-    #     all ws rounds p 2, k, p 3, k, p 2.
+    # sheet_pattern = r"""
+    #     all rs rows k, k2tog, yo 2, sk2po, yo 2, skpo, k. 
+    #     all ws rows p 2, k, p 3, k, p 2.
     # """
+    tube_pattern = r"""
+        all rs rounds k, k2tog, yo 2, sk2po, yo 2, skpo, k. 
+        all ws rounds p 2, k, p 3, k, p 2.
+    """
     compiler = Knitspeak_Compiler()
-    knit_graph = compiler.compile(18, 2, object_type = 'sheet', pattern = sheet_pattern)
+    # knit_graph = compiler.compile(18, 10, object_type = 'sheet', pattern = sheet_pattern)
+    knit_graph = compiler.compile(18, 2, object_type = 'tube', pattern = tube_pattern)
     knit_graph.gauge = 0.5
     loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
     loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_wales()
@@ -170,6 +171,11 @@ def test_lace():
     KnitGraph_Visualizer = knitGraph_visualizer(knit_graph)
     KnitGraph_Visualizer.visualize()
 
+    # hole_generator = Hole_Generator_on_Sheet(yarns_and_holes_to_add = {2:[49], 7:[98, 99]}, knitgraph = knit_graph)
+    # knitGraph = hole_generator.add_hole()
+    # # note that we only update (delete hole nodes on the self._knit_graph, we do not correspondingly update nodes in both self.node_on_front_or_back and self.node_to_course_and_wale)
+    # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+    # KnitGraph_Visualizer.visualize()
 
     generator = Knitout_Generator(knit_graph)
     generator.write_instructions(f"lace.k")

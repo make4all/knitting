@@ -458,7 +458,9 @@ class Hole_Generator_on_Sheet:
                         child_wale_id = self._knit_graph.node_to_course_and_wale[nearest_neighbor][1]
                         # todo: if the parent offset of bind_off is larger than 2, we will consider using connect_hole_edge_node(). But if the parent offset in connect_\
                         # hole_edge_node is also larger than 2, we will send out a error and exit.
-                        self._knit_graph.connect_loops(node, nearest_neighbor, parent_offset = parent_wale_id - child_wale_id) 
+                        self._knit_graph.connect_loops(node, nearest_neighbor, parent_offset = int((parent_wale_id - child_wale_id)/self.wale_dist))
+                        #we use (parent_wale_id - child_wale_id)/self.wale_dist rather than (parent_wale_id - child_wale_id) above is 
+                        # because we will "parent_offset*self.wale_dist" in final_knitgraph_to_knitout.py again. 
                     
     def add_hole(self):
         #first determine the validity of the input hole

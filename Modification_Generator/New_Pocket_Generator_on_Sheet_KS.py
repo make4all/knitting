@@ -450,7 +450,7 @@ class Pocket_Generator_on_Sheet:
         """
         bottom_root_nodes: Dict[Tuple[int, int]: List[int]] = {} 
         course_id = self.left_keynodes_child_fabric[0][0]
-        for wale_id in range(self.left_keynodes_child_fabric[0][1]+self.wale_dist, self.right_keynodes_child_fabric[0][1]-self.wale_dist, self.wale_dist):
+        for wale_id in range(self.left_keynodes_child_fabric[0][1], self.right_keynodes_child_fabric[0][1]+self.wale_dist, self.wale_dist):
             split_node = self.child_knitgraph_course_and_wale_to_node[(course_id, wale_id)]
             mirror_node = self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id+(self.wale_dist-1))]
             bottom_root_nodes[(mirror_node, split_node)] = []

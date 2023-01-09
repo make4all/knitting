@@ -334,7 +334,6 @@ class Pocket_Generator_on_Tube:
                 self.child_knitgraph_course_and_wale_to_node[(course_id, wale_id)] = loop_id
                 self.child_knitgraph.course_to_loop_ids[course_id].append(loop_id)
                 self.pocket_graph.node_on_front_or_back[loop_id] = 'b' if self.is_front_patch == False else 'f' 
-            
    
     def get_split_nodes_on_each_edge_on_child_fabric(self):
         """
@@ -511,41 +510,6 @@ class Pocket_Generator_on_Tube:
                 self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 0)
         print(f'bottom_root_nodes is {bottom_root_nodes}')
 
-
-
-    # def actions_around_target_edge_node(self, edge_nodes_smaller_wale_side_edges_parent, edge_nodes_bigger_wale_side_edges_parent):
-    #     # first iterate over edge_connection_left_side to see which edge to connect
-    #     num_of_left_edges = len(self.edge_connection_left_side)
-    #     for edge_index in range(num_of_left_edges):
-    #         connection_property = self.edge_connection_left_side[edge_index]
-    #         if connection_property == True:
-    #             for node in edge_nodes_smaller_wale_side_edges_parent[edge_index][1:]:
-    #                 course_id = self.parent_knitgraph.node_to_course_and_wale[node][0]
-    #                 wale_id = self.parent_knitgraph.node_to_course_and_wale[node][1]
-    #                 target_node_on_child_fabric = self.child_knitgraph_course_and_wale_to_node[(course_id+1, wale_id-1)] if self.is_front_patch == False else self.child_knitgraph_course_and_wale_to_node[(course_id+1, wale_id+1)]
-    #                 if (course_id, wale_id) in self.parent_knitgraph_course_and_wale_to_node:
-    #                     edge_split_node = self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id)]
-    #                     # self.pocket_graph.connect_loops(edge_split_node, target_node_on_child_fabric, pull_direction = Pull_Direction.FtB if self.is_front_patch == False else Pull_Direction.BtF, parent_offset = 1 if self.is_front_patch == False else -1)
-    #                     # self.pocket_graph.connect_loops(edge_split_node, target_node_on_child_fabric, pull_direction = Pull_Direction.BtF, parent_offset = 1 if self.is_front_patch == False else -1)
-    #                     self.pocket_graph.connect_loops(edge_split_node, target_node_on_child_fabric, pull_direction = Pull_Direction.BtF, parent_offset = 0)
-    #     # then iterate over edge_connection_right_side to see which edge to connect
-    #     num_of_right_edges = len(self.edge_connection_right_side)
-    #     for edge_index in range(num_of_right_edges):
-    #         connection_property = self.edge_connection_right_side[edge_index]
-    #         if connection_property == True:
-    #             for node in edge_nodes_bigger_wale_side_edges_parent[edge_index][1:]:
-    #                 course_id = self.parent_knitgraph.node_to_course_and_wale[node][0]
-    #                 wale_id = self.parent_knitgraph.node_to_course_and_wale[node][1]
-    #                 target_node_on_child_fabric = self.child_knitgraph_course_and_wale_to_node[(course_id+1, wale_id-1)] if self.is_front_patch == False else self.child_knitgraph_course_and_wale_to_node[(course_id+1, wale_id+1)]
-    #                 if (course_id, wale_id) in self.parent_knitgraph_course_and_wale_to_node:
-    #                     edge_split_node = self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id)]
-    #                     # self.pocket_graph.connect_loops(edge_split_node, target_node_on_child_fabric, pull_direction = Pull_Direction.FtB if self.is_front_patch == False else Pull_Direction.BtF, parent_offset = 1 if self.is_front_patch == False else -1)
-    #                     # self.pocket_graph.connect_loops(edge_split_node, target_node_on_child_fabric, pull_direction = Pull_Direction.BtF, parent_offset = 1 if self.is_front_patch == False else -1)
-    #                     self.pocket_graph.connect_loops(edge_split_node, target_node_on_child_fabric, pull_direction = Pull_Direction.BtF, parent_offset = 0)
-    
-
-
-
     def build_pocket_graph(self) -> Knit_Graph:   
         self.generate_polygon_from_keynodes()
         self.read_connectivity_from_knitgraph()
@@ -589,7 +553,6 @@ class Pocket_Generator_on_Tube:
         self.connect_stitches_on_knitgraph()
         self.reconnect_branches_on_the_side(root_nodes_smaller_wale_side_parent, root_nodes_bigger_wale_side_parent)
         self.reconnect_bottom_branches() 
-        
         #see if close top
         if self.close_top == True:
             for node in self.child_knitgraph.course_to_loop_ids[last_course_id_child_fabric]:
@@ -600,7 +563,6 @@ class Pocket_Generator_on_Tube:
                 neighbor_node = self.parent_knitgraph_course_and_wale_to_node[(course, wale+1)] if self.is_front_patch == False else self.parent_knitgraph_course_and_wale_to_node[(course, wale-1)]
                 print(f'haha neighbor_node is {neighbor_node}, node_to_connect is {node_to_connect}')
                 pull_direction = self.pocket_graph.graph[neighbor_node][node_to_connect]['pull_direction']
-                self.pocket_graph.connect_loops(node, node_to_connect, pull_direction = pull_direction, parent_offset = -1)
-
+                self.pocket_graph.connect_loops(node, node_to_connect, pull_direction = pull_direction, parent_offset = 1 if self.is_front_patch == True else -1)
         return self.pocket_graph
   

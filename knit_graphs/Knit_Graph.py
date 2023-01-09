@@ -44,12 +44,13 @@ class Knit_Graph:
          A list of Yarns used in the graph
     """
 
-    def __init__(self, yarn_start_direction: Optional[str] = 'right to left'):
+    def __init__(self, yarn_start_direction: Optional[str] = 'right to left', gauge: Optional[int] = 1):
         self.graph: networkx.DiGraph = networkx.DiGraph()
         self.loops: Dict[int, Loop] = {}
         self.last_loop_id: int = -1
         self.yarns: Dict[str, Yarn] = {}
-        self.gauge: float 
+        self.gauge: float = gauge
+        self.wale_dist: int = int(1/self.gauge)
         self.object_type: str
         self.loop_ids_to_course: Dict[int, int] = {}
         self.course_to_loop_ids: Dict[int, List[int]] = {}
@@ -99,21 +100,6 @@ class Knit_Graph:
         # print(child_loop, parent_loop)
         child_loop.add_parent_loop(parent_loop, stack_position)
     
-    def xfer_loop(self, loop_id: int, previous_bed: str, target_bed: str, xfer_offset: int):
-        assert loop_id in self, f"loop {loop_id} is not in this graph"
-        assert previous_bed[0] != target_bed[0], f'cannot xfer loop {loop_id} to the same bed'
-        if previous_bed[0] == 'f' and target_bed[0] == 'b':
-            xfer_direction = Xfer_Direction.FtB
-            front_bed_position = previous_bed[1]
-            back_bed_position = target_bed[1]
-            xfer_offset = front_bed_position - back_bed_position
-        elif previous_bed[0] == 'b' and target_bed[0] == 'f':
-            xfer_direction = Xfer_Direction.BtF
-            front_bed_position = target_bed[1]
-            back_bed_position = previous_bed[1]
-            xfer_offset = front_bed_position - back_bed_position
-        self.graph.add_edge(loop_id, loop_id, xfer_direction = xfer_direction, xfer_offset = xfer_offset)
-
     def get_courses(self) -> Tuple[Dict[int, int], Dict[int, List[int]]]:
         """
         :return: A dictionary of loop_ids to the course they are on,
@@ -157,13 +143,13 @@ class Knit_Graph:
         first_course_loop_ids = self.course_to_loop_ids[0] 
         wale = 0
         assert (1/self.gauge).is_integer() == True, f'wrong gauge info'
-        wale_dist = int(1/self.gauge)
-        # print(f'wale_dist is {wale_dist}')
+        self.wale_dist = int(1/self.gauge)
+        # print(f'self.wale_dist is {self.wale_dist}')
         for loop_id in first_course_loop_ids:
             self.loop_ids_to_wale[loop_id] = wale
             self.wale_to_loop_ids[wale] = [loop_id]
             # wale += 1
-            wale += wale_dist
+            wale += self.wale_dist
             # print(f'loop_id is {loop_id}, wale is {wale}')
         for course_id in [*self.course_to_loop_ids.keys()][1:]:
             next_row_loop_ids = self.course_to_loop_ids[course_id]
@@ -172,11 +158,11 @@ class Knit_Graph:
                 if len(parent_ids) > 0:
                     for parent_id in self.graph.predecessors(loop_id):
                         parent_offset = self.graph[parent_id][loop_id]['parent_offset']
-                        wale = self.loop_ids_to_wale[parent_id] - parent_offset*wale_dist
-                        # if object_type == 'sheet':
-                        #     wale = self.loop_ids_to_wale[parent_id] - parent_offset*wale_dist
-                        # elif object_type == 'tube':
-                        #     wale = self.loop_ids_to_wale[parent_id] + parent_offset*wale_dist
+                        # wale = self.loop_ids_to_wale[parent_id] - parent_offset*self.wale_dist
+                        if self.object_type == 'sheet':
+                            wale = self.loop_ids_to_wale[parent_id] - parent_offset*self.wale_dist
+                        elif self.object_type == 'tube':
+                            wale = self.loop_ids_to_wale[parent_id] + parent_offset*self.wale_dist
                         self.loop_ids_to_wale[loop_id] = wale
                         if wale not in self.wale_to_loop_ids:
                             self.wale_to_loop_ids[wale] = []
@@ -193,19 +179,19 @@ class Knit_Graph:
                         pre_wale = self.loop_ids_to_wale[yarn_predecessor]
                         if self.object_type == 'sheet':
                             if course_id % 2 == 1:
-                                wale = pre_wale - wale_dist
+                                wale = pre_wale - self.wale_dist
                                 self.loop_ids_to_wale[loop_id] = wale
                             else: 
-                                wale = pre_wale + wale_dist
+                                wale = pre_wale + self.wale_dist
                                 self.loop_ids_to_wale[loop_id] = wale
                         elif self.object_type == 'tube':
-                            wale = pre_wale + wale_dist
+                            wale = pre_wale + self.wale_dist
                             self.loop_ids_to_wale[loop_id] = wale
                             # if course_id % 2 == 1:
-                            #     wale = pre_wale + wale_dist
+                            #     wale = pre_wale + self.wale_dist
                             #     self.loop_ids_to_wale[loop_id] = wale
                             # else: 
-                            #     wale = pre_wale - wale_dist
+                            #     wale = pre_wale - self.wale_dist
                             #     self.loop_ids_to_wale[loop_id] = wale
                         if wale not in self.wale_to_loop_ids:
                             self.wale_to_loop_ids[wale] = [loop_id]

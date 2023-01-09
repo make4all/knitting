@@ -59,7 +59,8 @@ class Symbol_Table:
         #  You need to implement the following stitches: k2tog,k3tog, p2tog, p3tog,
         #   skpo,sppo (purl version of skpo), s2kpo, s2ppo, sk2po, sp2po
         for n in [2, 3]:  # ntog
-            offsets = [offset * -1 for offset in range(n - 1, -1, -1)]
+            offsets = [offset * -1 for offset in range(n - 1, -1, -1)] #original version
+            # offsets = [offset * 1 for offset in range(n - 1, -1, -1)]
             self[f"k{n}tog"] = Stitch_Definition(offset_to_parent_loops=offsets)
             self[f"p{n}tog"] = Stitch_Definition(Pull_Direction.FtB, offset_to_parent_loops=offsets)
         for n in [1, 2]:

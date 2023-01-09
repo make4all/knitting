@@ -234,6 +234,8 @@ class Knitspeak_Compiler:
                 print(f'loop_ids_consumed_by_current_course is {self.loop_ids_consumed_by_current_course}')
                 self.knit_graph.connect_loops(parent_loop_id, loop_id, stitch_def.pull_direction,
                                               stack_position, stitch_def.cabling_depth, parent_offset)
+                # self.knit_graph.connect_loops(parent_loop_id, loop_id, stitch_def.pull_direction,
+                #                               stack_position, stitch_def.cabling_depth, parent_offset*self.knit_graph.wale_dist)
             self.cur_course_loop_ids.append(loop_id)
         else:  # slip statement
             assert len(stitch_def.offset_to_parent_loops) == 1, "Cannot slip multiple loops"

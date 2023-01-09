@@ -37,7 +37,7 @@ class Strap_Generator_on_Tube:
         self.child_knitgraph_coors_connectivity: List[Tuple] = []
         self.parent_knitgraph_coors_connectivity: List[Tuple] = []
         # assert 1/3 <= self.parent_knitgraph.gauge <= 0.5, f'the gauge of given parent knitgraph has to be less than 0.5, and suggested gauge should be larger than 1/3 to avoid racking over +-2.' #otherwise it will mess up because xfers involved.
-        assert self.parent_knitgraph.gauge == 0.5, f'the gauge of given parent knitgraph has to be less than 0.5, and we set it to 0.5 which is sufficient to keep texture for sheet case' #otherwise it will mess up because xfers involved.
+        assert self.parent_knitgraph.gauge == 0.5, f'the gauge of given parent knitgraph has to be less than 0.5, and we set it to 0.5 which is sufficient to keep texture for strap on tube case' #otherwise it will mess up because xfers involved.
         self.strap_graph.gauge = self.child_knitgraph.gauge = self.parent_knitgraph.gauge #this is true for adding strap on sheet case
         self.wale_dist = int(1/self.parent_knitgraph.gauge)
         #
