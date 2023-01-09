@@ -29,26 +29,6 @@ class Pull_Direction(Enum):
     def __repr__(self):
         return self.value
 
-class Xfer_Direction(Enum):
-    """An enumerator of the two xfer directions of a loop"""
-    BtF = "BtF"
-    FtB = "FtB"
-
-    def opposite(self):
-        """
-        :return: returns the opposite pull direction of self
-        """
-        if self is Xfer_Direction.BtF:
-            return Xfer_Direction.FtB
-        else:
-            return Xfer_Direction.BtF
-
-    def __str__(self):
-        return self.value
-
-    def __repr__(self):
-        return self.value
-
 class Knit_Graph:
     """
     A class to knitted structures
