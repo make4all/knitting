@@ -4,13 +4,13 @@ from knitting_machine.final_knitgraph_to_knitout import Knitout_Generator
 
 from debugging_tools.simple_knitgraph_generator import Simple_Knitgraph_Generator
 from debugging_tools.polygon_generator import Polygon_Generator
-from pattern_modification.New_Mul_Hole_Generator_on_Sheet_KS import Hole_Generator_on_Sheet
-from pattern_modification.New_Mul_Hole_Generator_on_Tube_KS import Hole_Generator_on_Tube
-from pattern_modification.New_Pocket_Generator_on_Sheet_KS import Pocket_Generator_on_Sheet
-from pattern_modification.New_Pocket_Generator_on_Tube_KS import Pocket_Generator_on_Tube
-from pattern_modification.Handle_Generator_on_Sheet_KS import Handle_Generator_on_Sheet
-from pattern_modification.Handle_Generator_on_Tube_KS import Handle_Generator_on_Tube
-from pattern_modification.Strap_Generator_on_Tube_KS import Strap_Generator_on_Tube
+from Modification_Generator.New_Mul_Hole_Generator_on_Sheet_KS import Hole_Generator_on_Sheet
+from Modification_Generator.New_Mul_Hole_Generator_on_Tube_KS import Hole_Generator_on_Tube
+from Modification_Generator.New_Pocket_Generator_on_Sheet_KS import Pocket_Generator_on_Sheet
+from Modification_Generator.New_Pocket_Generator_on_Tube_KS import Pocket_Generator_on_Tube
+from Modification_Generator.Handle_Generator_on_Sheet_KS import Handle_Generator_on_Sheet
+from Modification_Generator.Handle_Generator_on_Tube_KS import Handle_Generator_on_Tube
+from Modification_Generator.Strap_Generator_on_Tube_KS import Strap_Generator_on_Tube
 
 # import os
 def test_stst():
@@ -18,11 +18,11 @@ def test_stst():
     note that if the generated polygon look weird, specifically wales are not align, probably caused by the improper gauge setting used
     below.
     """
-    # sheet_pattern = "all rs rows k. all ws rows p."
-    tube_pattern = "all rs rounds k. all ws rounds p."
+    sheet_pattern = "all rs rows k. all ws rows p."
+    # tube_pattern = "all rs rounds k. all ws rounds p."
     compiler = Knitspeak_Compiler()
-    knit_graph = compiler.compile(12, 10, object_type = 'tube', pattern = tube_pattern)
-    knit_graph.gauge = 1/3
+    knit_graph = compiler.compile(12, 10, object_type = 'sheet', pattern = sheet_pattern)
+    knit_graph.gauge = 1/2
     loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
     loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_wales() 
     node_to_course_and_wale = knit_graph.get_node_course_and_wale()

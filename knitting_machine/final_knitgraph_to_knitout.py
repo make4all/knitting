@@ -1,7 +1,6 @@
 """Script used to create knitout instructions from a knitgraph"""
 from turtle import position
 from typing import Dict, List, Optional, Tuple, Union
-from debugging_tools.new_knit_graph_viz import visualize_knitGraph
 from knit_graphs.Knit_Graph import Knit_Graph, Pull_Direction
 from knitting_machine.Machine_State import Machine_State, Needle, Pass_Direction, Yarn_Carrier
 from knitting_machine.machine_operations import outhook
