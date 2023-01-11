@@ -97,7 +97,7 @@ class Knitout_Generator:
     # only needed for tube
     def get_min_and_max_wale_id_on_course_on_bed(self):
         # if self.object_type == 'tube':
-        print(f'self.node_to_course_and_wale is {self.node_to_course_and_wale}, len is {len(self.node_to_course_and_wale)}')
+        print(f'self.node_to_course_and_wale in knitout is {self.node_to_course_and_wale}, len is {len(self.node_to_course_and_wale)}')
         for course_id, loop_ids in self._courses_to_loop_ids.items():
         # for course_id, loop_ids in self.old_courses_to_loop_id.items():
             max_wale_on_front = -10000
@@ -405,6 +405,8 @@ class Knitout_Generator:
                     self.xfer_strayed_loops_back_home(loops_not_home_yet)
                     loops_not_home_yet = []
             for loop_id in loop_ids:
+                # because below can cause error sometimes, so we print sth here to help debugging
+                print(f'loop_id is {loop_id} before is_strayed')
                 is_strayed = not ((self.node_on_front_or_back[loop_id] == 'f') == self._machine_state.get_needle_of_loop(loop_id).is_front)
                 if is_strayed:
                     loops_not_home_yet.append(loop_id)
@@ -729,6 +731,9 @@ class Knitout_Generator:
         # Dict[mirror_node: offset between rootnode and mirror_node], and 
         # store dict[split_node: offset between rootnode and splitnode] because offset between split node and root node is always 0 in our setting.
         split_offsets: Dict[int, int] = {} 
+        # below is used to document the root node that is right below the mirror node, which is used to help identify fake decrease that 
+        # consists of 
+        special_root_node: int 
         # .... only includes parents involved in a bindoff
         bind_off_loops: List[int] = []
         for loop_id in loop_ids:  # find target needle locations of each loop in the course
@@ -773,9 +778,9 @@ class Knitout_Generator:
                         # parent_offset then offset_needle.position is to avoid the error
                         target_needle = Needle(is_front=front_bed, position=parent_needle.position)
                         loop_id_to_target_needle[loop_id] = target_needle
-                        split_offset = self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*1 #here *1 not *self.wale_dist is because special unlike common decrease
-                        split_offsets[loop_id] = split_offset
-                        print(f'branch catched--loop id {loop_id} is a mirror node, and split offset is {split_offset}, parent_needle is {parent_needle}, target_needle is {target_needle}')
+                        # split_offset = int(self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*1) #here *1 not *self.wale_dist is because special unlike common decrease
+                        # split_offsets[loop_id] = split_offset
+                        # print(f'branch catched--loop id {loop_id} is a mirror node, and split offset is {split_offset}, parent_needle is {parent_needle}, target_needle is {target_needle}')
                     #detect the split node in split
                     elif self._knit_graph.loops[loop_id].yarn_id == 'pocket_yarn' or self._knit_graph.loops[loop_id].yarn_id == 'handle_yarn': #then this loop is a split node instead of a mirror node in a split
                         parent_needle = parent_loops_to_needles[parent_id]
@@ -827,9 +832,12 @@ class Knitout_Generator:
                         front_bed = False
                 parent_needle = parent_loops_to_needles[parent_id]
                 if self._knit_graph.yarn_start_direction == 'right to left':  
-                    parent_offset = -self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist #here for c
+                    if self.node_on_front_or_back[loop_id]=='f':
+                        parent_offset = int(-self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist) #here for c
+                    else:
+                        parent_offset = int(self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist)
                 else:
-                    parent_offset = self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist
+                    parent_offset = int(self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist)
                 offset_needle = parent_needle.offset(parent_offset)
                 target_needle = Needle(is_front=front_bed, position=offset_needle.position)
                 loop_id_to_target_needle[loop_id] = target_needle
@@ -857,9 +865,13 @@ class Knitout_Generator:
                 for parent_id in parent_ids:
                     parent_needle = parent_loops_to_needles[parent_id]
                     if self._knit_graph.yarn_start_direction == 'right to left':  
-                        offset = -self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist
+                        if self.node_on_front_or_back[loop_id] == 'f':
+                            offset = int(-self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist)
+                        else:  
+                            offset = int(self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist)
+                            print(f'in decrease detection, loop id is {loop_id}, parent_id is {parent_id}, offset is {offset}')
                     else:
-                        offset = self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist
+                        offset = int(self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist)
                     offset_needle = parent_needle.offset(offset)
                     pull_direction = self._knit_graph.graph[parent_id][loop_id]["pull_direction"]
                     if pull_direction == Pull_Direction.FtB:
@@ -882,14 +894,15 @@ class Knitout_Generator:
                     # if not pk/hdl:
                     if self.gauge != 1/3:
                         if self._knit_graph.yarn_start_direction == 'right to left':  
-                            offset = -self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist
-                        else:
-                            offset = self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist
+                            if self.node_on_front_or_back[loop_id] == 'f':
+                                offset = int(-self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist)
+                            else:
+                                offset = int(self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist)
                     else:
                         if self._knit_graph.yarn_start_direction == 'right to left':  
-                            offset = -self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
+                            offset = int(-self._knit_graph.graph[parent_id][loop_id]["parent_offset"])
                         else:
-                            offset = self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
+                            offset = int(self._knit_graph.graph[parent_id][loop_id]["parent_offset"])
                     if offset != 0:
                         decrease_offsets[parent_id] = offset
                     # if offset != 0:
@@ -928,24 +941,22 @@ class Knitout_Generator:
         front_cable_xfers: Dict[int, Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]]] = {}
         back_cable_xfers: Dict[int, Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]]] = {}
         for parent_loop, parent_needle in parent_loops_to_needles.items():
-            front_needle = Needle(is_front=True, position=parent_needle.position)
-            back_needle = parent_needle.opposite()
-            if parent_needle.is_front and (parent_loop in front_cable_offsets or parent_loop in back_cable_offsets):
-                xfers_to_back[front_needle] = (Instruction_Parameters(front_needle, needle_2=back_needle), Instruction_Type.Xfer)
+            opposite_needle = parent_needle.opposite()
+            if parent_loop in front_cable_offsets or parent_loop in back_cable_offsets:
+                xfers_to_back[parent_needle] = (Instruction_Parameters(parent_needle, needle_2=opposite_needle), Instruction_Type.Xfer)
             if parent_loop in front_cable_offsets:
                 offset = front_cable_offsets[parent_loop]
                 if offset not in front_cable_xfers:
                     front_cable_xfers[offset] = {}
-                offset_needle = front_needle.offset(offset)
-                front_cable_xfers[offset][back_needle] = (Instruction_Parameters(back_needle, needle_2=offset_needle), Instruction_Type.Xfer)
+                offset_needle = parent_needle.offset(offset)
+                front_cable_xfers[offset][opposite_needle] = (Instruction_Parameters(opposite_needle, needle_2=offset_needle), Instruction_Type.Xfer)
             elif parent_loop in back_cable_offsets:
                 offset = back_cable_offsets[parent_loop]
                 if offset not in back_cable_xfers:
                     back_cable_xfers[offset] = {}
-                offset_needle = front_needle.offset(offset)
-                back_cable_xfers[offset][back_needle] = (Instruction_Parameters(back_needle, needle_2=offset_needle), Instruction_Type.Xfer)
+                offset_needle = parent_needle.offset(offset)
+                back_cable_xfers[offset][opposite_needle] = (Instruction_Parameters(opposite_needle, needle_2=offset_needle), Instruction_Type.Xfer)
         carriage_pass = Carriage_Pass(None, xfers_to_back, self._machine_state)
-        # print('xfer to back', xfers_to_back)
         self._add_carriage_pass(carriage_pass, "cables to back")
         for offset, xfer_params in front_cable_xfers.items():
             carriage_pass = Carriage_Pass(None, xfer_params, self._machine_state)

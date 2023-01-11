@@ -598,11 +598,14 @@ class Hole_Generator_on_Tube:
                         child_wale_id = self._knit_graph.node_to_course_and_wale[nearest_neighbor][1]
                         # todo: if the parent offset of bind_off is larger than 2, we will consider using connect_hole_edge_node(). But if the parent offset in connect_\
                         # hole_edge_node is also larger than 2, we will send out a error and exit.
-                        if self._knit_graph.node_on_front_or_back[node] == 'f':
-                            pull_direction = Pull_Direction.BtF
-                        else:
-                            pull_direction = Pull_Direction.FtB
-                        self._knit_graph.connect_loops(node, nearest_neighbor, parent_offset = parent_wale_id - child_wale_id, pull_direction = pull_direction) 
+                        # if self._knit_graph.node_on_front_or_back[node] == 'f':
+                        #     pull_direction = Pull_Direction.BtF
+                        # else:
+                        #     pull_direction = Pull_Direction.FtB
+                        # we do not use above anymore because we have set pull direction label to the opposite for those on back bed in our current version of knitgraph visualizer
+                        pull_direction = Pull_Direction.BtF
+                        # self._knit_graph.connect_loops(node, nearest_neighbor, parent_offset = parent_wale_id - child_wale_id, pull_direction = pull_direction) 
+                        self._knit_graph.connect_loops(node, nearest_neighbor, parent_offset = int((parent_wale_id - child_wale_id)/self.wale_dist), pull_direction = pull_direction)
 
     def read_connectivity_from_knitgraph(self):
         """
@@ -674,6 +677,7 @@ class Hole_Generator_on_Tube:
         # print(f'self._knit_graph.graph.edges before reconnect stitch is {self._knit_graph.graph.edges}')
         self._knit_graph.graph.remove_edges_from([*self._knit_graph.graph.edges])
         for (parent_coor, parent_bed, child_coor, child_bed, attr_dict) in self.knitgraph_coors_connectivity:
+            #the reason why we 
             parent_node = self._knit_graph.course_and_wale_and_bed_to_node[(parent_coor, parent_bed)]
             child_node = self._knit_graph.course_and_wale_and_bed_to_node[(child_coor, child_bed)]
             pull_direction = attr_dict['pull_direction']

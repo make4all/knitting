@@ -232,6 +232,10 @@ class Knitspeak_Compiler:
                     f"Knitspeak Error: Loop {parent_loop_id} has already been used"
                 self.loop_ids_consumed_by_current_course.add(parent_loop_id)
                 print(f'loop_ids_consumed_by_current_course is {self.loop_ids_consumed_by_current_course}')
+                if is_row:
+                    parent_offset = parent_offset
+                elif is_round:
+                    parent_offset = -parent_offset
                 self.knit_graph.connect_loops(parent_loop_id, loop_id, stitch_def.pull_direction,
                                               stack_position, stitch_def.cabling_depth, parent_offset)
                 # self.knit_graph.connect_loops(parent_loop_id, loop_id, stitch_def.pull_direction,

@@ -140,7 +140,7 @@ class knitGraph_visualizer:
         G.add_nodes_from(pos.keys())
         #draw nodes
         for node in G.nodes():
-            nx.draw_networkx_nodes(G, pos, nodelist=[node], node_size = 600, node_color = self.node_color_property[node]['color'], alpha = self.node_color_property[node]['alpha'])
+            nx.draw_networkx_nodes(G, pos, nodelist=[node], node_size = 400, node_color = self.node_color_property[node]['color'], alpha = self.node_color_property[node]['alpha'])
         #draw edges
         for edge in [*self.edge_color_property.keys()]:
             nx.draw_networkx_edges(G, pos, edgelist=[edge], width=5.0, edge_color = self.edge_color_property[edge]['color'], style = 'solid', alpha = self.edge_color_property[edge]['alpha'])
@@ -151,9 +151,9 @@ class knitGraph_visualizer:
         nx.draw_networkx_edge_labels(G, pos, edge_labels = self.stitch_labels, label_pos=0.5, font_size=10, font_color='k', rotate=False)
         plt.show()
 
-        nt = nw.Network('1000px', '1000px')
-        nt.from_nx(G)
-        nt.show('nx.html')
+        # nt = nw.Network('1000px', '1000px')
+        # nt.from_nx(G)
+        # nt.show('nx.html')
     
     def visualize(self):
         self.get_nodes_position()

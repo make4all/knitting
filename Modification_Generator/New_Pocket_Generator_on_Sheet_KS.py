@@ -505,6 +505,6 @@ class Pocket_Generator_on_Sheet:
                 neighbor_node = self.parent_knitgraph_course_and_wale_to_node[(course, wale+1)] 
                 print(f'haha neighbor_node is {neighbor_node}, node_to_connect  is {node_to_connect }')
                 pull_direction = self.pocket_graph.graph[neighbor_node][node_to_connect]['pull_direction']
-                self.pocket_graph.connect_loops(node, node_to_connect, pull_direction = pull_direction, parent_offset = (self.wale_dist-1))
+                self.pocket_graph.connect_loops(node, node_to_connect, pull_direction = pull_direction, parent_offset = -(self.wale_dist-1)/self.wale_dist)
         return self.pocket_graph
   

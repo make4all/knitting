@@ -158,11 +158,11 @@ class Knit_Graph:
                 if len(parent_ids) > 0:
                     for parent_id in self.graph.predecessors(loop_id):
                         parent_offset = self.graph[parent_id][loop_id]['parent_offset']
-                        # wale = self.loop_ids_to_wale[parent_id] - parent_offset*self.wale_dist
-                        if self.object_type == 'sheet':
-                            wale = self.loop_ids_to_wale[parent_id] - parent_offset*self.wale_dist
-                        elif self.object_type == 'tube':
-                            wale = self.loop_ids_to_wale[parent_id] + parent_offset*self.wale_dist
+                        wale = self.loop_ids_to_wale[parent_id] - parent_offset*self.wale_dist
+                        # if self.object_type == 'sheet':
+                        #     wale = self.loop_ids_to_wale[parent_id] - parent_offset*self.wale_dist
+                        # elif self.object_type == 'tube':
+                        #     wale = self.loop_ids_to_wale[parent_id] + parent_offset*self.wale_dist
                         self.loop_ids_to_wale[loop_id] = wale
                         if wale not in self.wale_to_loop_ids:
                             self.wale_to_loop_ids[wale] = []
