@@ -143,12 +143,12 @@ class knitGraph_visualizer:
             nx.draw_networkx_nodes(G, pos, nodelist=[node], node_size = 400, node_color = self.node_color_property[node]['color'], alpha = self.node_color_property[node]['alpha'])
         #draw edges
         for edge in [*self.edge_color_property.keys()]:
-            nx.draw_networkx_edges(G, pos, edgelist=[edge], width=5.0, edge_color = self.edge_color_property[edge]['color'], style = 'solid', alpha = self.edge_color_property[edge]['alpha'])
+            nx.draw_networkx_edges(G, pos, edgelist=[edge], width=3.0, edge_color = self.edge_color_property[edge]['color'], style = 'solid', alpha = self.edge_color_property[edge]['alpha'])
         #draw node labels
         node_labels = {x: x for x in G.nodes}
-        nx.draw_networkx_labels(G, pos, labels=node_labels, font_size=12, font_color='w')
+        nx.draw_networkx_labels(G, pos, labels=node_labels, font_size=9, font_color='w')
         #draw edge labels
-        nx.draw_networkx_edge_labels(G, pos, edge_labels = self.stitch_labels, label_pos=0.5, font_size=10, font_color='k', rotate=False)
+        nx.draw_networkx_edge_labels(G, pos, edge_labels = self.stitch_labels, label_pos=0.5, font_size=5, font_color='k', rotate=False)
         plt.show()
 
         # nt = nw.Network('1000px', '1000px')

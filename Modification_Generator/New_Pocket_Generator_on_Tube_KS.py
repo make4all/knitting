@@ -463,6 +463,17 @@ class Pocket_Generator_on_Tube:
             # pull_direction = pull_direction.opposite() since when we view the knitgraph created, we view from the back side of the child fabric.
             self.pocket_graph.connect_loops(parent_node, child_node, pull_direction = Pull_Direction.BtF, depth = depth, parent_offset = parent_offset)
     
+    def get_attr_by_nodes_coor(self, Parent_Coor: Tuple[int, int], Child_Coor: Tuple[int, int], knitgraph_connectivity: List[Tuple]):
+        # print(f'knitgraph_connectivity is {knitgraph_connectivity}')
+        for connectivity in knitgraph_connectivity:
+            # print(f'parent_coor is {parent_coor}, Parent_Coor is {Parent_Coor}, child_coor is {child_coor}, Child_Coor is {Child_Coor}')
+            parent_coor = connectivity[0]
+            child_coor = connectivity[1]
+            attr_dict = connectivity[2]
+            if (Parent_Coor == parent_coor) and (Child_Coor == child_coor):
+                # print('find it!')
+                return attr_dict
+
     def reconnect_branches_on_the_side(self, root_nodes_smaller_wale_side_parent, root_nodes_bigger_wale_side_parent):
         """"
         this is used to update the connecting edges for all branch structures on the sides.
@@ -475,8 +486,15 @@ class Pocket_Generator_on_Tube:
                 for mirror_node, split_node in [*root_nodes_smaller_wale_side_parent[edge_index].keys()]:
                     root_nodes = root_nodes_smaller_wale_side_parent[edge_index][(mirror_node, split_node)]
                     for root_node in root_nodes:
-                        self.pocket_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB, parent_offset = -1 if self.is_front_patch == False else 1)
-                        self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 0)
+                        root_node_coor = self.parent_knitgraph.node_to_course_and_wale[root_node]
+                        mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
+                        # print(f'root_node is {root_node}, root_node_coor is {root_node_coor}, mirror_node is {mirror_node}, mirror_node_coor {mirror_node_coor}, self.parent_knitgraph_coors_connectivity is {self.parent_knitgraph_coors_connectivity}')
+                        attr_dict = self.get_attr_by_nodes_coor(root_node_coor, mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
+                        depth = attr_dict['depth']
+                        parent_offset = attr_dict['parent_offset']
+                        self.pocket_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
+                        # self.pocket_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB)
+                        self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = -1 if self.is_front_patch == False else 1)
         # then iterate over edge_connection_right_side to see which edge to connect
         num_of_right_edges = len(self.edge_connection_right_side)
         for edge_index in range(num_of_right_edges):
@@ -485,8 +503,14 @@ class Pocket_Generator_on_Tube:
                 for mirror_node, split_node in [*root_nodes_bigger_wale_side_parent[edge_index].keys()]:
                     root_nodes = root_nodes_bigger_wale_side_parent[edge_index][(mirror_node, split_node)]
                     for root_node in root_nodes:
-                        self.pocket_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB, parent_offset = -1 if self.is_front_patch == False else 1)
-                        self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 0)
+                        root_node_coor = self.parent_knitgraph.node_to_course_and_wale[root_node]
+                        mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
+                        attr_dict = self.get_attr_by_nodes_coor(root_node_coor, mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
+                        depth = attr_dict['depth']
+                        parent_offset = attr_dict['parent_offset']
+                        self.pocket_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
+                        # self.pocket_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB)
+                        self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = -1 if self.is_front_patch == False else 1)
 
     def reconnect_bottom_branches(self):
         """
@@ -502,12 +526,17 @@ class Pocket_Generator_on_Tube:
             bottom_root_nodes[(mirror_node, split_node)] = []
             mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
             parent_coors = self.find_parent_coors(child_coor = mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
-            assert len(parent_coors) > 0, f'this mirror node {mirror_node} can not form a branch structure because it has no parent'
+            assert len(parent_coors) > 0, f'this mirror node {mirror_node} at {mirror_node_coor} can not form a branch structure because it has no parent'
             for parent_coor in parent_coors:
                 root_node = self.parent_knitgraph_course_and_wale_to_node[parent_coor]
                 bottom_root_nodes[(mirror_node, split_node)].append(root_node)
-                self.pocket_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB, parent_offset = -1 if self.is_front_patch == False else 1)
-                self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 0)
+                root_node_coor = self.parent_knitgraph.node_to_course_and_wale[root_node]
+                attr_dict = self.get_attr_by_nodes_coor(root_node_coor, mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
+                depth = attr_dict['depth']
+                parent_offset = attr_dict['parent_offset']
+                self.pocket_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
+                # self.pocket_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB)
+                self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = -1 if self.is_front_patch == False else 1)
         print(f'bottom_root_nodes is {bottom_root_nodes}')
 
     def build_pocket_graph(self) -> Knit_Graph:   
@@ -563,6 +592,6 @@ class Pocket_Generator_on_Tube:
                 neighbor_node = self.parent_knitgraph_course_and_wale_to_node[(course, wale+1)] if self.is_front_patch == False else self.parent_knitgraph_course_and_wale_to_node[(course, wale-1)]
                 print(f'haha neighbor_node is {neighbor_node}, node_to_connect is {node_to_connect}')
                 pull_direction = self.pocket_graph.graph[neighbor_node][node_to_connect]['pull_direction']
-                self.pocket_graph.connect_loops(node, node_to_connect, pull_direction = pull_direction, parent_offset = 1 if self.is_front_patch == True else -1)
+                self.pocket_graph.connect_loops(node, node_to_connect, pull_direction = pull_direction, parent_offset = 1/self.wale_dist if self.is_front_patch == True else -1/self.wale_dist)
         return self.pocket_graph
   

@@ -466,6 +466,17 @@ class Handle_Generator_on_Tube:
             # pull_direction = pull_direction.opposite() since when we view the knitgraph created, we view from the back side of the child fabric.
             self.handle_graph.connect_loops(parent_node, child_node, pull_direction = Pull_Direction.BtF, depth = depth, parent_offset = parent_offset)
     
+    def get_attr_by_nodes_coor(self, Parent_Coor: Tuple[int, int], Child_Coor: Tuple[int, int], knitgraph_connectivity: List[Tuple]):
+        # print(f'knitgraph_connectivity is {knitgraph_connectivity}')
+        for connectivity in knitgraph_connectivity:
+            # print(f'parent_coor is {parent_coor}, Parent_Coor is {Parent_Coor}, child_coor is {child_coor}, Child_Coor is {Child_Coor}')
+            parent_coor = connectivity[0]
+            child_coor = connectivity[1]
+            attr_dict = connectivity[2]
+            if (Parent_Coor == parent_coor) and (Child_Coor == child_coor):
+                # print('find it!')
+                return attr_dict
+
     def reconnect_branches_on_the_side(self, root_nodes_smaller_wale_side_parent, root_nodes_bigger_wale_side_parent):
         """"
         this is used to update the connecting edges for all branch structures on the sides.
@@ -476,16 +487,29 @@ class Handle_Generator_on_Tube:
             for mirror_node, split_node in [*root_nodes_smaller_wale_side_parent[edge_index].keys()]:
                 root_nodes = root_nodes_smaller_wale_side_parent[edge_index][(mirror_node, split_node)]
                 for root_node in root_nodes:
-                    self.handle_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB, parent_offset = -1 if self.is_front_patch == False else 1)
-                    self.handle_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 0)
+                    root_node_coor = self.parent_knitgraph.node_to_course_and_wale[root_node]
+                    mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
+                    # print(f'root_node is {root_node}, root_node_coor is {root_node_coor}, mirror_node is {mirror_node}, mirror_node_coor {mirror_node_coor}, self.parent_knitgraph_coors_connectivity is {self.parent_knitgraph_coors_connectivity}')
+                    attr_dict = self.get_attr_by_nodes_coor(root_node_coor, mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
+                    depth = attr_dict['depth']
+                    parent_offset = attr_dict['parent_offset']
+                    self.handle_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
+                    # self.handle_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB)
+                    self.handle_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = -1 if self.is_front_patch == False else 1)
         # then iterate over edge_connection_right_side to see which edge to connect
         num_of_right_edges = len(root_nodes_bigger_wale_side_parent)
         for edge_index in range(num_of_right_edges):
             for mirror_node, split_node in [*root_nodes_bigger_wale_side_parent[edge_index].keys()]:
                 root_nodes = root_nodes_bigger_wale_side_parent[edge_index][(mirror_node, split_node)]
                 for root_node in root_nodes:
-                    self.handle_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB, parent_offset = -1 if self.is_front_patch == False else 1)
-                    self.handle_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 0)
+                    root_node_coor = self.parent_knitgraph.node_to_course_and_wale[root_node]
+                    mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
+                    attr_dict = self.get_attr_by_nodes_coor(root_node_coor, mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
+                    depth = attr_dict['depth']
+                    parent_offset = attr_dict['parent_offset']
+                    self.handle_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
+                    # self.handle_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB)
+                    self.handle_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = -1 if self.is_front_patch == False else 1)
 
     def build_handle_graph(self) -> Knit_Graph:   
         self.generate_polygon_from_keynodes()
