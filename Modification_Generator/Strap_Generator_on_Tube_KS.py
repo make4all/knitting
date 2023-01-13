@@ -59,11 +59,13 @@ class Strap_Generator_on_Tube:
         self.child_knitgraph.node_on_front_or_back: Dict[int, str] = {}
         #     
         self.tube_yarn_carrier_id: int = tube_yarn_carrier_id
-        self.tube_yarn: Yarn = Yarn("tube_yarn", self.strap_graph, carrier_id=self.tube_yarn_carrier_id)
+        self.tube_yarn: Yarn = Yarn("parent_yarn", self.strap_graph, carrier_id=self.tube_yarn_carrier_id)
         self.strap_graph.add_yarn(self.tube_yarn) 
         # note that here we haven't added yarns used for straps into self.strap_graph yet, we will do this in order_strap_coor_for_graph_building() below.
         self.strap_graph.node_to_course_and_wale: Dict[int, Tuple(int, int)]
         self.strap_graph.node_on_front_or_back: Dict[int, str] = {}
+        self.branches_on_front: Dict[Tuple[int, int]: List[int]] = {} #  = {(mirror_node, split_node): list[root_nodes]}
+        self.branches_on_back: Dict[Tuple[int, int]: List[int]] = {} # = {(mirror_node, split_node): list[root_nodes]}
 
     def check_strap_coor_validity(self):
         for strap_coor_info in self.straps_coor_info.values():
@@ -94,6 +96,7 @@ class Strap_Generator_on_Tube:
             self.ordered_straps_yarns.append(yarn)
             self.strap_graph.add_yarn(yarn) 
             i+=1
+        print(f'self.ordered_strap_coor is {self.ordered_strap_coor}')
      
     def generate_polygon_from_keynodes(self):
         #derive node_to_course_and_wale from above starting_nodes_coor and ending_nodes_coor
@@ -101,7 +104,6 @@ class Strap_Generator_on_Tube:
         node = 0
         strap_starting_course = max([*self.parent_knitgraph.course_to_loop_ids.keys()])
         #normally we would need a different yarn for each half of a straps, i.e., 1 strap would need 2 yarns.
-        print(f'self.ordered_strap_coor is {self.ordered_strap_coor}')
         for i, strap_coor in enumerate(self.ordered_strap_coor):
             strap_to_node_to_course_and_wale = {}
             if i<int(len(self.ordered_strap_coor)/2):
@@ -162,7 +164,7 @@ class Strap_Generator_on_Tube:
         for node in self.child_knitgraph.graph.nodes:
             course_id = node_to_course_and_wale[node][0]
             course_to_loop_ids[course_id].append(node)
-        print(f'course_to_loop_ids is {course_to_loop_ids}')
+        print(f'course_to_loop_ids for self.child_knitgraph is {course_to_loop_ids}')
         self.child_knitgraph.course_to_loop_ids = course_to_loop_ids
         #reverse node_to_course_and_wale to get course_and_wale_to_node
         course_and_wale_to_node = {}
@@ -176,10 +178,7 @@ class Strap_Generator_on_Tube:
                 #find upper neighbor node
                 if (course_id + 1, wale_id) in course_and_wale_to_node.keys():
                     child_loop = course_and_wale_to_node[(course_id + 1, wale_id)]
-                    if self.child_knitgraph.node_on_front_or_back[node] == self.child_knitgraph.node_on_front_or_back[child_loop] == 'b':
-                        self.child_knitgraph.connect_loops(node, child_loop, pull_direction = Pull_Direction.BtF)
-                    else:
-                        self.child_knitgraph.connect_loops(node, child_loop, pull_direction = Pull_Direction.BtF)
+                    self.child_knitgraph.connect_loops(node, child_loop, pull_direction = Pull_Direction.BtF)
         KnitGraph_Visualizer = knitGraph_visualizer(knit_graph = self.child_knitgraph)
         KnitGraph_Visualizer.visualize()
              
@@ -270,6 +269,14 @@ class Strap_Generator_on_Tube:
             self.parent_knitgraph_course_and_wale_to_node[(grow_course_id, wale_id)] = loop_id
             self.parent_knitgraph.course_to_loop_ids[grow_course_id].append(loop_id)
             self.strap_graph.node_on_front_or_back[loop_id] = 'f' if bed == 'b' else 'b'
+            # self.strap_graph.node_on_front_or_back[loop_id] = 'None' #here we use None to indicate the loop will be dropped immediately it gets knitted
+
+    def find_parent_coors(self, child_coor: Tuple[int, int], knitgraph_connectivity: List[Tuple]):
+        parent_coors = []
+        for connectivity in knitgraph_connectivity:
+            if child_coor == connectivity[1]:
+                parent_coors.append(connectivity[0])
+        return parent_coors
 
     def build_front_straps(self):
         assert len(self.ordered_straps_node_to_course_and_wale)%2==0, f'suspicious number of straps in given strap info'
@@ -295,11 +302,17 @@ class Strap_Generator_on_Tube:
         #connect bottom row of child fabric to splitting row
         # print(f'self.child_knitgraph_course_and_wale_to_node is {self.child_knitgraph_course_and_wale_to_node}')
         for wale_id in bottom_course_wale_ids:
-            parent_loop_id = self.parent_knitgraph_course_and_wale_to_node[(strap_starting_course-1, wale_id)] 
-            loop_id = self.child_knitgraph_course_and_wale_to_node[(strap_starting_course, wale_id)]
-            # print(f'parent_loop_id is {parent_loop_id}, loop_id is {loop_id}')
-            self.strap_graph.connect_loops(parent_loop_id, loop_id, pull_direction = Pull_Direction.BtF)    
-
+            mirror_node = self.parent_knitgraph_course_and_wale_to_node[(strap_starting_course, wale_id)] 
+            split_node = self.child_knitgraph_course_and_wale_to_node[(strap_starting_course, wale_id)] 
+            parent_nodes = []
+            mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
+            parent_coors = self.find_parent_coors(child_coor = mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
+            assert len(parent_coors) > 0, f'this mirror node {mirror_node} can not form a branch structure because it has no parent'
+            for parent_coor in parent_coors:
+                parent_nodes.append(self.parent_knitgraph_course_and_wale_to_node[parent_coor])
+            self.branches_on_front[(mirror_node, split_node)] = parent_nodes
+        print(f'self.branches_on_front is {self.branches_on_front}')
+     
     def build_back_straps(self):
         half = int(len(self.ordered_straps_node_to_course_and_wale)/2)
         strap_starting_course = [*self.parent_knitgraph_course_id_to_wale_ids.keys()][-1]
@@ -320,10 +333,16 @@ class Strap_Generator_on_Tube:
         #connect bottom row of child fabric to splitting row
         # print(f'self.child_knitgraph_course_and_wale_to_node is {self.child_knitgraph_course_and_wale_to_node}')
         for wale_id in bottom_course_wale_ids:
-            parent_loop_id = self.parent_knitgraph_course_and_wale_to_node[(strap_starting_course-1, wale_id)] 
-            loop_id = self.child_knitgraph_course_and_wale_to_node[(strap_starting_course, wale_id)]
-            # print(f'parent_loop_id is {parent_loop_id}, loop_id is {loop_id}')
-            self.strap_graph.connect_loops(parent_loop_id, loop_id, pull_direction = Pull_Direction.BtF) 
+            mirror_node = self.parent_knitgraph_course_and_wale_to_node[(strap_starting_course, wale_id)] 
+            split_node = self.child_knitgraph_course_and_wale_to_node[(strap_starting_course, wale_id)] 
+            parent_nodes = []
+            mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
+            parent_coors = self.find_parent_coors(child_coor = mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
+            assert len(parent_coors) > 0, f'this mirror node {mirror_node} can not form a branch structure because it has no parent'
+            for parent_coor in parent_coors:
+                parent_nodes.append(self.parent_knitgraph_course_and_wale_to_node[parent_coor])
+            self.branches_on_back[(mirror_node, split_node)] = parent_nodes
+        print(f'self.branches_on_back is {self.branches_on_back}')
 
     def connect_stitches_on_knitgraph(self):
         grow_course_id = [*self.parent_knitgraph_course_id_to_wale_ids.keys()][-1]
@@ -332,11 +351,7 @@ class Strap_Generator_on_Tube:
             child_node = self.parent_knitgraph_course_and_wale_to_node[child_coor]
             pull_direction = attr_dict['pull_direction']
             if self.parent_knitgraph.node_to_course_and_wale[child_node][0] == grow_course_id:
-                pull_direction = Pull_Direction.BtF
-                # if self.strap_graph.node_on_front_or_back[child_node] == 'b':
-                #     pull_direction = Pull_Direction.FtB
-                # else:
-                #     pull_direction = Pull_Direction.BtF
+                pull_direction = Pull_Direction.FtB
             depth = attr_dict['depth']
             parent_offset = attr_dict['parent_offset']
             self.strap_graph.connect_loops(parent_node, child_node, pull_direction = pull_direction, depth = depth, parent_offset = parent_offset)
@@ -346,15 +361,46 @@ class Strap_Generator_on_Tube:
             pull_direction = attr_dict['pull_direction']
             depth = attr_dict['depth']
             parent_offset = attr_dict['parent_offset']
-            # pull_direction = pull_direction.opposite() since when we view the knitgraph created, we view from the back side of the child fabric.
             self.strap_graph.connect_loops(parent_node, child_node, pull_direction = pull_direction, depth = depth, parent_offset = parent_offset)
+    
+    def get_attr_by_nodes_coor(self, Parent_Coor: Tuple[int, int], Child_Coor: Tuple[int, int], knitgraph_connectivity: List[Tuple]):
+        # print(f'knitgraph_connectivity is {knitgraph_connectivity}')
+        for connectivity in knitgraph_connectivity:
+            # print(f'parent_coor is {parent_coor}, Parent_Coor is {Parent_Coor}, child_coor is {child_coor}, Child_Coor is {Child_Coor}')
+            parent_coor = connectivity[0]
+            child_coor = connectivity[1]
+            attr_dict = connectivity[2]
+            if (Parent_Coor == parent_coor) and (Child_Coor == child_coor):
+                # print('find it!')
+                return attr_dict
+
+    def reconnect_branches(self):
+        for (mirror_node, split_node) in self.branches_on_front:
+            root_nodes = self.branches_on_front[(mirror_node, split_node)]
+            for root_node in root_nodes:
+                root_node_coor = self.parent_knitgraph.node_to_course_and_wale[root_node]
+                mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
+                # print(f'root_node is {root_node}, root_node_coor is {root_node_coor}, mirror_node is {mirror_node}, mirror_node_coor {mirror_node_coor}, self.parent_knitgraph_coors_connectivity is {self.parent_knitgraph_coors_connectivity}')
+                attr_dict = self.get_attr_by_nodes_coor(root_node_coor, mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
+                depth = attr_dict['depth']
+                parent_offset = attr_dict['parent_offset']
+                self.strap_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
+                self.strap_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 0)
+        for (mirror_node, split_node) in self.branches_on_back:
+            root_nodes = self.branches_on_back[(mirror_node, split_node)]
+            for root_node in root_nodes:
+                root_node_coor = self.parent_knitgraph.node_to_course_and_wale[root_node]
+                mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
+                # print(f'root_node is {root_node}, root_node_coor is {root_node_coor}, mirror_node is {mirror_node}, mirror_node_coor {mirror_node_coor}, self.parent_knitgraph_coors_connectivity is {self.parent_knitgraph_coors_connectivity}')
+                attr_dict = self.get_attr_by_nodes_coor(root_node_coor, mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
+                depth = attr_dict['depth']
+                parent_offset = attr_dict['parent_offset']
+                self.strap_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
+                self.strap_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset =0)
     
     def bind_off(self):
         wale_ids = []
         course_id = max([*self.child_knitgraph.course_to_loop_ids.keys()])
-        # for loop_id in self.child_knitgraph.course_to_loop_ids[course_id]:
-        #     wale_id = self.child_knitgraph.node_to_course_and_wale[loop_id][1]
-        #     wale_ids.append(wale_id)
         self.child_knitgraph.course_to_loop_ids[course_id+1] = []
         # organize wale_ids for each pair of strap (a front and back strap makes a pair)
         front_strap_wales = list(self.front_straps_top_course_wale_ids.values())
@@ -453,9 +499,10 @@ class Strap_Generator_on_Tube:
         self.build_back_straps()
         #merge node_to_course_and_wale on parent_knitgraph and child_knitgraph
         self.connect_stitches_on_knitgraph()
+        self.reconnect_branches()
         self.bind_off()
+        print(f'self.child_knitgraph.node_to_course_and_wale is {self.child_knitgraph.node_to_course_and_wale}, len is {len(self.child_knitgraph.node_to_course_and_wale)}; self.parent_knitgraph.node_to_course_and_wale is {self.parent_knitgraph.node_to_course_and_wale}, len is {len(self.parent_knitgraph.node_to_course_and_wale)}')
         self.strap_graph.node_to_course_and_wale = self.parent_knitgraph.node_to_course_and_wale|self.child_knitgraph.node_to_course_and_wale
-        # KnitGraph_Visualizer = knitGraph_visualizer(knit_graph = self.strap_graph, object_type = 'strap')
-        # KnitGraph_Visualizer.visualize()
+        print(f'len(self.strap_graph.node_to_course_and_wale) is {len(self.strap_graph.node_to_course_and_wale)}')
         return self.strap_graph
   

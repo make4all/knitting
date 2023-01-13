@@ -5,8 +5,6 @@ from knit_graphs.Knit_Graph import Knit_Graph
 from knit_graphs.Yarn import Yarn #just for the draw_rebulit_graph(), which we afterwards will move to New_Hole_Generator Module
 import matplotlib.pyplot as plt
 
-from pyvis import network as nw
-
 
 class knitGraph_visualizer:
     """
@@ -18,14 +16,9 @@ class knitGraph_visualizer:
         self.object_type = knit_graph.object_type
         # self.yarn_start_direction = yarn_start_direction
         self.yarn_start_direction =  knit_graph.yarn_start_direction
+        print(f'self.yarn_start_direction in viz is {self.yarn_start_direction}, knit_graph.yarn_start_direction in viz is {knit_graph.yarn_start_direction}')
         self.node_to_course_and_wale: Dict[int, (int, int)] = knit_graph.node_to_course_and_wale
         self.node_on_front_or_back: Dict[int, str] = knit_graph.node_on_front_or_back
-        # commented out below because we have not yet used "self.course_and_wale_and_bed_to_node" here.
-        # self.course_and_wale_and_bed_to_node: Dict[((int, int), str), int] = {}
-        # for node in self.node_on_front_or_back.keys():
-        #     course_and_wale = self.node_to_course_and_wale[node]
-        #     front_or_back = self.node_on_front_or_back[node]
-        #     self.course_and_wale_and_bed_to_node[(course_and_wale, front_or_back)] = node
         print('node_to_course_and_wale viz', self.node_to_course_and_wale)
         print('node_on_front_or_back viz', self.node_on_front_or_back)
         # print('course_and_wale_and_bed_to_node viz', self.course_and_wale_and_bed_to_node)
@@ -39,9 +32,6 @@ class knitGraph_visualizer:
         self.edge_color_property = {}
         self.stitch_labels = {}
         self.yarns = [*knit_graph.yarns.values()]
-        # if len(self.yarns) == 1:
-        #     print(f'yarn edges is {self.yarns[0].yarn_graph.edges}')
-        # print('yarns', self.yarns)
         #distance related param for tube
         self.h_back2front, self.w_back2front, self.w_between_node, self.h_course = 0.4, 0.1, 0.5, 1
     #below are skeletal functions to complete visualization
@@ -151,9 +141,6 @@ class knitGraph_visualizer:
         nx.draw_networkx_edge_labels(G, pos, edge_labels = self.stitch_labels, label_pos=0.5, font_size=5, font_color='k', rotate=False)
         plt.show()
 
-        # nt = nw.Network('1000px', '1000px')
-        # nt.from_nx(G)
-        # nt.show('nx.html')
     
     def visualize(self):
         self.get_nodes_position()

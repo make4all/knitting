@@ -36,7 +36,7 @@ class Knitout_Generator:
         self.node_on_front_or_back = knit_graph.node_on_front_or_back
 
         # get the min wale and max wale of the whole knitgraph, which is used for guiding cast-on of new yarns
-        print(f'self.node_to_course_and_wale in knitout is {self.node_to_course_and_wale}')
+        # print(f'self.node_to_course_and_wale in knitout is {self.node_to_course_and_wale}')
         self.min_wale = min(self.node_to_course_and_wale.values(), key=lambda x: x[1])[1]
         self.max_wale = max(self.node_to_course_and_wale.values(), key=lambda x: x[1])[1]
         # 
@@ -780,26 +780,26 @@ class Knitout_Generator:
                         loop_id_to_target_needle[loop_id] = target_needle
                         # get the other successor, i.e., split node
                         for successor in successors:
-                            if self._knit_graph.loops[successor].yarn_id == 'pocket_yarn' or self._knit_graph.loops[successor].yarn_id == 'handle_yarn':
+                            if self._knit_graph.loops[successor].yarn_id == 'pocket_yarn' or self._knit_graph.loops[successor].yarn_id == 'handle_yarn' or ('strap_yarn' in self._knit_graph.loops[successor].yarn_id):
                                 split_offset = int(self._knit_graph.graph[parent_id][successor]["parent_offset"]*1)
                                 # split_offset = int(self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*1) #here *1 not *self.wale_dist is because special unlike common decrease
                         split_offsets[loop_id] = split_offset
                         print(f'branch catched--loop id {loop_id} is a mirror node, and split offset is {split_offset}, parent_needle is {parent_needle}, target_needle is {target_needle}')
                     # detect the split node in split
-                    elif self._knit_graph.loops[loop_id].yarn_id == 'pocket_yarn' or self._knit_graph.loops[loop_id].yarn_id == 'handle_yarn': #then this loop is a split node instead of a mirror node in a split
+                    elif self._knit_graph.loops[loop_id].yarn_id == 'pocket_yarn' or self._knit_graph.loops[loop_id].yarn_id == 'handle_yarn' or ('strap_yarn' in self._knit_graph.loops[loop_id].yarn_id): #then this loop is a split node instead of a mirror node in a split
                         parent_needle = parent_loops_to_needles[parent_id]
-                        # parent_offset =  self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
-                        # offset_needle = parent_needle.offset(parent_offset)
-                        # bed = self.node_on_front_or_back[loop_id]
-                        # target_needle = Needle(is_front = (loop_bed == 'f'), position=offset_needle.position)
+                        parent_offset =  self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
+                        offset_needle = parent_needle.offset(parent_offset)
+                        bed = self.node_on_front_or_back[loop_id]
+                        target_needle = Needle(is_front = (bed == 'f'), position=offset_needle.position)
                         #if we use above method to identify target node, we would get wrong knitout because offset between root nodes and 
                         # split node are always 0 in out setting, however, they are not in the same bed. so we use below method.
-                        if self._knit_graph.yarn_start_direction == 'right to left':   
-                            position = self.courses_to_max_wale_on_front[self._loop_id_to_courses[loop_id]] - self.node_to_course_and_wale[loop_id][1]
-                        else:
-                            position = self.node_to_course_and_wale[loop_id][1]
-                        bed = self.node_on_front_or_back[loop_id]
-                        target_needle = Needle(is_front = (bed == 'f'), position=position)
+                        # if self._knit_graph.yarn_start_direction == 'right to left':   
+                        #     position = self.courses_to_max_wale_on_front[self._loop_id_to_courses[loop_id]] - self.node_to_course_and_wale[loop_id][1]
+                        # else:
+                        #     position = self.node_to_course_and_wale[loop_id][1]
+                        # bed = self.node_on_front_or_back[loop_id]
+                        # target_needle = Needle(is_front = (bed == 'f'), position=position)
                         loop_id_to_target_needle[loop_id] = target_needle
                         self.nodes_on_patch_side.append(loop_id)
                         print(f'branch catched--loop id {loop_id} is a split node, parent_needle is {parent_needle}, target_needle is {target_needle}')
@@ -862,7 +862,7 @@ class Knitout_Generator:
                     print(f'k/p stitch detected! loop id is {loop_id}, parent_offset is {parent_offset}, target_needle is {target_needle}')
             # detect decrease
             is_bindoff: bool = False
-            if len(parent_ids) > 1: # decrease, the bottom parent loop in the stack  will be on the target needle
+            if len(parent_ids) > 1: # decrease, the bottom parent loop in the stack will be on the target needle
                 # screen to get rid of fake decrease
                 if self._knit_graph.loops[loop_id].yarn_id == 'pocket_yarn' or self._knit_graph.loops[loop_id].yarn_id == 'handle_yarn':
                     actual_parents = []

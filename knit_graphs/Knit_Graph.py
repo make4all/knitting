@@ -44,7 +44,7 @@ class Knit_Graph:
          A list of Yarns used in the graph
     """
 
-    def __init__(self, yarn_start_direction: Optional[str] = 'right to left', gauge: Optional[int] = 1):
+    def __init__(self, yarn_start_direction: Optional[str] = 'right to left', gauge: Optional[int] = 1): 
         self.graph: networkx.DiGraph = networkx.DiGraph()
         self.loops: Dict[int, Loop] = {}
         self.last_loop_id: int = -1

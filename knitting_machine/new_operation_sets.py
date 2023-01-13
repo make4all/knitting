@@ -200,7 +200,7 @@ class Carriage_Pass:
         :return: The string for the line of code executing the instruction
         """
         # print(self.instruction_type(needle))
-        print(f'direction is {self._direction}, instruction_types is {self.needles_to_instruction_parameters_and_types[needle][1]}, needle is {needle}, involved loop is {self.needles_to_instruction_parameters_and_types[needle][0]._involved_loop}')
+        print(f'direction is {self._direction}, instruction_types is {self.needles_to_instruction_parameters_and_types[needle][1]}, needle is {needle}, carrier is {self.needles_to_instruction_parameters_and_types[needle][0].carrier}, involved loop is {self.needles_to_instruction_parameters_and_types[needle][0]._involved_loop}')
         if self.instruction_type(needle).value == Instruction_Type.Knit.value:
             return self.needles_to_instruction_parameters_and_types[needle][0].knit(self.machine_state, self.direction)
         elif self.instruction_type(needle).value == Instruction_Type.Tuck.value:
