@@ -27,13 +27,13 @@ def test_stst():
     tube_pattern = "all rs rounds k. all ws rounds p."
     tube_yarn_carrier_id = 3
     compiler = Knitspeak_Compiler(carrier_id = tube_yarn_carrier_id)
-    knit_graph = compiler.compile(12, 10, object_type = 'tube', pattern = tube_pattern)
+    knit_graph = compiler.compile(12, 2, object_type = 'tube', pattern = tube_pattern)
     # note that for gauge: 
     # if it is handle or pocket on tube, the gauge is fixed to be 1/3 (though can be smaller in practice) in our pipeline; 
     # if it is handle or pocket on tube, the gauge is fixed at 1/2 (though can be smaller in practice) in our pipeline; 
     # if it is hole or tube or sheet, the gauge can be set by users to be any number.
     # if it is strap (which can only be on tube), the gauge 
-    knit_graph.gauge = 1/5
+    knit_graph.gauge = 1/2
     loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
     loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_wales() 
     node_to_course_and_wale = knit_graph.get_node_course_and_wale()

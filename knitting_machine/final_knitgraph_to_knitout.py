@@ -1073,11 +1073,17 @@ class Knitout_Generator:
         kn_xfer = False
         xfers: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = {}
         for loop_id, target_needle in loop_id_to_target_needle.items():
+            yarn = self._knit_graph.loops[loop_id].yarn_id
+            is_same_yarn = False
             opposite_needle = target_needle.opposite()
-            loops_on_opposite = self._machine_state[opposite_needle]
-            if len(loops_on_opposite) > 0:
-                xfers[opposite_needle] = (Instruction_Parameters(opposite_needle, needle_2=target_needle), Instruction_Type.Xfer)
-                kn_xfer = True
+            loop_ids_on_opposite = self._machine_state[opposite_needle]
+            if len(loop_ids_on_opposite) > 0:
+                for loop_id in loop_ids_on_opposite:
+                    if self._knit_graph.loops[loop_id].yarn_id == yarn:
+                        is_same_yarn = True
+                if is_same_yarn == True:
+                    xfers[opposite_needle] = (Instruction_Parameters(opposite_needle, needle_2=target_needle), Instruction_Type.Xfer)
+                    kn_xfer = True
         if kn_xfer == True:
             print('----doing knit_purl_xfers----')
         carriage_pass = Carriage_Pass(None, xfers, self._machine_state)

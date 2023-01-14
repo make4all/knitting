@@ -46,6 +46,7 @@ class Strap_Generator_on_Tube:
         self.parent_knitgraph.loop_ids_to_wale: Dict[int, float] = parent_knitgraph.loop_ids_to_wale
         self.parent_knitgraph.wale_to_loop_ids: Dict[float, List[int]] = parent_knitgraph.wale_to_loop_ids
         self.parent_knitgraph.node_to_course_and_wale: Dict[int, Tuple(int, int)] = parent_knitgraph.node_to_course_and_wale
+        print(f'hahahhaha self.parent_knitgraph.node_to_course_and_wale is {self.parent_knitgraph.node_to_course_and_wale}')
         self.parent_knitgraph.node_on_front_or_back: Dict[int, str] = parent_knitgraph.node_on_front_or_back
         self.parent_knitgraph_course_and_wale_to_node: Dict[Tuple[int, int], int] = {tuple(v): k for k, v in parent_knitgraph.node_to_course_and_wale.items()}
         self.parent_knitgraph_course_id_to_wale_ids: Dict[int, List[int]] = {} 
@@ -136,9 +137,9 @@ class Strap_Generator_on_Tube:
                         node_to_course_and_wale[node] = (course_id, wale_id)
                         if course_id == strap_starting_course+self.strap_height - 1:
                             if i<int(len(self.ordered_strap_coor)/2):
-                                self.front_straps_top_course_wale_ids.append(wale_id)
+                                self.front_straps_top_course_wale_ids[i].append(wale_id)
                             else:
-                                self.back_straps_top_course_wale_ids.append(wale_id)
+                                self.back_straps_top_course_wale_ids[i].append(wale_id)
                         node += 1      
                 j+=1
             self.ordered_straps_node_to_course_and_wale.append(strap_to_node_to_course_and_wale)
@@ -151,7 +152,7 @@ class Strap_Generator_on_Tube:
                 else:
                     self.child_knitgraph.node_on_front_or_back[loop_id] = 'b'
                 self.child_knitgraph.add_loop(loop)
-        # print(f'self.ordered_straps_node_to_course_and_wale is {self.ordered_straps_node_to_course_and_wale}, node_to_course_and_wale is {node_to_course_and_wale}')
+        print(f'self.ordered_straps_node_to_course_and_wale is {self.ordered_straps_node_to_course_and_wale}, node_to_course_and_wale is {node_to_course_and_wale}')
         # print(f'self.child_knitgraph.graph.nodes is {self.child_knitgraph.graph.nodes}')
         print(f'self.front_straps_top_course_wale_ids is {self.front_straps_top_course_wale_ids}, self.back_straps_top_course_wale_ids is {self.back_straps_top_course_wale_ids}')
         self.child_knitgraph.node_to_course_and_wale = node_to_course_and_wale
@@ -170,6 +171,7 @@ class Strap_Generator_on_Tube:
         course_and_wale_to_node = {}
         course_and_wale_to_node = {tuple(v): k for k, v in node_to_course_and_wale.items()}
         self.child_knitgraph_course_and_wale_to_node = course_and_wale_to_node
+        print(f'self.child_knitgraph_course_and_wale_to_node in polygon generation is {self.child_knitgraph_course_and_wale_to_node}')
         #connect node stitches
         course_ids_before_final_course = [*course_to_loop_ids.keys()][:-1]
         for course_id in course_ids_before_final_course:
@@ -289,9 +291,11 @@ class Strap_Generator_on_Tube:
             self.child_knitgraph.course_to_loop_ids[course_id] = []
         for i in range(half):
             nodes_info = self.ordered_straps_node_to_course_and_wale[i]
+            print(f'nodes_info is {nodes_info}')
             for node in nodes_info:
                 course_id = nodes_info[node][0]
                 wale_id = nodes_info[node][1]
+                print(f'node is {node}, course_id is {course_id}, wale_id is {wale_id}')
                 loop_id, loop = self.ordered_straps_yarns[i].add_loop_to_end()
                 self.strap_graph.add_loop(loop)
                 self.strap_graph.node_on_front_or_back[loop_id] = 'f'
@@ -300,11 +304,13 @@ class Strap_Generator_on_Tube:
                 self.child_knitgraph.course_to_loop_ids[course_id].append(loop_id)
                 if course_id == strap_starting_course:
                     bottom_course_wale_ids.append(wale_id)
+        print(f'self.child_knitgraph_course_and_wale_to_node in front straps is {self.child_knitgraph_course_and_wale_to_node}')
         #connect bottom row of child fabric to splitting row
-        # print(f'self.child_knitgraph_course_and_wale_to_node is {self.child_knitgraph_course_and_wale_to_node}')
+        print(f'bottom_course_wale_ids in front strap is {bottom_course_wale_ids}')
         for wale_id in bottom_course_wale_ids:
             mirror_node = self.parent_knitgraph_course_and_wale_to_node[(strap_starting_course, wale_id)] 
             split_node = self.child_knitgraph_course_and_wale_to_node[(strap_starting_course, wale_id)] 
+            print(f'wale id is {wale_id}, mirror_node is {mirror_node}, split_node is {split_node}')
             parent_nodes = []
             mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
             parent_coors = self.find_parent_coors(child_coor = mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
@@ -332,7 +338,7 @@ class Strap_Generator_on_Tube:
                 if course_id == strap_starting_course:
                     bottom_course_wale_ids.append(wale_id)
         #connect bottom row of child fabric to splitting row
-        # print(f'self.child_knitgraph_course_and_wale_to_node is {self.child_knitgraph_course_and_wale_to_node}')
+        print(f'self.child_knitgraph_course_and_wale_to_node in back straps is {self.child_knitgraph_course_and_wale_to_node}')
         for wale_id in bottom_course_wale_ids:
             mirror_node = self.parent_knitgraph_course_and_wale_to_node[(strap_starting_course, wale_id)] 
             split_node = self.child_knitgraph_course_and_wale_to_node[(strap_starting_course, wale_id)] 
@@ -381,26 +387,26 @@ class Strap_Generator_on_Tube:
             for root_node in root_nodes:
                 root_node_coor = self.parent_knitgraph.node_to_course_and_wale[root_node]
                 mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
-                # print(f'root_node is {root_node}, root_node_coor is {root_node_coor}, mirror_node is {mirror_node}, mirror_node_coor {mirror_node_coor}, self.parent_knitgraph_coors_connectivity is {self.parent_knitgraph_coors_connectivity}')
+                print(f'root_node is {root_node}, root_node_coor is {root_node_coor}, mirror_node is {mirror_node}, mirror_node_coor {mirror_node_coor}, split_node is {split_node}')
                 attr_dict = self.get_attr_by_nodes_coor(root_node_coor, mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
                 depth = attr_dict['depth']
                 parent_offset = attr_dict['parent_offset']
                 #below we use Pull_Direction.BtF rather than Pull_Direction.FtB as usual is because the final course on parent fabric that we knit & split stays on that bed
                 # and do not return back.
-                self.strap_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.BtF, depth = depth)
+                self.strap_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
                 self.strap_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 0)
         for (mirror_node, split_node) in self.branches_on_back:
             root_nodes = self.branches_on_back[(mirror_node, split_node)]
             for root_node in root_nodes:
                 root_node_coor = self.parent_knitgraph.node_to_course_and_wale[root_node]
                 mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
-                # print(f'root_node is {root_node}, root_node_coor is {root_node_coor}, mirror_node is {mirror_node}, mirror_node_coor {mirror_node_coor}, self.parent_knitgraph_coors_connectivity is {self.parent_knitgraph_coors_connectivity}')
+                print(f'root_node is {root_node}, root_node_coor is {root_node_coor}, mirror_node is {mirror_node}, mirror_node_coor {mirror_node_coor}, split_node is {split_node}')
                 attr_dict = self.get_attr_by_nodes_coor(root_node_coor, mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
                 depth = attr_dict['depth']
                 parent_offset = attr_dict['parent_offset']
                 #below we use Pull_Direction.BtF rather than Pull_Direction.FtB as usual is because the final course on parent fabric that we knit & split stays on that bed
                 # and do not return back.
-                self.strap_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.BtF, depth = depth)
+                self.strap_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
                 self.strap_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset =0)
     
     def bind_off(self):
@@ -448,7 +454,11 @@ class Strap_Generator_on_Tube:
                     child_wale_id = self.child_knitgraph.node_to_course_and_wale[nearest_neighbor][1]
                     pull_direction = Pull_Direction.BtF
                     # pull_direction = Pull_Direction.BtF if self.strap_graph.node_on_front_or_back[nearest_neighbor] == 'f' else Pull_Direction.FtB
-                    self.strap_graph.connect_loops(node, nearest_neighbor, pull_direction = pull_direction, parent_offset = parent_wale_id - child_wale_id) 
+                    if self.strap_graph.node_on_front_or_back[node] == 'f' and self.strap_graph.node_on_front_or_back[nearest_neighbor] == 'b':
+                        parent_offset = -(parent_wale_id - child_wale_id)/self.wale_dist
+                    elif self.strap_graph.node_on_front_or_back[node] == 'b' and self.strap_graph.node_on_front_or_back[nearest_neighbor] == 'f':
+                        parent_offset = (parent_wale_id - child_wale_id)/self.wale_dist
+                    self.strap_graph.connect_loops(node, nearest_neighbor, pull_direction = pull_direction, parent_offset = parent_offset) 
         else:
             # then bind-off starts from left to right
             for wale_ids in self.straps_top_course_wale_ids.values():
@@ -483,7 +493,11 @@ class Strap_Generator_on_Tube:
                     child_wale_id = self.child_knitgraph.node_to_course_and_wale[nearest_neighbor][1]
                     pull_direction = Pull_Direction.BtF
                     # pull_direction = Pull_Direction.BtF if self.strap_graph.node_on_front_or_back[nearest_neighbor] == 'f' else Pull_Direction.FtB
-                    self.strap_graph.connect_loops(node, nearest_neighbor, pull_direction = pull_direction, parent_offset = parent_wale_id - child_wale_id) 
+                    if self.strap_graph.node_on_front_or_back[node] == 'f' and self.strap_graph.node_on_front_or_back[nearest_neighbor] == 'b':
+                        parent_offset = -(parent_wale_id - child_wale_id)/self.wale_dist
+                    elif self.strap_graph.node_on_front_or_back[node] == 'b' and self.strap_graph.node_on_front_or_back[nearest_neighbor] == 'f':
+                        parent_offset = (parent_wale_id - child_wale_id)/self.wale_dist
+                    self.strap_graph.connect_loops(node, nearest_neighbor, pull_direction = pull_direction, parent_offset = parent_offset) 
         
 
     def build_strap_graph(self) -> Knit_Graph:  
