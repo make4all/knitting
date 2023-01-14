@@ -325,7 +325,6 @@ class Handle_Generator_on_Tube:
                 self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id)] = loop_id
                 self.parent_knitgraph.course_to_loop_ids[course_id].append(loop_id)
                 self.handle_graph.node_on_front_or_back[loop_id] = self.parent_knitgraph_course_and_wale_to_bed[(course_id, wale_id)]
-                
         elif on_parent_graph == False:
             # update course and wale info of each node for child graph.
             self.child_knitgraph.course_to_loop_ids[course_id] = []
@@ -495,7 +494,7 @@ class Handle_Generator_on_Tube:
                     parent_offset = attr_dict['parent_offset']
                     self.handle_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
                     # self.handle_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB)
-                    self.handle_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = -1 if self.is_front_patch == False else 1)
+                    self.handle_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 1 if self.is_front_patch == False else -1)
         # then iterate over edge_connection_right_side to see which edge to connect
         num_of_right_edges = len(root_nodes_bigger_wale_side_parent)
         for edge_index in range(num_of_right_edges):
@@ -509,7 +508,7 @@ class Handle_Generator_on_Tube:
                     parent_offset = attr_dict['parent_offset']
                     self.handle_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
                     # self.handle_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB)
-                    self.handle_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = -1 if self.is_front_patch == False else 1)
+                    self.handle_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 1 if self.is_front_patch == False else -1)
 
     def build_handle_graph(self) -> Knit_Graph:   
         self.generate_polygon_from_keynodes()

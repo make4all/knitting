@@ -259,16 +259,17 @@ class Strap_Generator_on_Tube:
                 self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id)] = loop_id
                 self.strap_graph.node_on_front_or_back[loop_id] = self.parent_knitgraph_course_and_wale_to_bed[(course_id, wale_id)]
        
-    def grow_row_on_one_bed_parent_graph(self, bed):
+    def grow_row_on_one_bed_parent_graph(self, bed_to_knit):
         grow_course_id = [*self.parent_knitgraph_course_id_to_wale_ids.keys()][-1]
         self.parent_knitgraph.course_to_loop_ids[grow_course_id] = []
-        for wale_id in self.parent_knitgraph_bed_to_course_id_to_wale_ids[bed][grow_course_id]:
+        for wale_id in self.parent_knitgraph_bed_to_course_id_to_wale_ids[bed_to_knit][grow_course_id]:
             loop_id, loop = self.tube_yarn.add_loop_to_end()
             self.strap_graph.add_loop(loop)
             self.parent_knitgraph.node_to_course_and_wale[loop_id] = (grow_course_id, wale_id)
             self.parent_knitgraph_course_and_wale_to_node[(grow_course_id, wale_id)] = loop_id
             self.parent_knitgraph.course_to_loop_ids[grow_course_id].append(loop_id)
-            self.strap_graph.node_on_front_or_back[loop_id] = 'f' if bed == 'b' else 'b'
+            # self.strap_graph.node_on_front_or_back[loop_id] = bed_to_knit 
+            self.strap_graph.node_on_front_or_back[loop_id] = 'f' if bed_to_knit == 'b' else 'b'
             # self.strap_graph.node_on_front_or_back[loop_id] = 'None' #here we use None to indicate the loop will be dropped immediately it gets knitted
 
     def find_parent_coors(self, child_coor: Tuple[int, int], knitgraph_connectivity: List[Tuple]):
@@ -384,7 +385,9 @@ class Strap_Generator_on_Tube:
                 attr_dict = self.get_attr_by_nodes_coor(root_node_coor, mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
                 depth = attr_dict['depth']
                 parent_offset = attr_dict['parent_offset']
-                self.strap_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
+                #below we use Pull_Direction.BtF rather than Pull_Direction.FtB as usual is because the final course on parent fabric that we knit & split stays on that bed
+                # and do not return back.
+                self.strap_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.BtF, depth = depth)
                 self.strap_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 0)
         for (mirror_node, split_node) in self.branches_on_back:
             root_nodes = self.branches_on_back[(mirror_node, split_node)]
@@ -395,7 +398,9 @@ class Strap_Generator_on_Tube:
                 attr_dict = self.get_attr_by_nodes_coor(root_node_coor, mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
                 depth = attr_dict['depth']
                 parent_offset = attr_dict['parent_offset']
-                self.strap_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
+                #below we use Pull_Direction.BtF rather than Pull_Direction.FtB as usual is because the final course on parent fabric that we knit & split stays on that bed
+                # and do not return back.
+                self.strap_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.BtF, depth = depth)
                 self.strap_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset =0)
     
     def bind_off(self):
@@ -493,9 +498,9 @@ class Strap_Generator_on_Tube:
         self.build_rows_on_parent_graph_just_above_splitting_course_id()
         self.child_knitgraph.node_to_course_and_wale = {}
         #grow the whole graph by adding one row to parent fabric, then adding one row to child fabric, until reaching the end of child fabric
-        self.grow_row_on_one_bed_parent_graph(bed = 'f')
+        self.grow_row_on_one_bed_parent_graph(bed_to_knit = 'f')
         self.build_front_straps()
-        self.grow_row_on_one_bed_parent_graph(bed = 'b')
+        self.grow_row_on_one_bed_parent_graph(bed_to_knit = 'b')
         self.build_back_straps()
         #merge node_to_course_and_wale on parent_knitgraph and child_knitgraph
         self.connect_stitches_on_knitgraph()

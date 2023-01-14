@@ -14,12 +14,12 @@ class Knitspeak_Compiler:
     A class used to compile knit graphs from knitspeak
     """
 
-    def __init__(self):
+    def __init__(self, carrier_id: int):
         self._parser = KnitSpeak_Interpreter()
         self.parse_results: List[Dict[str, Union[List[int, Num_Closure, Iterator_Closure], List[tuple]]]] = []
         self.course_ids_to_operations: Dict[int, List[tuple]] = {}
         self.knit_graph = Knit_Graph()
-        self.yarn = Yarn("yarn", self.knit_graph)
+        self.yarn = Yarn("yarn", self.knit_graph, carrier_id = carrier_id)
         self.knit_graph.add_yarn(self.yarn)
         self.last_course_loop_ids: List[int] = []
         self.cur_course_loop_ids: List[int] = []

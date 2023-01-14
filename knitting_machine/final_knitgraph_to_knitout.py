@@ -253,21 +253,39 @@ class Knitout_Generator:
                     elif dirr == cur_dir[0]:
                         same_pass.append(loop)
                     elif dirr != cur_dir[0]:
-                        passes = self.split_pass_with_loops_on_two_beds(dir_loops_pair = [cur_dir[0], same_pass])
-                        if passes != None:
-                            pass_with_dir.append(passes[0])
-                            pass_with_dir.append(passes[1])
+                        passes_with_dir = self.split_pass_with_loops_on_two_beds(dir_loops_pair = [cur_dir[0], same_pass])
+                        if passes_with_dir != None:
+                            for each_pass_with_dir in passes_with_dir:
+                                splited_passes_with_dir = self.split_pass_with_different_yarns(each_pass_with_dir)
+                                knit_dir = splited_passes_with_dir[0]
+                                splited_passes = splited_passes_with_dir[1]
+                                for split_pass in splited_passes:
+                                    pass_with_dir.append([knit_dir, split_pass])
                         else:
-                            pass_with_dir.append([cur_dir[0], same_pass])
+                            dir_loops_pair = [cur_dir[0], same_pass]
+                            splited_passes_with_dir = self.split_pass_with_different_yarns(dir_loops_pair)
+                            knit_dir = splited_passes_with_dir[0]
+                            splited_passes = splited_passes_with_dir[1]
+                            for split_pass in splited_passes:
+                                pass_with_dir.append([knit_dir, split_pass])
                         cur_dir = [dirr]
                         same_pass = [loop]
                     if i==len(loops)-1 and len(same_pass)!=0:
-                        passes = self.split_pass_with_loops_on_two_beds(dir_loops_pair = [cur_dir[0], same_pass])
-                        if passes != None:
-                            pass_with_dir.append(passes[0])
-                            pass_with_dir.append(passes[1])
+                        passes_with_dir = self.split_pass_with_loops_on_two_beds(dir_loops_pair = [cur_dir[0], same_pass])
+                        if passes_with_dir != None:
+                            for each_pass_with_dir in passes_with_dir:
+                                splited_passes_with_dir = self.split_pass_with_different_yarns(each_pass_with_dir)
+                                knit_dir = splited_passes_with_dir[0]
+                                splited_passes = splited_passes_with_dir[1]
+                                for split_pass in splited_passes:
+                                    pass_with_dir.append([knit_dir, split_pass])
                         else:
-                            pass_with_dir.append([cur_dir[0], same_pass])
+                            dir_loops_pair = [cur_dir[0], same_pass]
+                            splited_passes_with_dir = self.split_pass_with_different_yarns(dir_loops_pair)
+                            knit_dir = splited_passes_with_dir[0]
+                            splited_passes = splited_passes_with_dir[1]
+                            for split_pass in splited_passes:
+                                pass_with_dir.append([knit_dir, split_pass])
             self.courses_to_passes[course] = pass_with_dir
             # print(i, cur_dir, dirr, same_pass, pass_with_dir)
         print(f'self.courses_to_passes is {self.courses_to_passes}')
@@ -296,6 +314,22 @@ class Knitout_Generator:
             dir_back_loops_pair = [knit_dir, back_bed_pass]
             return (dir_front_loops_pair, dir_back_loops_pair) if min(front_bed_pass) < min(back_bed_pass) else (dir_back_loops_pair, dir_front_loops_pair)
         return None
+    
+    def split_pass_with_different_yarns(self, dir_loops_pair: List[Union[str, List[int]]]):
+        """
+        # further split passes with different yarns, so that we can get the updated parent_needle position 
+        # before we knit child fabric because by this we can separate them into different passes.
+        """
+        knit_dir = dir_loops_pair[0]
+        same_pass = dir_loops_pair[1]
+        carrier_id_to_passes: Dict[int, List[int]] = {}
+        for loop in same_pass:
+            carrier_id = self.loop_id_to_carrier_id[loop]
+            if carrier_id not in carrier_id_to_passes:
+                carrier_id_to_passes[carrier_id] = [loop]
+            else:
+                carrier_id_to_passes[carrier_id].append(loop)
+        return [knit_dir, [*carrier_id_to_passes.values()]]
 
     def move_stray_loops_back_home(self):
         # this logic works for ribbing tube and pocket on tube.
@@ -781,28 +815,37 @@ class Knitout_Generator:
                         # get the other successor, i.e., split node
                         for successor in successors:
                             if self._knit_graph.loops[successor].yarn_id == 'pocket_yarn' or self._knit_graph.loops[successor].yarn_id == 'handle_yarn' or ('strap_yarn' in self._knit_graph.loops[successor].yarn_id):
-                                split_offset = int(self._knit_graph.graph[parent_id][successor]["parent_offset"]*1)
+                                if self._knit_graph.yarn_start_direction == 'right to left':   
+                                    split_offset = int(-self._knit_graph.graph[parent_id][successor]["parent_offset"]*1)
+                                else:
+                                    split_offset = int(self._knit_graph.graph[parent_id][successor]["parent_offset"]*1)
                                 # split_offset = int(self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*1) #here *1 not *self.wale_dist is because special unlike common decrease
                         split_offsets[loop_id] = split_offset
                         print(f'branch catched--loop id {loop_id} is a mirror node, and split offset is {split_offset}, parent_needle is {parent_needle}, target_needle is {target_needle}')
                     # detect the split node in split
                     elif self._knit_graph.loops[loop_id].yarn_id == 'pocket_yarn' or self._knit_graph.loops[loop_id].yarn_id == 'handle_yarn' or ('strap_yarn' in self._knit_graph.loops[loop_id].yarn_id): #then this loop is a split node instead of a mirror node in a split
-                        parent_needle = parent_loops_to_needles[parent_id]
-                        parent_offset =  self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
-                        offset_needle = parent_needle.offset(parent_offset)
-                        bed = self.node_on_front_or_back[loop_id]
-                        target_needle = Needle(is_front = (bed == 'f'), position=offset_needle.position)
-                        #if we use above method to identify target node, we would get wrong knitout because offset between root nodes and 
-                        # split node are always 0 in out setting, however, they are not in the same bed. so we use below method.
+                        # method 1
+                        # parent_needle = parent_loops_to_needles[parent_id]
+                        parent_needle = self._machine_state.get_needle_of_loop(parent_id)
+                        target_needle = parent_needle
+                        loop_id_to_target_needle[loop_id] = target_needle
+                        # method 2: will fail for pk case
+                        # parent_needle = parent_loops_to_needles[parent_id]
+                        # parent_offset =  self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
+                        # offset_needle = parent_needle.offset(parent_offset)
+                        # bed = self.node_on_front_or_back[loop_id]
+                        # target_needle = Needle(is_front = (bed == 'f'), position=offset_needle.position)
+                        # loop_id_to_target_needle[loop_id] = target_needle
+                        # method 3: will fail for strap case
                         # if self._knit_graph.yarn_start_direction == 'right to left':   
                         #     position = self.courses_to_max_wale_on_front[self._loop_id_to_courses[loop_id]] - self.node_to_course_and_wale[loop_id][1]
                         # else:
                         #     position = self.node_to_course_and_wale[loop_id][1]
                         # bed = self.node_on_front_or_back[loop_id]
                         # target_needle = Needle(is_front = (bed == 'f'), position=position)
-                        loop_id_to_target_needle[loop_id] = target_needle
+                        # loop_id_to_target_needle[loop_id] = target_needle
                         self.nodes_on_patch_side.append(loop_id)
-                        print(f'branch catched--loop id {loop_id} is a split node, parent_needle is {parent_needle}, target_needle is {target_needle}')
+                        print(f'branch catched--loop id {loop_id} is a split node, parent_id is {parent_id}, parent_needle is {parent_needle}, target_needle is {target_needle}')
 
             # detect yarn-over
             if len(parent_ids) == 0:  # yarn-over, yarn overs are made on front bed

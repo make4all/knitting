@@ -494,7 +494,7 @@ class Pocket_Generator_on_Tube:
                         parent_offset = attr_dict['parent_offset']
                         self.pocket_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
                         # self.pocket_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB)
-                        self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = -1 if self.is_front_patch == False else 1)
+                        self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 1 if self.is_front_patch == False else -1)
         # then iterate over edge_connection_right_side to see which edge to connect
         num_of_right_edges = len(self.edge_connection_right_side)
         for edge_index in range(num_of_right_edges):
@@ -510,7 +510,7 @@ class Pocket_Generator_on_Tube:
                         parent_offset = attr_dict['parent_offset']
                         self.pocket_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
                         # self.pocket_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB)
-                        self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = -1 if self.is_front_patch == False else 1)
+                        self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 1 if self.is_front_patch == False else -1)
 
     def reconnect_bottom_branches(self):
         """
@@ -536,7 +536,7 @@ class Pocket_Generator_on_Tube:
                 parent_offset = attr_dict['parent_offset']
                 self.pocket_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
                 # self.pocket_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB)
-                self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = -1 if self.is_front_patch == False else 1)
+                self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 1 if self.is_front_patch == False else -1)
         print(f'bottom_root_nodes is {bottom_root_nodes}')
 
     def build_pocket_graph(self) -> Knit_Graph:   

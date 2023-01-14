@@ -432,7 +432,7 @@ class Pocket_Generator_on_Sheet:
                     root_nodes = root_nodes_smaller_wale_side_parent[edge_index][(mirror_node, split_node)]
                     for root_node in root_nodes:
                         # self.pocket_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.BtF)
-                        self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = -(self.wale_dist-1))
+                        self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = (self.wale_dist-1))
         # then iterate over edge_connection_right_side to see which edge to connect
         num_of_right_edges = len(self.edge_connection_right_side)
         for edge_index in range(num_of_right_edges):
@@ -442,7 +442,7 @@ class Pocket_Generator_on_Sheet:
                     root_nodes = root_nodes_bigger_wale_side_parent[edge_index][(mirror_node, split_node)]
                     for root_node in root_nodes:
                         # self.pocket_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.BtF)
-                        self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = -(self.wale_dist-1))
+                        self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = (self.wale_dist-1))
 
     def reconnect_bottom_branches(self):
         """
@@ -461,7 +461,7 @@ class Pocket_Generator_on_Sheet:
                 root_node = self.parent_knitgraph_course_and_wale_to_node[parent_coor]
                 bottom_root_nodes[(mirror_node, split_node)].append(root_node)
                 # self.pocket_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.BtF)
-                self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = -(self.wale_dist-1))
+                self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = (self.wale_dist-1))
         print(f'bottom_root_nodes is {bottom_root_nodes}')
 
     def build_pocket_graph(self) -> Knit_Graph:   

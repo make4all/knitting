@@ -22,7 +22,7 @@ class Yarn:
         The id of the last loop on the yarn, none if no loops on the yarn
     """
 
-    def __init__(self, yarn_id: str, knit_graph, last_loop: Optional[Loop] = None, carrier_id: int = 3):
+    def __init__(self, yarn_id: str, knit_graph, carrier_id: int, last_loop: Optional[Loop] = None):
         """
         A Graph structure to show the yarn-wise relationship between loops
         :param knit_graph: The knitgraph the yarn is used in

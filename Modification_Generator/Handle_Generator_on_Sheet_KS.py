@@ -425,7 +425,7 @@ class Handle_Generator_on_Sheet:
                 root_nodes = root_nodes_smaller_wale_side_parent[edge_index][(mirror_node, split_node)]
                 for root_node in root_nodes:
                     # self.handle_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.BtF)
-                    self.handle_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = -(self.wale_dist-1))
+                    self.handle_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = (self.wale_dist-1))
         # then iterate over edge_connection_right_side to see which edge to connect
         num_of_right_edges = len(root_nodes_bigger_wale_side_parent)
         for edge_index in range(num_of_right_edges):
@@ -433,7 +433,7 @@ class Handle_Generator_on_Sheet:
                 root_nodes = root_nodes_bigger_wale_side_parent[edge_index][(mirror_node, split_node)]
                 for root_node in root_nodes:
                     # self.handle_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.BtF)
-                    self.handle_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = -(self.wale_dist-1))
+                    self.handle_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = (self.wale_dist-1))
 
     def build_handle_graph(self) -> Knit_Graph:   
         self.generate_polygon_from_keynodes()
