@@ -140,9 +140,11 @@ class Knitspeak_Compiler:
             self.course_ids_to_operations[max_course + 1] = self.course_ids_to_operations[2]
 
     def starting_width_safety_check(self, starting_width, row_count):
-        # for all courses:
-        # if "not static_repeats" (see function: _process_instruction() below) exist in the ks, then we need to make sure that the starting_width >= sum of repeats.
-        # if "not static_repeats" does not exist in the given ks, then starting_width should be equal to the sum of repeats.
+        """ 
+        for all courses:
+            if "not static_repeats" (see function: _process_instruction() below) exist in the ks, then we need to make sure that the starting_width >= sum of repeats.
+            if "not static_repeats" does not exist in the given ks, then starting_width should be equal to the sum of repeats.
+        """
         current_row = 0
         while current_row < row_count:
             for course_id in sorted(self.course_ids_to_operations):

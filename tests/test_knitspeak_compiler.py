@@ -118,9 +118,15 @@ def test_stst():
 def test_rib():
     rib_width = 1
     # sheet_pattern = f"all rs rows k rib={rib_width}, p rib. all ws rows k rib, p rib."
+    # sheet_yarn_carrier_id = 3
+    # compiler = Knitspeak_Compiler(carrier_id = sheet_yarn_carrier_id)
+    # knit_graph = compiler.compile(8, 8, object_type = 'sheet', pattern = sheet_pattern)
+
     tube_pattern = f"all rs rounds k rib={rib_width}, p rib. all ws rounds k rib, p rib."
-    compiler = Knitspeak_Compiler()
-    knit_graph = compiler.compile(8, 8, object_type = 'tube', pattern = tube_pattern)
+    tube_yarn_carrier_id = 4
+    compiler = Knitspeak_Compiler(carrier_id = tube_yarn_carrier_id)
+    knit_graph = compiler.compile(9, 8, object_type = 'tube', pattern = tube_pattern)
+
     knit_graph.gauge = 0.5
     loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
     loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_wales()
@@ -324,9 +330,9 @@ def test_write_short_rows():
 
 if __name__ == "__main__":
     # test_stst()
-    # test_rib()
+    test_rib()
     # test_write_slipped_rib()
     # test_write_slipped_rib_even()
     # test_cable()
-    test_lace()
+    # test_lace()
     # test_write_short_rows()
