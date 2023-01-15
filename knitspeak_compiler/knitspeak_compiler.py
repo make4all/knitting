@@ -57,6 +57,7 @@ class Knitspeak_Compiler:
         print(f'self._parser.parser.symbolTable is {self._parser.parser.symbolTable._symbol_table}, key is {self._parser.parser.symbolTable._symbol_table.keys()}')
         self._organize_courses()
         print(f'self.course_ids_to_operations is {self.course_ids_to_operations}, len is {len(self.course_ids_to_operations)}')
+        self.starting_width_safety_check(starting_width, row_count)
         self.populate_0th_course(starting_width)
         while self.current_row < row_count:
             for course_id in sorted(self.course_ids_to_operations):
@@ -77,7 +78,6 @@ class Knitspeak_Compiler:
                 if self.current_row == row_count:
                     # print(f'hahahaha cur_row is {self.current_row}')
                     break
-
         return self.knit_graph
 
     def populate_0th_course(self, starting_width: int):
@@ -115,9 +115,8 @@ class Knitspeak_Compiler:
                 else:  # course_id is integer
                     assert course_id not in self.course_ids_to_operations, f"KnitSpeak Error: Course {course_id} is defined more than once"
                     self.course_ids_to_operations[course_id] = course_instructions
-
+        
         max_course = max(*self.course_ids_to_operations)
-    
         if "all_rs_rows" in self._parser.parser.symbolTable or "all_rs_rounds" in self._parser.parser.symbolTable:
             # print('hahaha')
             course_instructions = self.course_ids_to_operations[1]
@@ -139,6 +138,36 @@ class Knitspeak_Compiler:
 
         if max_course % 2 == 1 and ("all_ws_rows" in self._parser.parser.symbolTable or "all_ws_rounds" in self._parser.parser.symbolTable):  # ends on rs row
             self.course_ids_to_operations[max_course + 1] = self.course_ids_to_operations[2]
+
+    def starting_width_safety_check(self, starting_width, row_count):
+        # for all courses:
+        # if "not static_repeats" (see function: _process_instruction() below) exist in the ks, then we need to make sure that the starting_width >= sum of repeats.
+        # if "not static_repeats" does not exist in the given ks, then starting_width should be equal to the sum of repeats.
+        current_row = 0
+        while current_row < row_count:
+            for course_id in sorted(self.course_ids_to_operations):
+                total = 0
+                use_remaining = False
+                current_row += 1
+                course_instructions = self.course_ids_to_operations[course_id]
+                for instruction in course_instructions:
+                    static_repeats = instruction[1][0]
+                    if static_repeats:
+                        repeats = instruction[1][1]
+                        if isinstance(repeats, Num_Closure):
+                            repeats = repeats.to_int()
+                        total += repeats
+                    if not static_repeats:
+                        use_remaining = True
+                    #     remaining_loops = instruction[1][1]
+                    #     if isinstance(remaining_loops, Num_Closure):
+                    #         remaining_loops = remaining_loops.to_int()
+                if use_remaining == False:
+                    assert starting_width % total == 0, f'given starting_width does not match the width of given knitspeak. starting_width should be a multiple of {total}'
+                else:
+                    assert total <= starting_width, f'given starting_width does not match the width of given knitspeak. starting_width should be >= than {total}'
+                if current_row == row_count:
+                    break
 
     def _process_instruction(self, instruction: Tuple[Union[tuple, Stitch_Definition, Cable_Definition, list],
                                                       Tuple[bool, int]]):

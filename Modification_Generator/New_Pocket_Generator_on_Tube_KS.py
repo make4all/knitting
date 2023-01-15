@@ -591,7 +591,12 @@ class Pocket_Generator_on_Tube:
                 node_to_connect = self.parent_knitgraph_course_and_wale_to_node[(course+1, wale+1)] if self.is_front_patch == False else self.parent_knitgraph_course_and_wale_to_node[(course+1, wale-1)] 
                 neighbor_node = self.parent_knitgraph_course_and_wale_to_node[(course, wale+1)] if self.is_front_patch == False else self.parent_knitgraph_course_and_wale_to_node[(course, wale-1)]
                 print(f'haha neighbor_node is {neighbor_node}, node_to_connect is {node_to_connect}')
-                pull_direction = self.pocket_graph.graph[neighbor_node][node_to_connect]['pull_direction']
+                # see if node_to_connect and neighbor_node is connected
+                parent_coors = self.find_parent_coors(child_coor = node_to_connect, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
+                if len(parent_coors) > 0:
+                    pull_direction = self.pocket_graph.graph[neighbor_node][node_to_connect]['pull_direction']
+                else:
+                    pull_direction = Pull_Direction.BtF #no matter it is on front or back bed
                 self.pocket_graph.connect_loops(node, node_to_connect, pull_direction = pull_direction, parent_offset = 1/self.wale_dist if self.is_front_patch == True else -1/self.wale_dist)
         return self.pocket_graph
   
