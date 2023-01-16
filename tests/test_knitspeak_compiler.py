@@ -101,7 +101,7 @@ def test_stst():
 
     # add strap on tube
     # tube_yarn_carrier_id is set to 9 is because 
-    strap_generator = Strap_Generator_on_Tube(parent_knitgraph = knit_graph, tube_yarn_carrier_id = 10, straps_coor_info={1:{'front':(2, 4), 'back':(1,3)}, 2:{'front':(6, 8), 'back':(5, 7)}}, strap_height = 3)
+    strap_generator = Strap_Generator_on_Tube(parent_knitgraph = knit_graph, tube_yarn_carrier_id = 10, straps_coor_info={1:{'front':(2, 4), 'back':(1,3)}, 2:{'front':(6, 8), 'back':(5, 7)}}, strap_height = 2)
     knitGraph = strap_generator.build_strap_graph() 
     KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
     KnitGraph_Visualizer.visualize()
@@ -148,16 +148,17 @@ def test_cable():
         3rd row k 2, lc2|1, k, rc1|2, [k] to end.
         5th row k 3, lc1|1, k, rc1|1, [k] to end.
     """
-    # tube_pattern = r"""
-    #     1st round k, lc2|2, k, rc2|2, [k] to end.
-    #     all ws rounds p.
-    #     3rd round k 2, lc2|1, k, rc1|2, [k] to end.
-    #     5th round k 3, lc1|1, k, rc1|1, [k] to end.
-    # """
-    compiler = Knitspeak_Compiler()
-    knit_graph = compiler.compile(12, 5, object_type= 'sheet', pattern = sheet_pattern)
-    # knit_graph = compiler.compile(12, 5, object_type= 'tube', pattern = tube_pattern)
-    knit_graph.gauge = 0.5
+    tube_pattern = r"""
+        1st round k, lc2|2, k, rc2|2, [k] to end.
+        all ws rounds p.
+        3rd round k 2, lc2|1, k, rc1|2, [k] to end.
+        5th round k 3, lc1|1, k, rc1|1, [k] to end.
+    """
+    sheet_yarn_carrier_id = 3
+    compiler = Knitspeak_Compiler(carrier_id = sheet_yarn_carrier_id)
+    # knit_graph = compiler.compile(12, 5, object_type= 'sheet', pattern = sheet_pattern)
+    knit_graph = compiler.compile(12, 5, object_type= 'tube', pattern = tube_pattern)
+    knit_graph.gauge = 1/3
     loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
     loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_wales() 
     node_to_course_and_wale = knit_graph.get_node_course_and_wale()
@@ -166,17 +167,24 @@ def test_cable():
     KnitGraph_Visualizer = knitGraph_visualizer(knit_graph)
     KnitGraph_Visualizer.visualize()
 
-    hole_generator = Hole_Generator_on_Sheet(yarns_and_holes_to_add = {2:[49], 7:[41]}, knitgraph = knit_graph)
-    knitGraph = hole_generator.add_hole()
-    # note that we only update (delete hole nodes on the self._knit_graph, we do not correspondingly update nodes in both self.node_on_front_or_back and self.node_to_course_and_wale)
-    KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
-    KnitGraph_Visualizer.visualize()
-
-    # add hole on tube
-    # hole_generator = Hole_Generator_on_Tube(hole_index_to_holes = {3: [37]}, knitgraph = knit_graph)
+    # yarns_and_holes_to_add = {2:[49], 7:[52, 53]} this throws an error 
+    # yarns_and_holes_to_add = {2:[49], 7:[53]} this throws an error 
+    # yarns_and_holes_to_add = {2:[49], 7:[41]}
+    # yarns_and_holes_to_add = {2:[49], 7:[27, 26]}
+    # hole_generator = Hole_Generator_on_Sheet(yarns_and_holes_to_add = {2:[49], 7:[27, 26]}, knitgraph = knit_graph)
     # knitGraph = hole_generator.add_hole()
+    # # note that we only update (delete hole nodes on the self._knit_graph, we do not correspondingly update nodes in both self.node_on_front_or_back and self.node_to_course_and_wale)
     # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
     # KnitGraph_Visualizer.visualize()
+
+    # add hole on tube
+    # hole_index_to_holes = {3: [37]} this throws an error
+    # hole_index_to_holes = {3: [32]} this throws an error
+    # hole_index_to_holes = {3: [30]} this throws an error
+    hole_generator = Hole_Generator_on_Tube(hole_index_to_holes = {3: [44]}, knitgraph = knit_graph)
+    knitGraph = hole_generator.add_hole()
+    KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+    KnitGraph_Visualizer.visualize()
 
     generator = Knitout_Generator(knit_graph)
     generator.write_instructions(f"cable.k")
@@ -204,7 +212,7 @@ def test_lace():
     # """
     sheet_yarn_carrier_id = 3
     compiler = Knitspeak_Compiler(carrier_id = sheet_yarn_carrier_id)
-    knit_graph = compiler.compile(18, 2, object_type = 'sheet', pattern = sheet_pattern)
+    knit_graph = compiler.compile(18, 10, object_type = 'sheet', pattern = sheet_pattern)
 
     # tube_yarn_carrier_id = 3
     # compiler = Knitspeak_Compiler(carrier_id = tube_yarn_carrier_id)
@@ -223,11 +231,11 @@ def test_lace():
     KnitGraph_Visualizer = knitGraph_visualizer(knit_graph)
     KnitGraph_Visualizer.visualize()
 
-    # hole_generator = Hole_Generator_on_Sheet(yarns_and_holes_to_add = {2:[49], 7:[98, 99]}, knitgraph = knit_graph)
-    # knitGraph = hole_generator.add_hole()
-    # # note that we only update (delete hole nodes on the self._knit_graph, we do not correspondingly update nodes in both self.node_on_front_or_back and self.node_to_course_and_wale)
-    # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
-    # KnitGraph_Visualizer.visualize()
+    hole_generator = Hole_Generator_on_Sheet(yarns_and_holes_to_add = {2:[49], 7:[98, 99]}, knitgraph = knit_graph)
+    knitGraph = hole_generator.add_hole()
+    # note that we only update (delete hole nodes on the self._knit_graph, we do not correspondingly update nodes in both self.node_on_front_or_back and self.node_to_course_and_wale)
+    KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+    KnitGraph_Visualizer.visualize()
 
     # hole_generator = Hole_Generator_on_Tube(hole_index_to_holes = {2: [58, 59], 4: [38]}, knitgraph = knit_graph)
     # knitGraph = hole_generator.add_hole()
@@ -329,8 +337,8 @@ def test_write_short_rows():
     generator.write_instructions(f"short_rows.k")
 
 if __name__ == "__main__":
-    # test_stst()
-    test_rib()
+    test_stst()
+    # test_rib()
     # test_write_slipped_rib()
     # test_write_slipped_rib_even()
     # test_cable()

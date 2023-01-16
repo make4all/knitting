@@ -533,7 +533,7 @@ class Hole_Generator_on_Tube:
                 # print(f'path is {path}')
                 for loop_id in path:
                     child_id, loop = new_yarn.add_loop_to_end(loop_id = loop_id)
-        
+    # @deprecated 
     def connect_hole_edge_nodes(self):
         for hole_index in [*self.holes_size.keys()]:
             if len(self._hole_course_to_wale_ids[hole_index].keys()) > 1:
@@ -606,7 +606,15 @@ class Hole_Generator_on_Tube:
                         pull_direction = Pull_Direction.BtF
                         # self._knit_graph.connect_loops(node, nearest_neighbor, parent_offset = parent_wale_id - child_wale_id, pull_direction = pull_direction) 
                         self._knit_graph.connect_loops(node, nearest_neighbor, parent_offset = int((parent_wale_id - child_wale_id)/self.wale_dist), pull_direction = pull_direction)
-
+                        # below we perform bind-off safety check
+                        # first, get all the parent loops that are sitting on the course underneath the course that nearest_neighbor node is on
+                        if len([*self._knit_graph.graph.predecessors(nearest_neighbor)]) != 0:
+                            predecessors = [*self._knit_graph.graph.predecessors(nearest_neighbor)]
+                            # filter out the node that are on the same horizontal line
+                            predecessors.remove(node)
+                            for predecessor in predecessors:
+                                assert self._knit_graph.graph[predecessor][nearest_neighbor]['parent_offset'] >= 0, f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {nearest_neighbor}'
+                            
     def read_connectivity_from_knitgraph(self):
         """
         transform edge_data_list where connectivity is expressed in terms of node id into coor_connectivity where connectivity is
@@ -718,6 +726,8 @@ class Hole_Generator_on_Tube:
         # # note that we only update (delete hole nodes on the self._knit_graph, we do not correspondingly update nodes in both self._knit_graph.node_on_front_or_back and self._knit_graph.node_to_course_and_wale)
         # KnitGraph_Visualizer = knitGraph_visualizer(self._knit_graph,  object_type = 'tube')
         # KnitGraph_Visualizer.visualize()
+        a = self._knit_graph.graph[30][31]['parent_offset']
+        print(f'7-21 offset is {a}')
         return self._knit_graph
 
 

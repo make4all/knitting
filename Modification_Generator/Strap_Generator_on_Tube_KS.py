@@ -455,7 +455,7 @@ class Strap_Generator_on_Tube:
                     pull_direction = Pull_Direction.BtF
                     # pull_direction = Pull_Direction.BtF if self.strap_graph.node_on_front_or_back[nearest_neighbor] == 'f' else Pull_Direction.FtB
                     if self.strap_graph.node_on_front_or_back[node] == 'f' and self.strap_graph.node_on_front_or_back[nearest_neighbor] == 'b':
-                        parent_offset = -(parent_wale_id - child_wale_id)/self.wale_dist
+                        parent_offset = (parent_wale_id - child_wale_id)/self.wale_dist
                     elif self.strap_graph.node_on_front_or_back[node] == 'b' and self.strap_graph.node_on_front_or_back[nearest_neighbor] == 'f':
                         parent_offset = (parent_wale_id - child_wale_id)/self.wale_dist
                     self.strap_graph.connect_loops(node, nearest_neighbor, pull_direction = pull_direction, parent_offset = parent_offset) 
@@ -494,7 +494,7 @@ class Strap_Generator_on_Tube:
                     pull_direction = Pull_Direction.BtF
                     # pull_direction = Pull_Direction.BtF if self.strap_graph.node_on_front_or_back[nearest_neighbor] == 'f' else Pull_Direction.FtB
                     if self.strap_graph.node_on_front_or_back[node] == 'f' and self.strap_graph.node_on_front_or_back[nearest_neighbor] == 'b':
-                        parent_offset = -(parent_wale_id - child_wale_id)/self.wale_dist
+                        parent_offset = (parent_wale_id - child_wale_id)/self.wale_dist
                     elif self.strap_graph.node_on_front_or_back[node] == 'b' and self.strap_graph.node_on_front_or_back[nearest_neighbor] == 'f':
                         parent_offset = (parent_wale_id - child_wale_id)/self.wale_dist
                     self.strap_graph.connect_loops(node, nearest_neighbor, pull_direction = pull_direction, parent_offset = parent_offset) 
