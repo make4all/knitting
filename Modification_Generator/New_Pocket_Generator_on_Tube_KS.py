@@ -27,7 +27,7 @@ class Pocket_Generator_on_Tube:
         self.parent_knitgraph_coors_connectivity: List[Tuple] = []
         self.left_keynodes_child_fabric: List[Tuple[int, int]] = left_keynodes_child_fabric
         self.right_keynodes_child_fabric: List[Tuple[int, int]] = right_keynodes_child_fabric
-        assert self.parent_knitgraph.gauge == 1/3, f'the gauge of given parent knitgraph has to be 1/3' #no matter what gauge parent graph is using, here we set it as 1/3
+        assert self.parent_knitgraph.gauge <= 1/3, f'the gauge of given parent knitgraph has to be 1/3' #no matter what gauge parent graph is using, here we set it as 1/3
         self.pocket_graph.gauge = self.child_knitgraph.gauge = self.parent_knitgraph.gauge #this is true for adding pocket on sheet case
         self.wale_dist = int(1/self.parent_knitgraph.gauge)
         #
@@ -64,6 +64,7 @@ class Pocket_Generator_on_Tube:
         self.edge_connection_left_side = edge_connection_left_side
         self.edge_connection_right_side = edge_connection_right_side        
         assert len(self.left_keynodes_child_fabric) - 1 == len(self.edge_connection_left_side) and len(self.right_keynodes_child_fabric) - 1 == len(self.edge_connection_right_side), f'number of connection booleans should be equal to that of keynodes on both sides'
+        self.wale_id_offset: int #use for connecting root nodes to split nodes
 
     def check_keynodes_validity(self): 
         """
@@ -81,13 +82,17 @@ class Pocket_Generator_on_Tube:
         last_keynode_right = self.right_keynodes_child_fabric[-1]
         assert first_keynode_left[0] == first_keynode_right[0], f'first keynode on the left and right do not share the same course_id'
         assert last_keynode_left[0] == last_keynode_right[0], f'last keynode on the left and right do not share the same course_id'
-        #
+        # keynode check 1: gauge check
+        assert (first_keynode_right[1] - first_keynode_left[1]) % self.wale_dist == 0, f'wale distance between first keynodes does not match the gauge setup'
+        assert (last_keynode_right[1] - last_keynode_left[1]) % self.wale_dist == 0, f'wale distance between last keynodes does not match the gauge setup'
+        # keynode check 2: slope check
         num_of_nodes_left_side = len(self.left_keynodes_child_fabric)
         num_of_nodes_right_side = len(self.right_keynodes_child_fabric)
         for i in range(1, num_of_nodes_left_side):
             curr_left_keynode = self.left_keynodes_child_fabric[i]
             last_left_keynode = self.left_keynodes_child_fabric[i-1] 
             width_change_left = curr_left_keynode[1] - last_left_keynode[1]
+            assert width_change_left % self.wale_dist == 0, f'wale distance between keynodes {i-1} and {i} does not match the gauge setup'
             increase_height_left = curr_left_keynode[0] - last_left_keynode[0]
             #check if any other keynodes might be missed in between 
             if width_change_left % increase_height_left != 0:
@@ -97,6 +102,7 @@ class Pocket_Generator_on_Tube:
             curr_right_keynode = self.right_keynodes_child_fabric[i]
             last_right_keynode = self.right_keynodes_child_fabric[i-1]
             width_change_right = curr_right_keynode[1] - last_right_keynode[1]
+            assert width_change_right % self.wale_dist == 0, f'wale distance between keynodes {i-1} and {i} does not match the gauge setup'
             increase_height_right = curr_right_keynode[0] - last_right_keynode[0]
             if width_change_right % increase_height_right != 0:
                 print(f'some keynodes might exist bewtween given keynodes {last_right_keynode} and {curr_right_keynode} on the right side if these two keynodes are entered correctly')
@@ -169,7 +175,7 @@ class Pocket_Generator_on_Tube:
                 for wale_id in range(ending_node_wale_id, staring_node_wale_id - self.wale_dist, -self.wale_dist):
                     node_to_course_and_wale[node] = (course_id, wale_id)
                     node += 1
-        print(f'node_to_course_and_wale is {node_to_course_and_wale}')
+        print(f'node_to_course_and_wale for child fabric demo is {node_to_course_and_wale}')
         self.child_knitgraph.node_to_course_and_wale = node_to_course_and_wale
         #connect nodes on yarn
         for node in node_to_course_and_wale.keys():
@@ -378,13 +384,24 @@ class Pocket_Generator_on_Tube:
         """
         mirror_nodes_smaller_wale_side_parent: Dict[int: List[int]] = {}
         mirror_nodes_bigger_wale_side_parent: Dict[int: List[int]] = {}
+        search_max_width = self.wale_dist
         for edge_index in edge_nodes_bigger_wale_side_child.keys():
             mirror_nodes_bigger_wale_side_parent[edge_index] = []
             edge_nodes = edge_nodes_bigger_wale_side_child[edge_index]
             for edge_node in edge_nodes:
                 course_id = self.child_knitgraph.node_to_course_and_wale[edge_node][0]
                 wale_id = self.child_knitgraph.node_to_course_and_wale[edge_node][1]
-                mirror_nodes_wale_id = wale_id+1 if self.is_front_patch == False else wale_id-1
+                # for efficiency, we only need to perform below once.
+                if edge_node == edge_nodes[0]:
+                    for wale_id_offset in range(search_max_width):
+                        target_wale_id = wale_id + wale_id_offset
+                        if (course_id, target_wale_id) in self.parent_knitgraph_course_and_wale_to_node:
+                            assert wale_id_offset!=0, f'wale_id of child fabric can not be the same as parent fabric, otherwise child fabric will not be able to achieve texturized pattern'
+                            if self.parent_knitgraph_course_and_wale_to_bed[(course_id, target_wale_id)] == ('b' if self.is_front_patch==False else 'f'):
+                                self.wale_id_offset = wale_id_offset
+                                break
+                # mirror_nodes_wale_id = wale_id+1 if self.is_front_patch == False else wale_id-1
+                mirror_nodes_wale_id = wale_id+self.wale_id_offset
                 mirror_nodes_bigger_wale_side_parent[edge_index].append(self.parent_knitgraph_course_and_wale_to_node[(course_id, mirror_nodes_wale_id)])
         for edge_index in edge_nodes_smaller_wale_side_child.keys():
             mirror_nodes_smaller_wale_side_parent[edge_index] = []
@@ -392,7 +409,8 @@ class Pocket_Generator_on_Tube:
             for edge_node in edge_nodes:
                 course_id = self.child_knitgraph.node_to_course_and_wale[edge_node][0]
                 wale_id = self.child_knitgraph.node_to_course_and_wale[edge_node][1]
-                mirror_nodes_wale_id = wale_id+1 if self.is_front_patch == False else wale_id-1
+                # mirror_nodes_wale_id = wale_id+1 if self.is_front_patch == False else wale_id-1
+                mirror_nodes_wale_id = wale_id+self.wale_id_offset
                 mirror_nodes_smaller_wale_side_parent[edge_index].append(self.parent_knitgraph_course_and_wale_to_node[(course_id, mirror_nodes_wale_id)])
         print(f'mirror nodes on parent knitgraph that correspond to edge nodes of each edge on smaller wale side on child knitgraph is {mirror_nodes_smaller_wale_side_parent}, \
             mirror nodes on parent knitgraph that correspond to edge nodes of each edge on bigger wale side on child knitgraph is {mirror_nodes_bigger_wale_side_parent}')
@@ -493,8 +511,8 @@ class Pocket_Generator_on_Tube:
                         depth = attr_dict['depth']
                         parent_offset = attr_dict['parent_offset']
                         self.pocket_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
-                        # self.pocket_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB)
-                        self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 1 if self.is_front_patch == False else -1)
+                        # self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 1 if self.is_front_patch == False else -1)
+                        self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = self.wale_id_offset)
         # then iterate over edge_connection_right_side to see which edge to connect
         num_of_right_edges = len(self.edge_connection_right_side)
         for edge_index in range(num_of_right_edges):
@@ -509,8 +527,8 @@ class Pocket_Generator_on_Tube:
                         depth = attr_dict['depth']
                         parent_offset = attr_dict['parent_offset']
                         self.pocket_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
-                        # self.pocket_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB)
-                        self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 1 if self.is_front_patch == False else -1)
+                        # self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 1 if self.is_front_patch == False else -1)
+                        self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = self.wale_id_offset)
 
     def reconnect_bottom_branches(self):
         """
@@ -521,8 +539,9 @@ class Pocket_Generator_on_Tube:
         # for wale_id in range(self.left_keynodes_child_fabric[0][1]+self.wale_dist, self.right_keynodes_child_fabric[0][1]-self.wale_dist, self.wale_dist):
         for wale_id in range(self.left_keynodes_child_fabric[0][1], self.right_keynodes_child_fabric[0][1]+self.wale_dist, self.wale_dist):
             split_node = self.child_knitgraph_course_and_wale_to_node[(course_id, wale_id)]
-            wale_offset = 1 if self.is_front_patch == False else -1
-            mirror_node = self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id+wale_offset)]
+            # wale_offset = 1 if self.is_front_patch == False else -1
+            # mirror_node = self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id+wale_offset)]
+            mirror_node = self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id+self.wale_id_offset)]
             bottom_root_nodes[(mirror_node, split_node)] = []
             mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
             parent_coors = self.find_parent_coors(child_coor = mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
@@ -535,8 +554,8 @@ class Pocket_Generator_on_Tube:
                 depth = attr_dict['depth']
                 parent_offset = attr_dict['parent_offset']
                 self.pocket_graph.connect_loops(root_node, mirror_node, parent_offset = parent_offset, pull_direction = Pull_Direction.FtB, depth = depth)
-                # self.pocket_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.FtB)
-                self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 1 if self.is_front_patch == False else -1)
+                # self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = 1 if self.is_front_patch == False else -1)
+                self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = self.wale_id_offset)
         print(f'bottom_root_nodes is {bottom_root_nodes}')
 
     def build_pocket_graph(self) -> Knit_Graph:   
@@ -588,8 +607,10 @@ class Pocket_Generator_on_Tube:
                 course = self.pocket_graph.node_to_course_and_wale[node][0]
                 wale = self.pocket_graph.node_to_course_and_wale[node][1]
                 print(f'node to connect on child fabric is {node}')
-                node_to_connect = self.parent_knitgraph_course_and_wale_to_node[(course+1, wale+1)] if self.is_front_patch == False else self.parent_knitgraph_course_and_wale_to_node[(course+1, wale-1)] 
-                neighbor_node = self.parent_knitgraph_course_and_wale_to_node[(course, wale+1)] if self.is_front_patch == False else self.parent_knitgraph_course_and_wale_to_node[(course, wale-1)]
+                node_to_connect = self.parent_knitgraph_course_and_wale_to_node[(course+1, wale+self.wale_id_offset)] 
+                neighbor_node = self.parent_knitgraph_course_and_wale_to_node[(course, wale+self.wale_id_offset)] 
+                # node_to_connect = self.parent_knitgraph_course_and_wale_to_node[(course+1, wale+1)] if self.is_front_patch == False else self.parent_knitgraph_course_and_wale_to_node[(course+1, wale-1)] 
+                # neighbor_node = self.parent_knitgraph_course_and_wale_to_node[(course, wale+1)] if self.is_front_patch == False else self.parent_knitgraph_course_and_wale_to_node[(course, wale-1)]
                 print(f'haha neighbor_node is {neighbor_node}, node_to_connect is {node_to_connect}')
                 # see if node_to_connect and neighbor_node is connected
                 parent_coors = self.find_parent_coors(child_coor = node_to_connect, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
@@ -597,6 +618,7 @@ class Pocket_Generator_on_Tube:
                     pull_direction = self.pocket_graph.graph[neighbor_node][node_to_connect]['pull_direction']
                 else:
                     pull_direction = Pull_Direction.BtF #no matter it is on front or back bed
-                self.pocket_graph.connect_loops(node, node_to_connect, pull_direction = pull_direction, parent_offset = 1/self.wale_dist if self.is_front_patch == True else -1/self.wale_dist)
+                # self.pocket_graph.connect_loops(node, node_to_connect, pull_direction = pull_direction, parent_offset = 1/self.wale_dist if self.is_front_patch == True else -1/self.wale_dist)
+                self.pocket_graph.connect_loops(node, node_to_connect, pull_direction = pull_direction, parent_offset = 1/self.wale_id_offset if self.is_front_patch == True else -1/self.wale_id_offset)
         return self.pocket_graph
   
