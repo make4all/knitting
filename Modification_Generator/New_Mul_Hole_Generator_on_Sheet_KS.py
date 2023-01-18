@@ -162,7 +162,7 @@ class Hole_Generator_on_Sheet:
                     exit()
                 #Second, on knit graph, any edge related to the node must have a parent offset that is 0.
                 #If not, it is part of decrease or cable.
-                if len(parent_ids) != 0:
+                if len(parent_ids) == 1:
                     for parent_id in parent_ids:
                         parent_offset = self._knit_graph.graph[parent_id][node]["parent_offset"]
                         if parent_offset != 0:
@@ -221,7 +221,7 @@ class Hole_Generator_on_Sheet:
                 del self._knit_graph.node_to_course_and_wale[hole_node]
                 del self._knit_graph.node_on_front_or_back[hole_node] 
         self._knit_graph.course_and_wale_to_node = {v: k for k, v in self._knit_graph.node_to_course_and_wale.items()}
-        print(f'self._knit_graph.course_and_wale_to_node is {self._knit_graph.course_and_wale_to_node}')
+        print(f'updated self._knit_graph.course_and_wale_to_node with hole nodes deleted is {self._knit_graph.course_and_wale_to_node}')
 
     def get_start_and_end_wale_id_per_course(self):
         course_id_to_start_wale_id = {}
@@ -245,9 +245,9 @@ class Hole_Generator_on_Sheet:
         self.course_id_to_start_wale_id = course_id_to_start_wale_id
         self.course_id_to_end_wale_id = course_id_to_end_wale_id
 
-    # only applicable to sheet case
     def get_new_yarn_loop_ids_for_holes(self):
         """
+        ----Only applicable to sheet case----
         Provided the hole_start_course, no matter what the yarn starting direction is, i.e., from left to right or from right
         to left, the loop ids that should be re-assigned to a new yarn can be determined by if the hole_start_course is an 
         odd number or even number, though the use of wale id and course id.
@@ -265,23 +265,21 @@ class Hole_Generator_on_Sheet:
                 for course_id in range(hole_info['hole_start_course'], hole_info['hole_end_course'] + 1):
                     smallest_wale_id = min(self._hole_course_to_wale_ids[hole_index][course_id])
                     biggest_wale_id = max(self._hole_course_to_wale_ids[hole_index][course_id])
-                    if (course_id, smallest_wale_id-(self.wale_dist)) not in self._knit_graph.course_and_wale_to_node.keys():
-                        print(f'no node is found on the hole margin near the old yarn side {(course_id, smallest_wale_id - 1)}')
-                    
+                    if (course_id, smallest_wale_id - self.wale_dist) not in self._knit_graph.course_and_wale_to_node.keys():
+                        print(f'no node is found on the hole margin near the old yarn side {(course_id, smallest_wale_id - self.wale_dist)}')
                     else:
                         old_yarn_course_to_margin_loop_ids[course_id] = self._knit_graph.course_and_wale_to_node[(course_id, smallest_wale_id - self.wale_dist)]
-                    if (course_id, biggest_wale_id + (self.wale_dist)) not in self._knit_graph.course_and_wale_to_node.keys():
-                        print(f'no node is found on the hole margin near the new yarn side {(course_id, biggest_wale_id + 1)}')
-                        
+                    if (course_id, biggest_wale_id + self.wale_dist) not in self._knit_graph.course_and_wale_to_node.keys():
+                        print(f'no node is found on the hole margin near the new yarn side {(course_id, biggest_wale_id + self.wale_dist)}')   
                     else:
                         new_yarn_course_to_margin_loop_ids[course_id] = self._knit_graph.course_and_wale_to_node[(course_id, biggest_wale_id + self.wale_dist)]
                     new_yarn_course_to_loop_ids[course_id] = []
                     if course_id % 2 == 0:
-                        for wale_id in range(biggest_wale_id + self.wale_dist, self.course_id_to_end_wale_id[course_id]+self.wale_dist):
+                        for wale_id in range(biggest_wale_id + self.wale_dist, self.course_id_to_end_wale_id[course_id] + self.wale_dist):
                             if (course_id, wale_id) in self._knit_graph.course_and_wale_to_node.keys():
                                 new_yarn_course_to_loop_ids[course_id].append(self._knit_graph.course_and_wale_to_node[(course_id, wale_id)])
                     elif course_id % 2 == 1:
-                        for wale_id in range(biggest_wale_id + self.wale_dist, self.course_id_to_end_wale_id[course_id]+self.wale_dist):
+                        for wale_id in range(biggest_wale_id + self.wale_dist, self.course_id_to_end_wale_id[course_id] + self.wale_dist):
                             if (course_id, wale_id) in self._knit_graph.course_and_wale_to_node.keys():
                                 new_yarn_course_to_loop_ids[course_id].insert(0, self._knit_graph.course_and_wale_to_node[(course_id, wale_id)])
                     if hole_info['hole_height'] % 2 == 0:

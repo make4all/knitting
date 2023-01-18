@@ -399,6 +399,7 @@ class Handle_Generator_on_Tube:
                                 break
                 # mirror_nodes_wale_id = wale_id+1 if self.is_front_patch == False else wale_id-1
                 mirror_nodes_wale_id = wale_id+self.wale_id_offset
+                assert (course_id, mirror_nodes_wale_id) in self.parent_knitgraph_course_and_wale_to_node, f'cannot find mirror node at {(course_id, mirror_nodes_wale_id)}'
                 mirror_nodes_bigger_wale_side_parent[edge_index].append(self.parent_knitgraph_course_and_wale_to_node[(course_id, mirror_nodes_wale_id)])
         for edge_index in edge_nodes_smaller_wale_side_child.keys():
             mirror_nodes_smaller_wale_side_parent[edge_index] = []
@@ -408,6 +409,7 @@ class Handle_Generator_on_Tube:
                 wale_id = self.child_knitgraph.node_to_course_and_wale[edge_node][1]
                 # mirror_nodes_wale_id = wale_id+1 if self.is_front_patch == False else wale_id-1
                 mirror_nodes_wale_id = wale_id+self.wale_id_offset
+                assert (course_id, mirror_nodes_wale_id) in self.parent_knitgraph_course_and_wale_to_node, f'cannot find mirror node at {(course_id, mirror_nodes_wale_id)}'
                 mirror_nodes_smaller_wale_side_parent[edge_index].append(self.parent_knitgraph_course_and_wale_to_node[(course_id, mirror_nodes_wale_id)])
         print(f'mirror nodes on parent knitgraph that correspond to edge nodes of each edge on smaller wale side on child knitgraph is {mirror_nodes_smaller_wale_side_parent}, \
             mirror nodes on parent knitgraph that correspond to edge nodes of each edge on bigger wale side on child knitgraph is {mirror_nodes_bigger_wale_side_parent}')

@@ -348,6 +348,7 @@ class Handle_Generator_on_Sheet:
                             assert wale_id_offset!=0, f'wale_id of child fabric can not be the same as parent fabric, otherwise child fabric will not be able to achieve texturized pattern'
                             self.wale_id_offset = wale_id_offset
                             break
+                assert (course_id, wale_id+wale_id_offset) in self.parent_knitgraph_course_and_wale_to_node, f'cannot find mirror node at {(course_id, wale_id+wale_id_offset)}'
                 mirror_nodes_bigger_wale_side_parent[edge_index].append(self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id+wale_id_offset)])
         for edge_index in edge_nodes_smaller_wale_side_child.keys():
             mirror_nodes_smaller_wale_side_parent[edge_index] = []
@@ -355,6 +356,7 @@ class Handle_Generator_on_Sheet:
             for edge_node in edge_nodes:
                 course_id = self.child_knitgraph.node_to_course_and_wale[edge_node][0]
                 wale_id = self.child_knitgraph.node_to_course_and_wale[edge_node][1]
+                assert (course_id, wale_id+wale_id_offset) in self.parent_knitgraph_course_and_wale_to_node, f'cannot find mirror node at {(course_id, wale_id+wale_id_offset)}'
                 mirror_nodes_smaller_wale_side_parent[edge_index].append(self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id+wale_id_offset)])
         print(f'mirror nodes on parent knitgraph that correspond to edge nodes of each edge on smaller wale side on child knitgraph is {mirror_nodes_smaller_wale_side_parent}, \
             mirror nodes on parent knitgraph that correspond to edge nodes of each edge on bigger wale side on child knitgraph is {mirror_nodes_bigger_wale_side_parent}')
