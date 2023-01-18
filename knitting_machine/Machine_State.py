@@ -296,6 +296,7 @@ class Machine_State:
         :param racking:the current racking between the front and back bed: r=f-b
         """
         self.racking: float = racking
+        self.racking_bound: int = 3
         self.front_bed: Machine_Bed = Machine_Bed(is_front=True, needle_count=needle_count)
         self.back_bed: Machine_Bed = Machine_Bed(is_front=False, needle_count=needle_count)
         self.last_carriage_direction: Pass_Direction = Pass_Direction.Left_to_Right
@@ -403,6 +404,7 @@ class Machine_State:
         """
         original = self.racking
         self.racking = front_pos - back_pos
+        assert self.racking <= self.racking_bound, f'racking {self.racking} can not exceed racking bound: {self.racking_bound} of the machine'
         return self.racking, original == self.racking
 
     def valid_rack(self, front_pos: int, back_pos: int) -> bool:
