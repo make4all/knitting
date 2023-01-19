@@ -110,7 +110,8 @@ class Hole_Generator_on_Sheet:
             #number of unique wale id can not exceed 6 to make it a feasible to knit on knittimg machine taking into account racking constraint
             # deprecated because now turn to bind-off on unstable hole nodes
             # assert len(wale_involved) <= 5, f'hole width is too large to achieve the racking bound by 2 on the machine'
-            assert self._hole_start_course > 1, f'bind-off would fail if hole_start_course <= 1'
+            # relax below constraints considering in our pipeline we have waste height for each knit object.
+            # assert self._hole_start_course > 1, f'bind-off would fail if hole_start_course <= 1'
             assert self._hole_end_course < self._pattern_height - 1, f'hole height is too large that it is exceeding the knit graph border'
             self._hole_height = self._hole_end_course - self._hole_start_course + 1
             self._hole_width = (self._hole_end_wale - self._hole_start_wale) + self.wale_dist
@@ -442,36 +443,41 @@ class Hole_Generator_on_Sheet:
             # then connect nodes that have no child to its nearest neighbor node
             # we sorted the nodes so that we can guarantee that small nodes is connected to the bigger nodes, which is consistent with bind-off. it can be reverted.
             sorted_bottom_nodes = sorted(bottom_nodes)
-            # print(f'sorted_bottom_nodes is {sorted_bottom_nodes}')
+            print(f'sorted_bottom_nodes for course_id: {hole_bottom_course_id+1} is {sorted_bottom_nodes}')
             for i in range(len(sorted_bottom_nodes)-1):
                 node = sorted_bottom_nodes[i]
-                nearest_neighbor = sorted_bottom_nodes[i+1]
-                if node not in self._knit_graph.graph.nodes or nearest_neighbor not in self._knit_graph.graph.nodes:
-                    continue
-                else:
+                # instead of using below method, we won't stop until finding the node to connect to acheive bind-off, if can't find any, throw an error.
+                # nearest_neighbor = sorted_bottom_nodes[i+1]
+                # if node not in self._knit_graph.graph.nodes or nearest_neighbor not in self._knit_graph.graph.nodes:
+                #     continue
+                if node in self._knit_graph.graph.nodes:
                     child_ids = [*self._knit_graph.graph.successors(node)] 
-                    # only connect node that have no child, i.e., unstable
-                    if len(child_ids) == 0:
-                        parent_wale_id = self._knit_graph.node_to_course_and_wale[node][1]
-                        child_wale_id = self._knit_graph.node_to_course_and_wale[nearest_neighbor][1]
-                        # todo: if the parent offset of bind_off is larger than 2, we will consider using connect_hole_edge_node(). But if the parent offset in connect_\
-                        # hole_edge_node is also larger than 2, we will send out a error and exit.
-                        self._knit_graph.connect_loops(node, nearest_neighbor, parent_offset = int((parent_wale_id - child_wale_id)/self.wale_dist))
-                        #we use (parent_wale_id - child_wale_id)/self.wale_dist rather than (parent_wale_id - child_wale_id) above is 
-                        # because we will "parent_offset*self.wale_dist" in final_knitgraph_to_knitout.py again. 
-                        # below we perform bind-off safety check
-                        # first, get all the parent loops that are sitting on the course underneath the course that nearest_neighbor node is on
-                        if len([*self._knit_graph.graph.predecessors(nearest_neighbor)]) != 0:
-                            predecessors = [*self._knit_graph.graph.predecessors(nearest_neighbor)]
-                            # filter out the node that are on the same horizontal line
-                            predecessors.remove(node)
-                            if hole_bottom_course_id % 2 == 1:
-                                for predecessor in predecessors:
-                                    assert self._knit_graph.graph[predecessor][nearest_neighbor]['parent_offset'] <= 0, f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {nearest_neighbor}'
+                    print(f'node is {node},child_ids is {child_ids}')
+                    if len(child_ids) == 0: # only connect node that have no child, i.e., unstable
+                        for potential_node_to_connect in sorted_bottom_nodes[i+1:]:
+                            if potential_node_to_connect not in self._knit_graph.graph.nodes:
+                                continue
                             else:
-                                for predecessor in predecessors:
-                                    assert self._knit_graph.graph[predecessor][nearest_neighbor]['parent_offset'] >= 0, f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {nearest_neighbor}' 
-
+                                parent_wale_id = self._knit_graph.node_to_course_and_wale[node][1]
+                                child_wale_id = self._knit_graph.node_to_course_and_wale[potential_node_to_connect][1]
+                                # todo: if the parent offset of bind_off is larger than 2, we will consider using connect_hole_edge_node(). But if the parent offset in connect_\
+                                # hole_edge_node is also larger than 2, we will send out a error and exit.
+                                self._knit_graph.connect_loops(node, potential_node_to_connect, parent_offset = int((parent_wale_id - child_wale_id)/self.wale_dist))
+                                # we use (parent_wale_id - child_wale_id)/self.wale_dist rather than (parent_wale_id - child_wale_id) above is 
+                                # because we will "parent_offset*self.wale_dist" in final_knitgraph_to_knitout.py again. 
+                                # below we perform bind-off safety check
+                                # first, get all the parent loops that are sitting on the course underneath the course that nearest_neighbor node is on
+                                if len([*self._knit_graph.graph.predecessors(potential_node_to_connect)]) != 0:
+                                    predecessors = [*self._knit_graph.graph.predecessors(potential_node_to_connect)]
+                                    # filter out the node that are on the same horizontal line
+                                    predecessors.remove(node)
+                                    if hole_bottom_course_id % 2 == 1:
+                                        for predecessor in predecessors:
+                                            assert self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] <= 0, f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {nearest_neighbor}'
+                                    else:
+                                        for predecessor in predecessors:
+                                            assert self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] >= 0, f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {nearest_neighbor}' 
+                                break
     def add_hole(self):
         #first determine the validity of the input hole
         # self.hole_shape_and_number_constraints()

@@ -207,7 +207,9 @@ class Knitout_Generator:
                                 self.loop_id_to_knit_dir[prior_loop] = '-'
                                 self.loop_id_to_knit_dir[next_loop] = '+'     
                 else:
+                    node = [*yarn.yarn_graph.nodes][0]
                     dir = '-' #(the direction that the carrier first comes in)
+                    self.loop_id_to_knit_dir[node] = dir
         # revert if yarn start from 'right to left'.
         if self._knit_graph.yarn_start_direction == 'right to left':
             for loop_id in self.loop_id_to_knit_dir:

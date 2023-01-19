@@ -23,7 +23,7 @@ def test_stst():
     sheet_yarn_carrier_id = 2
     compiler = Knitspeak_Compiler(carrier_id = sheet_yarn_carrier_id)
     # knit_graph = compiler.compile(12, 10, object_type = 'sheet', pattern = sheet_pattern)
-    knit_graph = compiler.compile(8, 6, object_type = 'sheet', pattern = sheet_pattern)
+    knit_graph = compiler.compile(8, 7, object_type = 'sheet', pattern = sheet_pattern)
     # for tube
     # tube_pattern = "all rs rounds k. all ws rounds p."
     # tube_yarn_carrier_id = 3
@@ -55,7 +55,8 @@ def test_stst():
     # {2: [29], 4: [35], 6:[27]} the one that tells us how to optimize code to stabilize unstable node. refer to slide pp. 203
     # {2: [20, 26, 27, 28, 34, 35, 36, 37, 38, 42, 44]} a heart-shaped hole
     # yarns_and_holes_to_add = {6:[29], 4:[20, 21, 22]}
-    hole_generator = Hole_Generator_on_Sheet(yarns_and_holes_to_add = {1:[19, 20], 7:[34, 35], 4: [42]}, knitgraph = knit_graph)
+    # yarns_and_holes_to_add = {1:[19, 20], 7:[34, 35], 4: [42]} used to replicate a figure used for the paper
+    hole_generator = Hole_Generator_on_Sheet(yarns_and_holes_to_add = {1:[28], 7:[20], 4:[18]}, knitgraph = knit_graph)
     knitGraph = hole_generator.add_hole()
     # note that we only update (delete hole nodes on the self._knit_graph, we do not correspondingly update nodes in both self.node_on_front_or_back and self.node_to_course_and_wale)
     KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
@@ -319,10 +320,7 @@ def test_write_slipped_rib():
     # KnitGraph_Visualizer.visualize()
     
     # add pocket on tube
-    # when gauge = 1/3: left_keynodes_child_fabric=[(3, 4), (6, 4)], right_keynodes_child_fabric=[(3, 7), (6, 7)], edge_connection_left_side = [True], close_top = True, edge_connection_right_side = [True]
-    # when gauge = 1/3: left_keynodes_child_fabric=[(3, 4), (4, 1), (6, 1)], right_keynodes_child_fabric=[(3, 7), (4,10), (6, 10)], close_top = True, edge_connection_left_side = [True, True], edge_connection_right_side = [True, True]
-    # when gauge = 1/3: pocket_generator = Pocket_Generator_on_Tube(parent_knitgraph = knit_graph, tube_yarn_carrier_id = tube_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = True, left_keynodes_child_fabric=[(3, 4), (6, 4)], right_keynodes_child_fabric=[(3, 7), (6, 7)], close_top = True, edge_connection_left_side = [True], edge_connection_right_side = [True])
-    # when gauge = 1/4: pocket_generator = Pocket_Generator_on_Tube(parent_knitgraph = knit_graph, tube_yarn_carrier_id = tube_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 5), (6, 5)], right_keynodes_child_fabric=[(3, 13), (6, 13)], close_top = True, edge_connection_left_side = [True], edge_connection_right_side = [True])
+    # when gauge = 1/3: pocket_generator = Pocket_Generator_on_Tube(parent_knitgraph = knit_graph, tube_yarn_carrier_id = tube_yarn_carrier_id, pocket_yarn_carrier_id = 4, is_front_patch = False, left_keynodes_child_fabric = [(3, 7), (6, 7)], right_keynodes_child_fabric = [(3, 13), (6, 13)], edge_connection_left_side = [True], close_top = True, edge_connection_right_side = [True])
     pocket_generator = Pocket_Generator_on_Tube(parent_knitgraph = knit_graph, tube_yarn_carrier_id = tube_yarn_carrier_id, pocket_yarn_carrier_id = 4, is_front_patch = False, left_keynodes_child_fabric = [(3, 7), (6, 7)], right_keynodes_child_fabric = [(3, 13), (6, 13)], edge_connection_left_side = [True], close_top = True, edge_connection_right_side = [True])
     knitGraph = pocket_generator.build_pocket_graph() 
     KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
@@ -355,7 +353,7 @@ def test_write_slipped_rib_even():
 
 
 def test_write_short_rows():
-    object_type = 'tube'
+    # for sheet
     # sheet_pattern = r"""
     #     1st row [k] to end.
     #     2nd row [p] to last 1 sts, slip 1.
@@ -365,6 +363,11 @@ def test_write_short_rows():
     #     6th row slip 2, [p] to end.
     #     7th row [k] to end.
     # """
+    # sheet_yarn_carrier_id = 2
+    # compiler = Knitspeak_Compiler(carrier_id = sheet_yarn_carrier_id)
+    # knit_graph = compiler.compile(5, 7, object_type = 'sheet', pattern = sheet_pattern)
+
+    # for tube
     tube_pattern = r"""
         1st round [k] to end.
         2nd round [p] to last 1 sts, slip 1.
@@ -374,22 +377,37 @@ def test_write_short_rows():
         6th round slip 2, [p] to end.
         7th round [k] to end.
     """
-    compiler = Knitspeak_Compiler()
-    knit_graph = compiler.compile(5, 7, tube_pattern)
-    knit_graph.gauge = 0.5
+    tube_yarn_carrier_id = 3
+    compiler = Knitspeak_Compiler(carrier_id = tube_yarn_carrier_id)
+    knit_graph = compiler.compile(8, 7, object_type = 'tube', pattern = tube_pattern)
+
+    knit_graph.gauge = 1/3
     loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
-    loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_wales(object_type = object_type) 
-    node_to_course_and_wale = knit_graph.get_node_course_and_wale(object_type = object_type)
-    node_on_front_or_back = knit_graph.get_node_bed(object_type = object_type)
-    KnitGraph_Visualizer = knitGraph_visualizer(knit_graph, object_type = object_type)
+    loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_wales() 
+    node_to_course_and_wale = knit_graph.get_node_course_and_wale()
+    node_on_front_or_back = knit_graph.get_node_bed()
+    course_and_wale_and_bed_to_node = knit_graph.get_course_and_wale_and_bed_to_node()
+    KnitGraph_Visualizer = knitGraph_visualizer(knit_graph)
     KnitGraph_Visualizer.visualize()
+
+    # hole_generator = Hole_Generator_on_Sheet(yarns_and_holes_to_add = {7: [12, 15]}, knitgraph = knit_graph)
+    # knitGraph = hole_generator.add_hole()
+    # # note that we only update (delete hole nodes on the self._knit_graph, we do not correspondingly update nodes in both self.node_on_front_or_back and self.node_to_course_and_wale)
+    # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+    # KnitGraph_Visualizer.visualize()
+
+    #this convertor is for the modified knitgraph
+    # generator = Knitout_Generator(knitGraph)
+    # generator.write_instructions(f"short_rows.k")
+
+    #this convertor is for the unmodified knitgraph
     generator = Knitout_Generator(knit_graph)
     generator.write_instructions(f"short_rows.k")
 
 if __name__ == "__main__":
-    # test_stst()
+    test_stst()
     # test_rib()
-    test_write_slipped_rib()
+    # test_write_slipped_rib()
     # test_write_slipped_rib_even()
     # test_cable()
     # test_lace()
