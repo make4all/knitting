@@ -71,6 +71,7 @@ class knitGraph_visualizer:
         # print(f'nodes_to_positions is {self.nodes_to_positions}')
     #set node color
     def get_nodes_color(self):
+        print(f'in knit viz, nodes is {self.knit_graph.graph.nodes}')
         for node in self.knit_graph.graph.nodes:
             #find carrier_id of the node
             #first identify the yarn of the node
@@ -78,6 +79,7 @@ class knitGraph_visualizer:
                 if node in yarn:
                     carrier_id = yarn.carrier.carrier_ids
                     break
+            print(f'in knit viz, node is {node}, carrier_id is {carrier_id}')
             #store node color property
             self.node_color_property[node]['color'] = self.carrier_id_to_color[carrier_id]
             self.node_color_property[node]['alpha'] = self.alpha_front if self.node_on_front_or_back[node] == 'f' else self.alpha_back
@@ -86,11 +88,14 @@ class knitGraph_visualizer:
         #add yarn edges and set edge color
         for yarn in self.yarns:
             for prior_node, next_node in yarn.yarn_graph.edges:
+                if prior_node not in self.nodes_to_positions or next_node not in self.nodes_to_positions:
+                    continue
                 self.edge_color_property[(prior_node, next_node)] = {}
                 carrier_id = yarn.carrier.carrier_ids
                 self.edge_color_property[(prior_node, next_node)]['color'] = self.carrier_id_to_color[carrier_id]
                 #As long as either node on the edge is on the front, then the edge is regarded as on the front and will be colored brighter
                 self.edge_color_property[(prior_node, next_node)]['alpha'] = self.alpha_front if self.node_on_front_or_back[prior_node] == 'f' and self.node_on_front_or_back[next_node] == 'f' else self.alpha_back
+        print(f'self.edge_color_property is {self.edge_color_property}')
     #get stitch edges color
     def get_stitch_edges(self):
         #add stitch edges and set edge color

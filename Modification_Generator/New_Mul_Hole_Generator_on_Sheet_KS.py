@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Tuple, Union
 import networkx as nx
 from knit_graphs.Yarn import Yarn
-from knit_graphs.Knit_Graph import Knit_Graph
+from knit_graphs.Knit_Graph import Knit_Graph, Pull_Direction
 from debugging_tools.final_knit_graph_viz import knitGraph_visualizer
 from debugging_tools.polygon_generator import Polygon_Generator
 from debugging_tools.simple_knitgraph_generator import Simple_Knitgraph_Generator
@@ -110,8 +110,9 @@ class Hole_Generator_on_Sheet:
             #number of unique wale id can not exceed 6 to make it a feasible to knit on knittimg machine taking into account racking constraint
             # deprecated because now turn to bind-off on unstable hole nodes
             # assert len(wale_involved) <= 5, f'hole width is too large to achieve the racking bound by 2 on the machine'
-            # relax below constraints considering in our pipeline we have waste height for each knit object.
-            # assert self._hole_start_course > 1, f'bind-off would fail if hole_start_course <= 1'
+            # cannot relax below constraints considering in our pipeline even though we have waste height for each knit object, otherwise yarn-over node would get wrong
+            # target needle position with our pipeline.
+            assert self._hole_start_course > 1, f'bind-off would fail if hole_start_course <= 1'
             assert self._hole_end_course < self._pattern_height - 1, f'hole height is too large that it is exceeding the knit graph border'
             self._hole_height = self._hole_end_course - self._hole_start_course + 1
             self._hole_width = (self._hole_end_wale - self._hole_start_wale) + self.wale_dist
@@ -428,7 +429,6 @@ class Hole_Generator_on_Sheet:
                         else:
                             print(f'no connected_node_big_wale_for_hole_edge is found at position {connected_node_big_wale_for_hole_edge}')   
                         
-
     # currently, we only apply bind-off on the hole bottom nodes to stabilize them
     def bind_off(self):
         for hole_index in [*self.holes_size.keys()]:
@@ -462,21 +462,24 @@ class Hole_Generator_on_Sheet:
                                 child_wale_id = self._knit_graph.node_to_course_and_wale[potential_node_to_connect][1]
                                 # todo: if the parent offset of bind_off is larger than 2, we will consider using connect_hole_edge_node(). But if the parent offset in connect_\
                                 # hole_edge_node is also larger than 2, we will send out a error and exit.
-                                self._knit_graph.connect_loops(node, potential_node_to_connect, parent_offset = int((parent_wale_id - child_wale_id)/self.wale_dist))
                                 # we use (parent_wale_id - child_wale_id)/self.wale_dist rather than (parent_wale_id - child_wale_id) above is 
                                 # because we will "parent_offset*self.wale_dist" in final_knitgraph_to_knitout.py again. 
                                 # below we perform bind-off safety check
                                 # first, get all the parent loops that are sitting on the course underneath the course that nearest_neighbor node is on
                                 if len([*self._knit_graph.graph.predecessors(potential_node_to_connect)]) != 0:
-                                    predecessors = [*self._knit_graph.graph.predecessors(potential_node_to_connect)]
-                                    # filter out the node that are on the same horizontal line
-                                    predecessors.remove(node)
-                                    if hole_bottom_course_id % 2 == 1:
-                                        for predecessor in predecessors:
-                                            assert self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] <= 0, f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {nearest_neighbor}'
-                                    else:
-                                        for predecessor in predecessors:
-                                            assert self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] >= 0, f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {nearest_neighbor}' 
+                                    predecessors = [*self._knit_graph.graph.predecessors(potential_node_to_connect)] 
+                                    pull_direction = self._knit_graph.graph[predecessors[0]][potential_node_to_connect]['pull_direction']
+                                    for predecessor in predecessors:
+                                        # this only applies to case where yarn starting direction is from right to left
+                                        if hole_bottom_course_id % 2 == 0:
+                                            assert self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] <= 0, f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {potential_node_to_connect}' 
+                                        else:
+                                            assert self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] >= 0, f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {potential_node_to_connect}' 
+                                    self._knit_graph.connect_loops(node, potential_node_to_connect, parent_offset = int((parent_wale_id - child_wale_id)/self.wale_dist), pull_direction = pull_direction)
+                                else:
+                                    # then it is actually a single cable stitch (special, because no crossing between two or more stitches here), thus we need to set the depth as 1.
+                                    pull_direction = Pull_Direction.BtF
+                                    self._knit_graph.connect_loops(node, potential_node_to_connect, parent_offset = int((parent_wale_id - child_wale_id)/self.wale_dist), pull_direction = pull_direction, depth = 1)
                                 break
     def add_hole(self):
         #first determine the validity of the input hole

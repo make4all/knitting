@@ -177,7 +177,9 @@ class Knitout_Generator:
                                     dir = '+' if dir == '-' else '-'
                                     self.loop_id_to_knit_dir[next_loop] = dir
                 else:
+                    node = [*yarn.yarn_graph.nodes][0]
                     dir = '-' #(the direction that the carrier first comes in)
+                    self.loop_id_to_knit_dir[node] = dir
         elif self.object_type == 'sheet':
             for yarn in self.yarns:
                 if len(yarn.yarn_graph.nodes) > 1: # that means this yarn will have at least one yarn edge.
@@ -810,7 +812,8 @@ class Knitout_Generator:
                             elif self.node_on_front_or_back[parent_id] == 'b': 
                                 front_bed = False
                         # the reason why we set position for target_needle below using "position=parent_needle.position" rather than
-                        # parent_offset then offset_needle.position is to avoid the error
+                        # parent_offset then offset_needle.position is to avoid the error. todo: need to update to work for decrease case
+                        # where randomly pick a parent node and take its needle might lead to incorrect position detection of loop id.
                         target_needle = Needle(is_front=front_bed, position=parent_needle.position)
                         loop_id_to_target_needle[loop_id] = target_needle
                         # get the other successor, i.e., split node
@@ -848,21 +851,21 @@ class Knitout_Generator:
                         # loop_id_to_target_needle[loop_id] = target_needle
                         self.nodes_on_patch_side.append(loop_id)
                         print(f'branch catched--loop id {loop_id} is a split node, parent_id is {parent_id}, parent_needle is {parent_needle}, target_needle is {target_needle}')
-
             # detect yarn-over
             if len(parent_ids) == 0:  # yarn-over, yarn overs are made on front bed
                 # from below snippet we can see that using wale to identify position of target needle is quite tedious; but we can't 
                 # use parent_needle to identify target needle here because yarn over loop has no parent..
+                # below doesn't work for the case where we do special cable on the first course resulted from hole creation on the second
+                # course. so we use get_yarn_over_needle_position().
                 max_wale = max([*self.courses_to_max_wale_on_front.values()]) #we can only use this assuming that the object is same width vertically.
                 if self._knit_graph.yarn_start_direction == 'right to left':    
-                    # position = self.courses_to_max_wale_on_front[self._loop_id_to_courses[loop_id]] - self.node_to_course_and_wale[loop_id][1]
                     position = max_wale - self.node_to_course_and_wale[loop_id][1]
                 else:
                     position = self.node_to_course_and_wale[loop_id][1]
                 bed = self.node_on_front_or_back[loop_id]
                 target_needle = Needle(is_front = (bed == 'f'), position=position)
                 loop_id_to_target_needle[loop_id] = target_needle
-                print(f'yarn over detected! loop id is {loop_id}, target_needle is {target_needle}, position is {position}')
+                print(f'yarn over detected! loop id is {loop_id}, target_needle is {target_needle}, position is {position}, max_wale is {max_wale}')
             # detect cable
             if len(parent_ids) == 1 and is_split == False:  # knit, purl, may be in cable
                 parent_id = [*parent_ids][0]
@@ -920,6 +923,8 @@ class Knitout_Generator:
                         bind_off_loops.append(loop_id) 
                         is_bindoff = True
                     target_needle = None  # re-assigned on first iteration to needle of first parent
+                    # this for loop is used to get target needle for the loop id, and we can achieve this by using only one parent loop,
+                    # that's why we break the for loop when we finish first loop.
                     for parent_id in parent_ids:
                         parent_needle = parent_loops_to_needles[parent_id]
                         if self._knit_graph.yarn_start_direction == 'right to left':  
@@ -948,22 +953,8 @@ class Knitout_Generator:
                         target_needle = Needle(is_front=front_bed, position=offset_needle.position)
                         loop_id_to_target_needle[loop_id] = target_needle
                         break #we can put break here because for either bind-off or decrease, we can get the target needle by using any one of the parent needle
+                    # this for loop is used to get decrease offset for the loop id
                     for parent_id in parent_ids:
-                        # note that below has to be constrained by if it is pk/hdl on tube case or not. If so, it can not *self.wale_dist.
-                        # so we need a function to identify if pocket_yarn / handle yarn exist in this knitgraph to detect whether it is 
-                        # a pk/hdl. a cheating approach is used the unique gauge: 1/3 that can only allowed for pk/hdl on tube in our setting.
-                        # if not pk/hdl:
-                        # if self.gauge != 1/3:
-                        #     if self._knit_graph.yarn_start_direction == 'right to left':  
-                        #         if self.node_on_front_or_back[loop_id] == 'f':
-                        #             offset = int(-self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist)
-                        #         else:
-                        #             offset = int(self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist)
-                        # else:
-                        #     if self._knit_graph.yarn_start_direction == 'right to left':  
-                        #         offset = int(-self._knit_graph.graph[parent_id][loop_id]["parent_offset"])
-                        #     else:
-                        #         offset = int(self._knit_graph.graph[parent_id][loop_id]["parent_offset"])
                         if self._knit_graph.yarn_start_direction == 'right to left':  
                             if self.node_on_front_or_back[loop_id] == 'f':
                                 offset = int(-self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist)

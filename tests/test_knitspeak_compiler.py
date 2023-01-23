@@ -19,16 +19,19 @@ def test_stst():
     below.
     """
     # for sheet
-    sheet_pattern = "all rs rows k. all ws rows p."
-    sheet_yarn_carrier_id = 2
-    compiler = Knitspeak_Compiler(carrier_id = sheet_yarn_carrier_id)
-    # knit_graph = compiler.compile(12, 10, object_type = 'sheet', pattern = sheet_pattern)
-    knit_graph = compiler.compile(8, 7, object_type = 'sheet', pattern = sheet_pattern)
+    # sheet_pattern = "all rs rows k. all ws rows p."
+    # # sheet_pattern = "1st row p, k." #used to verify whether the result of compiler match the real hand-knitting rule.
+    # # sheet_pattern = "1st row k2tog, yo, k."  #get decrease and yarn-over figure to show
+    # # sheet_pattern = "1st row lc2|2, k." #get cable figure to show, [5, 1]
+    # sheet_yarn_carrier_id = 2
+    # compiler = Knitspeak_Compiler(carrier_id = sheet_yarn_carrier_id)
+    # knit_graph = compiler.compile(starting_width = 8, row_count = 6, object_type = 'sheet', pattern = sheet_pattern) 
+   
     # for tube
-    # tube_pattern = "all rs rounds k. all ws rounds p."
-    # tube_yarn_carrier_id = 3
-    # compiler = Knitspeak_Compiler(carrier_id = tube_yarn_carrier_id)
-    # knit_graph = compiler.compile(12, 10, object_type = 'tube', pattern = tube_pattern)
+    tube_pattern = "all rs rounds k. all ws rounds p."
+    tube_yarn_carrier_id = 3
+    compiler = Knitspeak_Compiler(carrier_id = tube_yarn_carrier_id)
+    knit_graph = compiler.compile(12, 5, object_type = 'tube', pattern = tube_pattern) #[12, 10]
     
     # note that for gauge: 
     # if it is handle or pocket on tube, the gauge can be set by users to be any number <= 1/3; 
@@ -55,22 +58,26 @@ def test_stst():
     # {2: [29], 4: [35], 6:[27]} the one that tells us how to optimize code to stabilize unstable node. refer to slide pp. 203
     # {2: [20, 26, 27, 28, 34, 35, 36, 37, 38, 42, 44]} a heart-shaped hole
     # yarns_and_holes_to_add = {6:[29], 4:[20, 21, 22]}
+    # yarns_and_holes_to_add = {1:[4]} needs to debug when starting_width = 3, row_count = 2
     # yarns_and_holes_to_add = {1:[19, 20], 7:[34, 35], 4: [42]} used to replicate a figure used for the paper
-    hole_generator = Hole_Generator_on_Sheet(yarns_and_holes_to_add = {1:[28], 7:[20], 4:[18]}, knitgraph = knit_graph)
-    knitGraph = hole_generator.add_hole()
-    # note that we only update (delete hole nodes on the self._knit_graph, we do not correspondingly update nodes in both self.node_on_front_or_back and self.node_to_course_and_wale)
-    KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
-    KnitGraph_Visualizer.visualize()
+    # hole_generator = Hole_Generator_on_Sheet(yarns_and_holes_to_add = {1: [7]}, knitgraph = knit_graph)
+    # knitGraph = hole_generator.add_hole()
+    # # note that we only update (delete hole nodes on the self._knit_graph, we do not correspondingly update nodes in both self.node_on_front_or_back and self.node_to_course_and_wale)
+    # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+    # KnitGraph_Visualizer.visualize()
 
     # add hole on tube
     # # test hole on tube: non-decreased tube
     # hole_index_to_holes = {1: [51, 63]} tested! saved as tube_hole1 in local folder [latest_converted_knitouts] waited to be tested on machine.
-    # # 2: [25, 26,  38], 4: [40, 28], 6:[51] tested! saved as tube_hole2 in local folder waited to be tested on machine.
-    # # 2: [26, 38], 4: [28], 6:[40] tested! saved as tube_hole3 in local folder waited to be tested on machine.
-    # hole_generator = Hole_Generator_on_Tube(hole_index_to_holes = {2: [26, 38], 4: [28], 6:[40]}, knitgraph = knit_graph)
-    # knitGraph = hole_generator.add_hole()
-    # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
-    # KnitGraph_Visualizer.visualize()
+    # 2: [25, 26,  38], 4: [40, 28], 6:[51] tested! saved as tube_hole2 in local folder waited to be tested on machine.
+    # 2: [26, 38], 4: [28], 6:[40] tested! saved as tube_hole3 in local folder waited to be tested on machine.
+    # hole_index_to_holes = {2: [50, 51]}
+    # hole_index_to_holes = {1: [41]} #get figure for paper
+    # hole_index_to_holes = {1: [25], 2:[27], 3:[49]} #get figure for paper
+    hole_generator = Hole_Generator_on_Tube(hole_index_to_holes = {1: [25, 26], 2:[35], 3:[49]}, knitgraph = knit_graph)
+    knitGraph = hole_generator.add_hole()
+    KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+    KnitGraph_Visualizer.visualize()
 
     # add pocket on sheet
     # retangle pockect on stst
@@ -116,13 +123,13 @@ def test_stst():
     # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
     # KnitGraph_Visualizer.visualize()
 
-    #this convertor is for the modified knitgraph
-    generator = Knitout_Generator(knitGraph)
-    generator.write_instructions(f"stst_test.k")
+    # this convertor is for the modified knitgraph
+    # generator = Knitout_Generator(knitGraph)
+    # generator.write_instructions(f"stst_test.k")
     
     #this convertor is for the unmodified knitgraph
-    # generator = Knitout_Generator(knit_graph)
-    # generator.write_instructions(f"stst_test.k")
+    generator = Knitout_Generator(knit_graph)
+    generator.write_instructions(f"stst_test.k")
 
 
 def test_rib():
@@ -200,10 +207,10 @@ def test_cable():
     generator.write_instructions(f"cable.k")
 
 def test_lace():
-    sheet_pattern = r"""
-        all rs rows k, k2tog, yo 2, sk2po, yo 2, skpo, k. 
-        all ws rows p 2, k, p 3, k, p 2.
-    """
+    # sheet_pattern = r"""
+    #     all rs rows k, k2tog, yo 2, sk2po, yo 2, skpo, k. 
+    #     all ws rows p 2, k, p 3, k, p 2.
+    # """
 
     tube_pattern = r"""
         all rs rounds k, k2tog, yo 2, sk2po, yo 2, skpo, k. 
@@ -211,18 +218,21 @@ def test_lace():
     """
 
 
-    # sheet_pattern = r"""
-    #     all rs rows k, k2tog, yo. 
-    #     all ws rows p 3, k.
-    # """
+    sheet_pattern = r"""
+        1st row [k] to end.
+        2nd row k, yo, k2tog, [k] to end. 
+    """
+    # 2nd row p, skpo, yo, k.
+    # 3rd row p 2, k 2.
+    # from 4th to 6th row k 4.
 
     # tube_pattern = r"""
     #     all rs rounds k, k2tog, yo. 
-    #     all ws rounds p 3, k.
+    #     all ws rounds p 2, k.
     # """
     sheet_yarn_carrier_id = 3
     compiler = Knitspeak_Compiler(carrier_id = sheet_yarn_carrier_id)
-    knit_graph = compiler.compile(18, 10, object_type = 'sheet', pattern = sheet_pattern)
+    knit_graph = compiler.compile(8, 8, object_type = 'sheet', pattern = sheet_pattern)
 
     # tube_yarn_carrier_id = 3
     # compiler = Knitspeak_Compiler(carrier_id = tube_yarn_carrier_id)
@@ -232,7 +242,7 @@ def test_lace():
     # knit_graph = compiler.compile(4, 2, object_type = 'sheet', pattern = sheet_pattern)
     # knit_graph = compiler.compile(18, 2, object_type = 'sheet', pattern = sheet_pattern)
     # knit_graph = compiler.compile(18, 10, object_type = 'tube', pattern = tube_pattern)
-    knit_graph.gauge = 1/3
+    knit_graph.gauge = 1/2
     loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
     loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_wales()
     node_to_course_and_wale = knit_graph.get_node_course_and_wale()
@@ -241,11 +251,12 @@ def test_lace():
     KnitGraph_Visualizer = knitGraph_visualizer(knit_graph)
     KnitGraph_Visualizer.visualize()
 
-    hole_generator = Hole_Generator_on_Sheet(yarns_and_holes_to_add = {2:[49], 7:[98, 99]}, knitgraph = knit_graph)
-    knitGraph = hole_generator.add_hole()
-    # note that we only update (delete hole nodes on the self._knit_graph, we do not correspondingly update nodes in both self.node_on_front_or_back and self.node_to_course_and_wale)
-    KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
-    KnitGraph_Visualizer.visualize()
+    # yarns_and_holes_to_add = {2:[49], 7:[98, 99]} for [18, 10]
+    # hole_generator = Hole_Generator_on_Sheet(yarns_and_holes_to_add = {2:[39]}, knitgraph = knit_graph)
+    # knitGraph = hole_generator.add_hole()
+    # # note that we only update (delete hole nodes on the self._knit_graph, we do not correspondingly update nodes in both self.node_on_front_or_back and self.node_to_course_and_wale)
+    # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+    # KnitGraph_Visualizer.visualize()
 
     # hole_generator = Hole_Generator_on_Tube(hole_index_to_holes = {2: [58, 59], 4: [38]}, knitgraph = knit_graph)
     # knitGraph = hole_generator.add_hole()
@@ -254,10 +265,10 @@ def test_lace():
 
     # left_keynodes_child_fabric=[(3, 13), (6, 13)], right_keynodes_child_fabric=[(3, 15), (6, 15)]
     # left_keynodes_child_fabric=[(3, 13), (6, 13)], right_keynodes_child_fabric=[(3, 19), (6, 19)]
-    # pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = 3, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 13), (6, 13)], right_keynodes_child_fabric=[(3, 19), (6, 19)], close_top = True, edge_connection_left_side = [True], edge_connection_right_side = [True])
-    # knitGraph = pocket_generator.build_pocket_graph() 
-    # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
-    # KnitGraph_Visualizer.visualize()
+    pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = 3, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(2, 3), (4, 3)], right_keynodes_child_fabric=[(2, 11), (4, 11)], close_top = True, edge_connection_left_side = [False], edge_connection_right_side = [False])
+    knitGraph = pocket_generator.build_pocket_graph() 
+    KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+    KnitGraph_Visualizer.visualize()
 
     # left_keynodes_child_fabric=[(2, 4), (5, 4)], right_keynodes_child_fabric=[(2, 13), (5, 13)] this is for [18, 10]
     # left_keynodes_child_fabric=[(2, 4), (10, 4)], right_keynodes_child_fabric=[(2, 22), (10, 22)] this is for []
@@ -276,23 +287,24 @@ def test_lace():
     # generator.write_instructions(f"lace.k")
 
     #this convertor is for the unmodified knitgraph
-    generator = Knitout_Generator(knit_graph)
-    generator.write_instructions(f"lace.k")
+    # generator = Knitout_Generator(knit_graph)
+    # generator.write_instructions(f"lace.k")
 
 def test_write_slipped_rib():
     rib_width = 1
 
     # for sheet
-    # sheet_pattern = f"all rs rows k rib={rib_width}, [k rib, p rib] to last rib sts, k rib. all ws rows k rib, [slip rib, k rib] to last rib sts, p rib."
-    # sheet_yarn_carrier_id = 2
-    # compiler = Knitspeak_Compiler(carrier_id = sheet_yarn_carrier_id)
-    # knit_graph = compiler.compile(12, 10, object_type = 'sheet', pattern = sheet_pattern)
+    sheet_pattern = f"all rs rows k rib={rib_width}, [k rib, p rib] to last rib sts, k rib. all ws rows k rib, [slip rib, k rib] to last rib sts, p rib."
+    # sheet_pattern = f"all rs rows k. all ws rows k rib={rib_width}, [slip rib, k rib]." #get the slip figure, [4, 2]
+    sheet_yarn_carrier_id = 2
+    compiler = Knitspeak_Compiler(carrier_id = sheet_yarn_carrier_id)
+    knit_graph = compiler.compile(12, 10, object_type = 'sheet', pattern = sheet_pattern)
 
     # for tube
-    tube_pattern = f"all rs rounds k rib={rib_width}, [k rib, p rib] to last rib sts, k rib. all ws rounds k rib, [slip rib, k rib] to last rib sts, p rib."
-    tube_yarn_carrier_id = 3
-    compiler = Knitspeak_Compiler(carrier_id = tube_yarn_carrier_id)
-    knit_graph = compiler.compile(12, 10, object_type = 'tube', pattern = tube_pattern)
+    # tube_pattern = f"all rs rounds k rib={rib_width}, [k rib, p rib] to last rib sts, k rib. all ws rounds k rib, [slip rib, k rib] to last rib sts, p rib."
+    # tube_yarn_carrier_id = 3
+    # compiler = Knitspeak_Compiler(carrier_id = tube_yarn_carrier_id)
+    # knit_graph = compiler.compile(12, 10, object_type = 'tube', pattern = tube_pattern)
 
     knit_graph.gauge = 1/3
     loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
@@ -354,32 +366,38 @@ def test_write_slipped_rib_even():
 
 def test_write_short_rows():
     # for sheet
+    sheet_pattern = r"""
+        1st row [k] to end.
+        2nd row [p] to last 1 sts, slip 1.
+        3rd row slip 1, [k] to last 1 sts, slip 1.
+        4th row slip 1, [p] to last 2 sts, slip 2.
+        5th row slip 2, [k] to last 2 sts, slip 2.
+        6th row slip 2, [p] to end.
+        7th row [k] to end.
+    # """
     # sheet_pattern = r"""
     #     1st row [k] to end.
     #     2nd row [p] to last 1 sts, slip 1.
-    #     3rd row slip 1, [k] to last 1 sts, slip 1.
-    #     4th row slip 1, [p] to last 2 sts, slip 2.
-    #     5th row slip 2, [k] to last 2 sts, slip 2.
-    #     6th row slip 2, [p] to end.
-    #     7th row [k] to end.
-    # """
-    # sheet_yarn_carrier_id = 2
-    # compiler = Knitspeak_Compiler(carrier_id = sheet_yarn_carrier_id)
-    # knit_graph = compiler.compile(5, 7, object_type = 'sheet', pattern = sheet_pattern)
+    #     3rd row slip 1, [k] to end.
+    #     4th row [p] to end.
+    # """ #get short row figure for paper, [3, 4]
+    sheet_yarn_carrier_id = 2
+    compiler = Knitspeak_Compiler(carrier_id = sheet_yarn_carrier_id)
+    knit_graph = compiler.compile(5, 7, object_type = 'sheet', pattern = sheet_pattern)
 
     # for tube
-    tube_pattern = r"""
-        1st round [k] to end.
-        2nd round [p] to last 1 sts, slip 1.
-        3rd round slip 1, [k] to last 1 sts, slip 1.
-        4th round slip 1, [p] to last 2 sts, slip 2.
-        5th round slip 2, [k] to last 2 sts, slip 2.
-        6th round slip 2, [p] to end.
-        7th round [k] to end.
-    """
-    tube_yarn_carrier_id = 3
-    compiler = Knitspeak_Compiler(carrier_id = tube_yarn_carrier_id)
-    knit_graph = compiler.compile(8, 7, object_type = 'tube', pattern = tube_pattern)
+    # tube_pattern = r"""
+    #     1st round [k] to end.
+    #     2nd round [p] to last 1 sts, slip 1.
+    #     3rd round slip 1, [k] to last 1 sts, slip 1.
+    #     4th round slip 1, [p] to last 2 sts, slip 2.
+    #     5th round slip 2, [k] to last 2 sts, slip 2.
+    #     6th round slip 2, [p] to end.
+    #     7th round [k] to end.
+    # """
+    # tube_yarn_carrier_id = 3
+    # compiler = Knitspeak_Compiler(carrier_id = tube_yarn_carrier_id)
+    # knit_graph = compiler.compile(8, 7, object_type = 'tube', pattern = tube_pattern)
 
     knit_graph.gauge = 1/3
     loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()

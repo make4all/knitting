@@ -56,7 +56,6 @@ class Knitspeak_Compiler:
         print(f'self.parse_results is {self.parse_results}')
         print(f'self._parser.parser.symbolTable is {self._parser.parser.symbolTable._symbol_table}, key is {self._parser.parser.symbolTable._symbol_table.keys()}')
         self._organize_courses()
-        print(f'self.course_ids_to_operations is {self.course_ids_to_operations}, len is {len(self.course_ids_to_operations)}')
         self.starting_width_safety_check(starting_width, row_count)
         self.populate_0th_course(starting_width)
         while self.current_row < row_count:
@@ -69,7 +68,7 @@ class Knitspeak_Compiler:
                 while len(self.loop_ids_consumed_by_current_course) < len(self.last_course_loop_ids):
                     for instruction in course_instructions:
                         self._process_instruction(instruction)
-                        print(f'self.loop_ids_consumed_by_current_course is {self.loop_ids_consumed_by_current_course}, self.last_course_loop_ids is {self.last_course_loop_ids}')
+                        print(f'instruction is {instruction}, self.loop_ids_consumed_by_current_course is {self.loop_ids_consumed_by_current_course}, self.last_course_loop_ids is {self.last_course_loop_ids}')
                         if len(self.loop_ids_consumed_by_current_course) == len(self.last_course_loop_ids):
                             break
                 self.last_course_loop_ids = self.cur_course_loop_ids
@@ -115,8 +114,8 @@ class Knitspeak_Compiler:
                 else:  # course_id is integer
                     assert course_id not in self.course_ids_to_operations, f"KnitSpeak Error: Course {course_id} is defined more than once"
                     self.course_ids_to_operations[course_id] = course_instructions
-        
-        max_course = max(*self.course_ids_to_operations)
+        print(f'self.course_ids_to_operations is {self.course_ids_to_operations}, len is {len(self.course_ids_to_operations)}')
+        max_course = max([*self.course_ids_to_operations])
         if "all_rs_rows" in self._parser.parser.symbolTable or "all_rs_rounds" in self._parser.parser.symbolTable:
             # print('hahaha')
             course_instructions = self.course_ids_to_operations[1]
@@ -153,17 +152,27 @@ class Knitspeak_Compiler:
                 current_row += 1
                 course_instructions = self.course_ids_to_operations[course_id]
                 for instruction in course_instructions:
+                    if isinstance(instruction[0], list) == True:
+                        stitches = instruction[0][0] #eg: ([(0-BtF-c0->1, (True, 1))], (True, 1))
+                    else:
+                        stitches = instruction[0] #e.g., (0-BtF-c0->1, (True, 1))
                     static_repeats = instruction[1][0]
                     if static_repeats:
                         repeats = instruction[1][1]
+                        print(f'inside width check, is static repeat, instruction is {instruction}, repeats is {repeats}')
                         if isinstance(repeats, Num_Closure):
                             repeats = repeats.to_int()
-                        total += repeats
+                        if isinstance(stitches, Cable_Definition):
+                            total += repeats*(stitches._right_crossing_loops + stitches._left_crossing_loops)
+                        else:
+                            total += repeats
                     if not static_repeats:
                         use_remaining = True
+                        print(f'inside width check, is not static repeat, instruction is {instruction}')
                     #     remaining_loops = instruction[1][1]
                     #     if isinstance(remaining_loops, Num_Closure):
                     #         remaining_loops = remaining_loops.to_int()
+                print(f'current row is {current_row}, total is {total}')
                 if use_remaining == False:
                     assert starting_width % total == 0, f'given starting_width does not match the width of given knitspeak. starting_width should be a multiple of {total}'
                 else:
@@ -249,7 +258,7 @@ class Knitspeak_Compiler:
             #  add the newly created loop to the end of self.cur_course_loop_ids
             loop_id, loop = self.yarn.add_loop_to_end()
             self.knit_graph.add_loop(loop)
-            print(f'loop_id is {loop_id}, stitch_def is {stitch_def}')
+            print(f'loop_id is {loop_id}, stitch_def is {stitch_def}, stitch_def.offset_to_parent_loops is {stitch_def.offset_to_parent_loops}')
             for stack_position, parent_offset in enumerate(stitch_def.offset_to_parent_loops):
                 if is_row:
                     parent_index = prior_course_index + parent_offset
