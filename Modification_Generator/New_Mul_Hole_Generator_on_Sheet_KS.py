@@ -503,7 +503,7 @@ class Hole_Generator_on_Sheet:
         self.remove_old_and_add_new_yarn(real_old_yarn_nodes, hole_index_to_new_yarn_nodes) 
         #connect unstable (have no child loops) nodes on the edge of the hole to the nearest top neighbor to prevent them from falling off the parent loops,
         #leading the hole bigger and bigger.
-        self.connect_hole_edge_nodes()
+        # self.connect_hole_edge_nodes()
         # to prevent hole deformation, we can also use the bind-off
         self.bind_off()
         # note that we only update (delete hole nodes on the self._knit_graph, we do not correspondingly update nodes in both self._knit_graph.node_on_front_or_back and self._knit_graph.node_to_course_and_wale)

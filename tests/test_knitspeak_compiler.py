@@ -74,7 +74,8 @@ def test_stst():
     # hole_index_to_holes = {2: [50, 51]}
     # hole_index_to_holes = {1: [41]} #get figure for paper
     # hole_index_to_holes = {1: [25], 2:[27], 3:[49]} #get figure for paper
-    hole_generator = Hole_Generator_on_Tube(hole_index_to_holes = {1: [25, 26], 2:[35], 3:[49]}, knitgraph = knit_graph)
+    # hole_index_to_holes = {1: [24]} #get figure in the slide
+    hole_generator = Hole_Generator_on_Tube(hole_index_to_holes = {1: [25], 2:[27], 3:[49]}, knitgraph = knit_graph)
     knitGraph = hole_generator.add_hole()
     KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
     KnitGraph_Visualizer.visualize()
