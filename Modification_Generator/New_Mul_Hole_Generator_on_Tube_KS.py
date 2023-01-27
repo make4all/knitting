@@ -147,7 +147,7 @@ class Hole_Generator_on_Tube:
                         parent_offset = self._knit_graph.graph[parent_id][node]["parent_offset"]
                         if parent_offset != 0:
                             print(f'Warning: node {node} might break a special stitch for having parent offset of {parent_offset}')
-                #the sample applies to child_offset
+                #the above rule applies to child_offset too.
                 if len(child_ids) != 0:
                     child_id = child_ids[0] # no "for child_id in child_ids[0]:" here because a node can have <= 1 child on the knit graph
                     child_offset = self._knit_graph.graph[node][child_id]["parent_offset"]

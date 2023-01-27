@@ -132,7 +132,7 @@ class Carriage_Pass:
         self.needles_to_instruction_parameters_and_types: \
                 Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = needles_to_instruction_parameters_and_types
         if needles_to_instruction_parameters_and_types != {}:
-            # print('la', self.needles_to_instruction_parameters_and_types)
+            # print(f'self.needles_to_instruction_parameters_and_types is {self.needles_to_instruction_parameters_and_types}')
             params_list  = []
             for (param, param_type) in self.needles_to_instruction_parameters_and_types.values():
                 params_list.append(param)
@@ -189,8 +189,11 @@ class Carriage_Pass:
         if self.direction is Pass_Direction.Right_to_Left:
             print(f'direction should be -, actual direction is {self.direction}')
             return [*reversed(sorted_left_to_right)]
-        else:
+        elif self.direction is Pass_Direction.Left_to_Right:
             print(f'direction should be +, actual direction is {self.direction}')
+            return sorted_left_to_right
+        else:
+            print(f'direction should be None, actual direction is {self.direction}')
             return sorted_left_to_right
             
 

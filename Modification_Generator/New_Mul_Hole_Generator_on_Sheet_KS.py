@@ -52,8 +52,7 @@ class Hole_Generator_on_Sheet:
         self.yarns_and_holes_to_add: Dict[int, List[int]] = yarns_and_holes_to_add
         self._new_carriers: List[int] = [*yarns_and_holes_to_add.keys()]
         for carrier_id in self._new_carriers:
-            if carrier_id == self._old_yarn.carrier.carrier_ids:
-                print(f'one of the carrier ids: {carrier_id} in provided yarn carriers for adding hole is the same as old yarn carrier id :{self._old_yarn.carrier.carrier_ids}')
+            assert carrier_id != self._old_yarn.carrier.carrier_ids, f'one of the carrier ids: {carrier_id} in provided yarn carriers for adding hole is the same as old yarn carrier id :{self._old_yarn.carrier.carrier_ids}'
         self.new_yarn_ids: List[str] = [str(new_yarn_id) for new_yarn_id in self._new_carriers]
         self._new_yarns: Dict[int, Yarn] = {}
 
@@ -169,7 +168,7 @@ class Hole_Generator_on_Sheet:
                         parent_offset = self._knit_graph.graph[parent_id][node]["parent_offset"]
                         if parent_offset != 0:
                             print(f'Warning: node {node} might break a special stitch for having parent offset of {parent_offset}')
-                #the sample applies to child_offset
+                #the above rule applies to child_offset too.
                 if len(child_ids) != 0:
                     child_id = child_ids[0] # no "for child_id in child_ids[0]:" here because a node can have <= 1 child on the knit graph
                     child_offset = self._knit_graph.graph[node][child_id]["parent_offset"]
@@ -223,7 +222,7 @@ class Hole_Generator_on_Sheet:
                 del self._knit_graph.node_to_course_and_wale[hole_node]
                 del self._knit_graph.node_on_front_or_back[hole_node] 
         self._knit_graph.course_and_wale_to_node = {v: k for k, v in self._knit_graph.node_to_course_and_wale.items()}
-        print(f'updated self._knit_graph.course_and_wale_to_node with hole nodes deleted is {self._knit_graph.course_and_wale_to_node}')
+        # print(f'updated self._knit_graph.course_and_wale_to_node with hole nodes deleted is {self._knit_graph.course_and_wale_to_node}')
 
     def get_start_and_end_wale_id_per_course(self):
         course_id_to_start_wale_id = {}
@@ -260,7 +259,6 @@ class Hole_Generator_on_Sheet:
             old_yarn_course_to_margin_loop_ids: Dict[float, List[int]]= {}
             new_yarn_course_to_margin_loop_ids: Dict[float, List[int]]= {}
             hole_info = self.holes_size[hole_index] 
-            # print('hole_nodes is', hole_info['hole_nodes'])
             self.holes_to_old_and_new_yarns[hole_index] = {}
             if hole_info['hole_start_course'] % 2 == 0:
                 #new yarn spread between the hole_end_wale and the last wale_id, old yarn is between the wale_id = 0 to the hole_start_wale 
@@ -284,11 +282,11 @@ class Hole_Generator_on_Sheet:
                         for wale_id in range(biggest_wale_id + self.wale_dist, self.course_id_to_end_wale_id[course_id] + self.wale_dist):
                             if (course_id, wale_id) in self._knit_graph.course_and_wale_to_node.keys():
                                 new_yarn_course_to_loop_ids[course_id].insert(0, self._knit_graph.course_and_wale_to_node[(course_id, wale_id)])
-                    if hole_info['hole_height'] % 2 == 0:
-                        pass
-                    elif hole_info['hole_height'] % 2 == 1:
-                        for course_id in range(hole_info['hole_end_course'] + 1, self._pattern_height):
-                            new_yarn_course_to_loop_ids[course_id] = self._knit_graph.course_to_loop_ids[course_id]
+                if hole_info['hole_height'] % 2 == 0:
+                    pass
+                elif hole_info['hole_height'] % 2 == 1:
+                    for course_id in range(hole_info['hole_end_course'] + 1, self._pattern_height):
+                        new_yarn_course_to_loop_ids[course_id] = self._knit_graph.course_to_loop_ids[course_id]
             if hole_info['hole_start_course'] % 2 == 1:
                 #Contrary to the above,
                 #new yarn spread between the wale_id = 0 to the hole_start_wale, old yarn is between the hole_end_wale and the last wale_id
@@ -312,11 +310,11 @@ class Hole_Generator_on_Sheet:
                         for wale_id in range(self.course_id_to_start_wale_id[course_id], smallest_wale_id):
                             if (course_id, wale_id) in self._knit_graph.course_and_wale_to_node.keys():
                                 new_yarn_course_to_loop_ids[course_id].insert(0, self._knit_graph.course_and_wale_to_node[(course_id, wale_id)])
-                    if hole_info['hole_height'] % 2 == 0:
-                        pass
-                    elif hole_info['hole_height'] % 2 == 1:
-                        for course_id in range(hole_info['hole_end_course'] + 1, self._pattern_height):
-                            new_yarn_course_to_loop_ids[course_id] = self._knit_graph.course_to_loop_ids[course_id]
+                if hole_info['hole_height'] % 2 == 0:
+                    pass
+                elif hole_info['hole_height'] % 2 == 1:
+                    for course_id in range(hole_info['hole_end_course'] + 1, self._pattern_height):
+                        new_yarn_course_to_loop_ids[course_id] = self._knit_graph.course_to_loop_ids[course_id]
             # print('old_yarn_course_to_margin_loop_ids', old_yarn_course_to_margin_loop_ids)
             # print('new_yarn_course_to_margin_loop_ids', new_yarn_course_to_margin_loop_ids)
             # print('new_yarn_course_to_loop_ids', new_yarn_course_to_loop_ids)
@@ -324,19 +322,15 @@ class Hole_Generator_on_Sheet:
             new_yarn_nodes = set(item for sublist in [*new_yarn_course_to_loop_ids.values()] for item in sublist) 
             self.holes_to_old_and_new_yarns[hole_index]['new_yarn_nodes'] = new_yarn_nodes
             self.holes_to_old_and_new_yarns[hole_index]['old_yarn_nodes'] = self.graph_nodes.difference(new_yarn_nodes).difference(set(hole_info['hole_nodes']))
-        # print(f'self.holes_to_old_and_new_yarns is {self.holes_to_old_and_new_yarns}')
         # get nodes on the old yarn
         real_old_yarn_nodes = self.holes_to_old_and_new_yarns[hole_index]['old_yarn_nodes']
         for hole_index in self.holes_to_old_and_new_yarns.keys():
             old_yarn_nodes = self.holes_to_old_and_new_yarns[hole_index]['old_yarn_nodes']
             real_old_yarn_nodes = real_old_yarn_nodes.intersection(old_yarn_nodes)
-        # print(f'final old yarn nodes is {real_old_yarn_nodes}')
         # get nodes for different new yarns
         hole_index_to_new_yarn_nodes = {}
         for hole_index in self.holes_to_old_and_new_yarns.keys():
-            # print(f'hole_index is {hole_index}')
             real_new_yarn_nodes = self.holes_to_old_and_new_yarns[hole_index]['new_yarn_nodes']
-            # print('real_new_yarn_nodes1 is', real_new_yarn_nodes)
             for hole_index_inside in self.holes_to_old_and_new_yarns.keys():
                 other_new_yarn_nodes = self.holes_to_old_and_new_yarns[hole_index_inside]['new_yarn_nodes']
                 if real_new_yarn_nodes == other_new_yarn_nodes:
@@ -347,26 +341,20 @@ class Hole_Generator_on_Sheet:
                             continue
                         else:
                             real_new_yarn_nodes = real_new_yarn_nodes.difference(other_new_yarn_nodes)
-            # print('real_new_yarn_nodes2 is', real_new_yarn_nodes)
             # finally, we need to delete the all hole nodes if it is included on the real_new_yarn_nodes
             for hole in self.yarns_and_holes_to_add.values():
                 for node in hole:
                     if node in real_new_yarn_nodes:
                         real_new_yarn_nodes.remove(node)
             hole_index_to_new_yarn_nodes[hole_index] = sorted(real_new_yarn_nodes)
-        # print(f'hole_index_to_new_yarn_nodes is {hole_index_to_new_yarn_nodes}')
         return real_old_yarn_nodes, hole_index_to_new_yarn_nodes
 
     def bring_new_yarn(self):
         """
         Create a new yarn with new carrier id.
         """
-        # self._new_carriers
-        # self.new_yarn_ids
         hole_index = 0
-        # print(f'self.new_yarn_ids is {self.new_yarn_ids}, self._new_carriers is {self._new_carriers}')
         for new_yarn_id, carrier_id in zip(self.new_yarn_ids, self._new_carriers):
-            # print(f'new_yarn_id is {new_yarn_id}, carrier_id is {carrier_id}, type(carrier_id) is {type(carrier_id)}')
             new_yarn = Yarn(new_yarn_id, self._knit_graph, carrier_id=carrier_id)
             self._knit_graph.add_yarn(new_yarn)
             self._new_yarns[hole_index] = new_yarn
@@ -383,12 +371,10 @@ class Hole_Generator_on_Sheet:
             self._old_yarn.yarn_graph.remove_nodes_from(new_yarn_nodes)
             for loop_id in new_yarn_nodes:
                 child_id, loop = new_yarn.add_loop_to_end(loop_id = loop_id)
-            # print(f'new yarn edges are {new_yarn.yarn_graph.edges}')
         # use this method makes it no need to invoke reconnect_old_yarn_at_margin()
         self._old_yarn.last_loop_id = None
         for loop_id in real_old_yarn_nodes:
             child_id, loop = self._old_yarn.add_loop_to_end(loop_id = loop_id)
-        # print(f'old yarn edges are {self._old_yarn.yarn_graph.edges}')
         
     def connect_hole_edge_nodes(self):
         for hole_index in [*self.holes_size.keys()]:
@@ -434,53 +420,52 @@ class Hole_Generator_on_Sheet:
         for hole_index in [*self.holes_size.keys()]:
             # first search for nodes that have no child on the hole bottom course (the course immediately below the hole area)
             # current version relaxing the racking constraint of up to 2 needle on beds
-            hole_bottom_course_id = self.holes_size[hole_index]['hole_start_course'] - 1
-            # bottom_node_start_wale = self.course_id_to_start_wale_id[hole_bottom_course_id]
-            # bottom_node_end_wale = self.holes_size[hole_index]['hole_end_wale']
-            # then, connect them end to end, consistent with the yarn walking direction for that course
-            bottom_nodes = []
-            bottom_nodes = self._knit_graph.course_to_loop_ids[hole_bottom_course_id]
-            # then connect nodes that have no child to its nearest neighbor node
-            # we sorted the nodes so that we can guarantee that small nodes is connected to the bigger nodes, which is consistent with bind-off. it can be reverted.
-            sorted_bottom_nodes = sorted(bottom_nodes)
-            print(f'sorted_bottom_nodes for course_id: {hole_bottom_course_id+1} is {sorted_bottom_nodes}')
-            for i in range(len(sorted_bottom_nodes)-1):
-                node = sorted_bottom_nodes[i]
-                # instead of using below method, we won't stop until finding the node to connect to acheive bind-off, if can't find any, throw an error.
-                # nearest_neighbor = sorted_bottom_nodes[i+1]
-                # if node not in self._knit_graph.graph.nodes or nearest_neighbor not in self._knit_graph.graph.nodes:
-                #     continue
-                if node in self._knit_graph.graph.nodes:
-                    child_ids = [*self._knit_graph.graph.successors(node)] 
-                    print(f'node is {node},child_ids is {child_ids}')
-                    if len(child_ids) == 0: # only connect node that have no child, i.e., unstable
-                        for potential_node_to_connect in sorted_bottom_nodes[i+1:]:
-                            if potential_node_to_connect not in self._knit_graph.graph.nodes:
-                                continue
-                            else:
-                                parent_wale_id = self._knit_graph.node_to_course_and_wale[node][1]
-                                child_wale_id = self._knit_graph.node_to_course_and_wale[potential_node_to_connect][1]
-                                # todo: if the parent offset of bind_off is larger than 2, we will consider using connect_hole_edge_node(). But if the parent offset in connect_\
-                                # hole_edge_node is also larger than 2, we will send out a error and exit.
-                                # we use (parent_wale_id - child_wale_id)/self.wale_dist rather than (parent_wale_id - child_wale_id) above is 
-                                # because we will "parent_offset*self.wale_dist" in final_knitgraph_to_knitout.py again. 
-                                # below we perform bind-off safety check
-                                # first, get all the parent loops that are sitting on the course underneath the course that nearest_neighbor node is on
-                                if len([*self._knit_graph.graph.predecessors(potential_node_to_connect)]) != 0:
-                                    predecessors = [*self._knit_graph.graph.predecessors(potential_node_to_connect)] 
-                                    pull_direction = self._knit_graph.graph[predecessors[0]][potential_node_to_connect]['pull_direction']
-                                    for predecessor in predecessors:
-                                        # this only applies to case where yarn starting direction is from right to left
-                                        if hole_bottom_course_id % 2 == 0:
-                                            assert self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] <= 0, f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {potential_node_to_connect}' 
-                                        else:
-                                            assert self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] >= 0, f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {potential_node_to_connect}' 
-                                    self._knit_graph.connect_loops(node, potential_node_to_connect, parent_offset = int((parent_wale_id - child_wale_id)/self.wale_dist), pull_direction = pull_direction)
+            # hole_bottom_course_id = self.holes_size[hole_index]['hole_start_course'] - 1
+            for course_id in range(self.holes_size[hole_index]['hole_start_course'] - 1, self.holes_size[hole_index]['hole_start_course'] - 1 + self.holes_size[hole_index]['hole_height']):
+                # then, connect them end to end, consistent with the yarn walking direction for that course
+                bottom_nodes = []
+                bottom_nodes = self._knit_graph.course_to_loop_ids[course_id]
+                # then connect nodes that have no child to its nearest neighbor node
+                # we sorted the nodes so that we can guarantee that small nodes is connected to the bigger nodes, which is consistent with bind-off. it can be reverted.
+                sorted_bottom_nodes = sorted(bottom_nodes)
+                # print(f'sorted_bottom_nodes for course_id: {hole_bottom_course_id+1} is {sorted_bottom_nodes}')
+                for i in range(len(sorted_bottom_nodes)-1):
+                    node = sorted_bottom_nodes[i]
+                    # instead of using below method, we won't stop until finding the node to connect to acheive bind-off, if can't find any, throw an error.
+                    # nearest_neighbor = sorted_bottom_nodes[i+1]
+                    # if node not in self._knit_graph.graph.nodes or nearest_neighbor not in self._knit_graph.graph.nodes:
+                    #     continue
+                    if node in self._knit_graph.graph.nodes:
+                        child_ids = [*self._knit_graph.graph.successors(node)] 
+                        # print(f'node is {node},child_ids is {child_ids}')
+                        if len(child_ids) == 0: # only connect node that have no child, i.e., unstable
+                            for potential_node_to_connect in sorted_bottom_nodes[i+1:]:
+                                if potential_node_to_connect not in self._knit_graph.graph.nodes:
+                                    continue
                                 else:
-                                    # then it is actually a single cable stitch (special, because no crossing between two or more stitches here), thus we need to set the depth as 1.
-                                    pull_direction = Pull_Direction.BtF
-                                    self._knit_graph.connect_loops(node, potential_node_to_connect, parent_offset = int((parent_wale_id - child_wale_id)/self.wale_dist), pull_direction = pull_direction, depth = 1)
-                                break
+                                    parent_wale_id = self._knit_graph.node_to_course_and_wale[node][1]
+                                    child_wale_id = self._knit_graph.node_to_course_and_wale[potential_node_to_connect][1]
+                                    # todo: if the parent offset of bind_off is larger than 2, we will consider using connect_hole_edge_node(). But if the parent offset in connect_\
+                                    # hole_edge_node is also larger than 2, we will send out a error and exit.
+                                    # we use (parent_wale_id - child_wale_id)/self.wale_dist rather than (parent_wale_id - child_wale_id) above is 
+                                    # because we will "parent_offset*self.wale_dist" in final_knitgraph_to_knitout.py again. 
+                                    # below we perform bind-off safety check
+                                    # first, get all the parent loops that are sitting on the course underneath the course that nearest_neighbor node is on
+                                    if len([*self._knit_graph.graph.predecessors(potential_node_to_connect)]) != 0:
+                                        predecessors = [*self._knit_graph.graph.predecessors(potential_node_to_connect)] 
+                                        pull_direction = self._knit_graph.graph[predecessors[0]][potential_node_to_connect]['pull_direction']
+                                        for predecessor in predecessors:
+                                            # this only applies to case where yarn starting direction is from right to left
+                                            if course_id % 2 == 0:
+                                                assert self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] <= 0, f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {potential_node_to_connect}' 
+                                            else:
+                                                assert self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] >= 0, f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {potential_node_to_connect}' 
+                                        self._knit_graph.connect_loops(node, potential_node_to_connect, parent_offset = int((parent_wale_id - child_wale_id)/self.wale_dist), pull_direction = pull_direction)
+                                    else:
+                                        # then it is actually a single cable stitch (special, because no crossing between two or more stitches here), thus we need to set the depth as 1.
+                                        pull_direction = Pull_Direction.BtF
+                                        self._knit_graph.connect_loops(node, potential_node_to_connect, parent_offset = int((parent_wale_id - child_wale_id)/self.wale_dist), pull_direction = pull_direction, depth = 1)
+                                    break
     def add_hole(self):
         #first determine the validity of the input hole
         # self.hole_shape_and_number_constraints()

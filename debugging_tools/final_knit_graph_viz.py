@@ -11,16 +11,15 @@ class knitGraph_visualizer:
     :param knit_graph: the knit graph to visualize
     :param yarn_start_direction: the starting direction of the yarn, value include 'left to right' or 'right to left'.
     """
-    def __init__(self, knit_graph: Knit_Graph):
+    def __init__(self, knit_graph: Knit_Graph): 
         self.knit_graph: Knit_Graph = knit_graph
-        self.object_type = knit_graph.object_type
-        # self.yarn_start_direction = yarn_start_direction
-        self.yarn_start_direction =  knit_graph.yarn_start_direction
-        print(f'self.yarn_start_direction in viz is {self.yarn_start_direction}, knit_graph.yarn_start_direction in viz is {knit_graph.yarn_start_direction}')
+        self.object_type: str = knit_graph.object_type
+        self.yarn_start_direction: str = knit_graph.yarn_start_direction
+        # print(f'self.yarn_start_direction in viz is {self.yarn_start_direction}, knit_graph.yarn_start_direction in viz is {knit_graph.yarn_start_direction}')
         self.node_to_course_and_wale: Dict[int, (int, int)] = knit_graph.node_to_course_and_wale
         self.node_on_front_or_back: Dict[int, str] = knit_graph.node_on_front_or_back
-        print('node_to_course_and_wale viz', self.node_to_course_and_wale)
-        print('node_on_front_or_back viz', self.node_on_front_or_back)
+        # print('node_to_course_and_wale viz', self.node_to_course_and_wale)
+        # print('node_on_front_or_back viz', self.node_on_front_or_back)
         # print('course_and_wale_and_bed_to_node viz', self.course_and_wale_and_bed_to_node)
         self.nodes_to_positions: Dict[int, Dict[str, float]] = {} 
         # we assume different carrier carry yarns of differnt color, though practically they can be the same.
@@ -71,7 +70,6 @@ class knitGraph_visualizer:
         # print(f'nodes_to_positions is {self.nodes_to_positions}')
     #set node color
     def get_nodes_color(self):
-        print(f'in knit viz, nodes is {self.knit_graph.graph.nodes}')
         for node in self.knit_graph.graph.nodes:
             #find carrier_id of the node
             #first identify the yarn of the node
@@ -79,7 +77,6 @@ class knitGraph_visualizer:
                 if node in yarn:
                     carrier_id = yarn.carrier.carrier_ids
                     break
-            print(f'in knit viz, node is {node}, carrier_id is {carrier_id}')
             #store node color property
             self.node_color_property[node]['color'] = self.carrier_id_to_color[carrier_id]
             self.node_color_property[node]['alpha'] = self.alpha_front if self.node_on_front_or_back[node] == 'f' else self.alpha_back
@@ -88,6 +85,7 @@ class knitGraph_visualizer:
         #add yarn edges and set edge color
         for yarn in self.yarns:
             for prior_node, next_node in yarn.yarn_graph.edges:
+                # print(f'prior_node, next_node on yarn is {prior_node, next_node}')
                 if prior_node not in self.nodes_to_positions or next_node not in self.nodes_to_positions:
                     continue
                 self.edge_color_property[(prior_node, next_node)] = {}
@@ -95,7 +93,7 @@ class knitGraph_visualizer:
                 self.edge_color_property[(prior_node, next_node)]['color'] = self.carrier_id_to_color[carrier_id]
                 #As long as either node on the edge is on the front, then the edge is regarded as on the front and will be colored brighter
                 self.edge_color_property[(prior_node, next_node)]['alpha'] = self.alpha_front if self.node_on_front_or_back[prior_node] == 'f' and self.node_on_front_or_back[next_node] == 'f' else self.alpha_back
-        print(f'self.edge_color_property is {self.edge_color_property}')
+        # print(f'self.edge_color_property for yarn edges is {self.edge_color_property}')
     #get stitch edges color
     def get_stitch_edges(self):
         #add stitch edges and set edge color
@@ -122,7 +120,7 @@ class knitGraph_visualizer:
                         #if nodes not on any yarns, then it will be colored 'maroon'
             if flag_for_on_yarn == False:
                 self.edge_color_property[(parent_id, child_id)]['color'] = 'maroon'
-        print(f'self.stitch_labels is {self.stitch_labels}')
+        # print(f'self.stitch_labels is {self.stitch_labels}')
     # draw the graph
     def draw_graph(self):
         #create a graph

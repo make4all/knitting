@@ -296,7 +296,7 @@ class Machine_State:
         :param racking:the current racking between the front and back bed: r=f-b
         """
         self.racking: float = racking
-        self.racking_bound: int = 3
+        self.racking_bound: int = 4
         self.front_bed: Machine_Bed = Machine_Bed(is_front=True, needle_count=needle_count)
         self.back_bed: Machine_Bed = Machine_Bed(is_front=False, needle_count=needle_count)
         self.last_carriage_direction: Pass_Direction = Pass_Direction.Left_to_Right

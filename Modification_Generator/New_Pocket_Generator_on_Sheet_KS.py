@@ -517,7 +517,7 @@ class Pocket_Generator_on_Sheet:
         self.child_knitgraph.node_to_course_and_wale = {}
         self.grow_one_row(course_id = [*self.child_knitgraph.course_to_loop_ids.keys()][0], on_parent_graph = False)
         #grow the whole graph by adding one row to parent fabric, then adding one row to child fabric, until reaching the end of child fabric
-        print('self.child_knitgraph.course_to_loop_ids.keys()', self.child_knitgraph.course_to_loop_ids.keys())
+        # print('self.child_knitgraph.course_to_loop_ids.keys()', self.child_knitgraph.course_to_loop_ids.keys())
         for course_id in [*self.child_knitgraph.course_to_loop_ids.keys()][1:]:
             self.grow_one_row(course_id, on_parent_graph = True)
             self.grow_one_row(course_id, on_parent_graph = False)
@@ -532,6 +532,7 @@ class Pocket_Generator_on_Sheet:
         #merge node_to_course_and_wale on parent_knitgraph and child_knitgraph
         self.pocket_graph.node_to_course_and_wale = self.parent_knitgraph.node_to_course_and_wale|self.child_knitgraph.node_to_course_and_wale
         print(f'self.pocket_graph.node_to_course_and_wale is {self.pocket_graph.node_to_course_and_wale}')
+        # print(f'self.child_knitgraph.node_to_course_and_wale is {self.child_knitgraph.node_to_course_and_wale}')
         #see if connect edges
         edge_nodes_smaller_wale_side_child, edge_nodes_bigger_wale_side_child = self.get_split_nodes_on_each_edge_on_child_fabric()
         mirror_nodes_smaller_wale_side_parent, mirror_nodes_bigger_wale_side_parent = self.get_mirror_nodes_on_each_edge_on_parent_fabric(edge_nodes_smaller_wale_side_child, edge_nodes_bigger_wale_side_child)

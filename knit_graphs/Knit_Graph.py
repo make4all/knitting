@@ -59,7 +59,7 @@ class Knit_Graph:
         self.node_to_course_and_wale: Dict[int, Tuple[int, int]] = {}
         self.node_on_front_or_back: Dict[int, str] = {}
         self.course_and_wale_and_bed_to_node: Dict[((int, int), str), int] = {}
-        self.yarn_start_direction = yarn_start_direction
+        self.yarn_start_direction: str = yarn_start_direction
         
     def add_loop(self, loop: Loop):
         """
@@ -131,7 +131,7 @@ class Knit_Graph:
             self.loop_ids_to_course[loop_id] = course
             # print(f'current_course_set is {current_course_set}')
         self.course_to_loop_ids[course] = current_course
-        print(f'course_to_loop_ids in Knit_Graph is {self.course_to_loop_ids}')
+        # print(f'course_to_loop_ids in Knit_Graph is {self.course_to_loop_ids}')
         return self.loop_ids_to_course, self.course_to_loop_ids
 
     def get_wales(self) :
@@ -200,7 +200,7 @@ class Knit_Graph:
                     else:
                         print(f'Error: wale of node {loop_id} cannot be determined')
                         exit()
-        print(f'loop_ids_to_wale is {self.loop_ids_to_wale}, wale_to_loop_ids is {self.wale_to_loop_ids}')
+        # print(f'loop_ids_to_wale in KnitGraph is {self.loop_ids_to_wale}, wale_to_loop_ids in KnitGraph is {self.wale_to_loop_ids}')
         return self.loop_ids_to_wale, self.wale_to_loop_ids
 
     def get_node_course_and_wale(self):
@@ -233,7 +233,7 @@ class Knit_Graph:
             #         mirror_node = course_to_loop_ids[course][mirror_node_pos]
             #         adjusted_wale = mirror_node_wale = loop_ids_to_wale[mirror_node]
             #         node_to_course_and_wale[node] = [course, adjusted_wale]
-        print(f'node_to_course_and_wale is {self.node_to_course_and_wale}')
+        # print(f'node_to_course_and_wale in KnitGraph is {self.node_to_course_and_wale}')
         return self.node_to_course_and_wale
 
     def get_node_bed(self):
@@ -261,6 +261,26 @@ class Knit_Graph:
                 self.course_and_wale_and_bed_to_node[(course_and_wale, front_or_back)] = node
             return self.course_and_wale_and_bed_to_node
     
+    def update_parent_offsets(self):  
+        """
+        update it to make all stitches consistent with the view -- comply with the only wale advancing direction, rather than the alternating yarn walking direction.
+        We do this to avoid wrong parent-offset extracted in knitout interpreter, which would lead to failed conversion.
+        """
+        for loop_id in self.graph.nodes:
+            parent_loops = [*self.graph.predecessors(loop_id)]
+            if len(parent_loops) != 0:
+                for parent_id in self.graph.predecessors(loop_id):
+                    parent_offset = self.graph[parent_id][loop_id]['parent_offset']
+                    if parent_offset != 0:
+                        print(f'parent id is {parent_id}, original parent offset is {parent_offset}')
+                        # we deprecated this because the actual wale_id we use to visualize graph is self.node_to_course_and_wale rather than self.loop_ids_to_wale.
+                        # self.graph[parent_id][loop_id]['parent_offset'] =  int((self.loop_ids_to_wale[parent_id] - self.loop_ids_to_wale[loop_id])/self.wale_dist)
+                        # print(f'wale of parent id {parent_id} is {self.loop_ids_to_wale[parent_id]}, wale of loop id {loop_id} is {self.loop_ids_to_wale[loop_id]}')
+                        self.graph[parent_id][loop_id]['parent_offset'] =  int((self.node_to_course_and_wale[parent_id][1] - self.node_to_course_and_wale[loop_id][1])/self.wale_dist)
+                        print(f'wale of parent id {parent_id} is {self.node_to_course_and_wale[parent_id][1]}, wale of loop id {loop_id} is {self.node_to_course_and_wale[loop_id][1]}')
+                        updated_parent_offset = int(self.graph[parent_id][loop_id]['parent_offset'])
+                        print(f'parent id is {parent_id}, updated parent offset is {updated_parent_offset}')
+
     def get_carriers(self) -> List[Yarn_Carrier]:
         """
         :return: A list of yarn carriers that hold the yarns involved in this graph

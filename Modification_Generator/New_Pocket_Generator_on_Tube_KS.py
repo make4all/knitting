@@ -64,7 +64,7 @@ class Pocket_Generator_on_Tube:
         self.edge_connection_left_side = edge_connection_left_side
         self.edge_connection_right_side = edge_connection_right_side        
         assert len(self.left_keynodes_child_fabric) - 1 == len(self.edge_connection_left_side) and len(self.right_keynodes_child_fabric) - 1 == len(self.edge_connection_right_side), f'number of connection booleans should be equal to that of keynodes on both sides'
-        self.wale_id_offset: int #use for connecting root nodes to split nodes
+        self.wale_id_offset: int #use for connecting root nodes to split nodes, and always > 0. refer to get_mirror_nodes_on_each_edge_on_parent_fabric() for why.
 
     def check_keynodes_validity(self): 
         """
@@ -393,7 +393,7 @@ class Pocket_Generator_on_Tube:
                 wale_id = self.child_knitgraph.node_to_course_and_wale[edge_node][1]
                 # for efficiency, we only need to perform below once.
                 if edge_node == edge_nodes[0]:
-                    for wale_id_offset in range(search_max_width):
+                    for wale_id_offset in range(search_max_width): #from here we know that wale_id_offset > 0.
                         target_wale_id = wale_id + wale_id_offset
                         if (course_id, target_wale_id) in self.parent_knitgraph_course_and_wale_to_node:
                             assert wale_id_offset!=0, f'wale_id of child fabric can not be the same as parent fabric, otherwise child fabric will not be able to achieve texturized pattern'
@@ -583,7 +583,7 @@ class Pocket_Generator_on_Tube:
                 else:
                     pull_direction = Pull_Direction.BtF #no matter it is on front or back bed
                 # self.pocket_graph.connect_loops(node, node_to_connect, pull_direction = pull_direction, parent_offset = 1/self.wale_dist if self.is_front_patch == True else -1/self.wale_dist)
-                self.pocket_graph.connect_loops(node, node_to_connect, pull_direction = pull_direction, parent_offset = self.wale_id_offset/self.wale_dist if self.is_front_patch == True else -self.wale_id_offset/self.wale_dist)
+                self.pocket_graph.connect_loops(node, node_to_connect, pull_direction = pull_direction, parent_offset = -self.wale_id_offset/self.wale_dist)
 
     def build_pocket_graph(self) -> Knit_Graph:   
         self.generate_polygon_from_keynodes()

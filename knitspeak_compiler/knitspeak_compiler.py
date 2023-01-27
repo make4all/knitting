@@ -53,22 +53,22 @@ class Knitspeak_Compiler:
         if object_type == 'tube':
             assert starting_width % 2 ==0, f'starting width is required to be an even number for tube'
         self.parse_results = self._parser.interpret(pattern, patternIsFile)
-        print(f'self.parse_results is {self.parse_results}')
-        print(f'self._parser.parser.symbolTable is {self._parser.parser.symbolTable._symbol_table}, key is {self._parser.parser.symbolTable._symbol_table.keys()}')
+        # print(f'self.parse_results is {self.parse_results}')
+        # print(f'self._parser.parser.symbolTable is {self._parser.parser.symbolTable._symbol_table}, key is {self._parser.parser.symbolTable._symbol_table.keys()}')
         self._organize_courses()
         self.starting_width_safety_check(starting_width, row_count)
         self.populate_0th_course(starting_width)
         while self.current_row < row_count:
             for course_id in sorted(self.course_ids_to_operations):
                 self._increment_current_row()
-                print(f'self.current_row is {self.current_row}, row_count is {row_count}')
+                # print(f'self.current_row is {self.current_row}, row_count is {row_count}')
                 # print(f'self.current_row is {self.current_row}, course id is {course_id}')
                 # assert self.current_row % course_id == 0
                 course_instructions = self.course_ids_to_operations[course_id]
                 while len(self.loop_ids_consumed_by_current_course) < len(self.last_course_loop_ids):
                     for instruction in course_instructions:
                         self._process_instruction(instruction)
-                        print(f'instruction is {instruction}, self.loop_ids_consumed_by_current_course is {self.loop_ids_consumed_by_current_course}, self.last_course_loop_ids is {self.last_course_loop_ids}')
+                        # print(f'instruction is {instruction}, self.loop_ids_consumed_by_current_course is {self.loop_ids_consumed_by_current_course}, self.last_course_loop_ids is {self.last_course_loop_ids}')
                         if len(self.loop_ids_consumed_by_current_course) == len(self.last_course_loop_ids):
                             break
                 self.last_course_loop_ids = self.cur_course_loop_ids
@@ -114,10 +114,9 @@ class Knitspeak_Compiler:
                 else:  # course_id is integer
                     assert course_id not in self.course_ids_to_operations, f"KnitSpeak Error: Course {course_id} is defined more than once"
                     self.course_ids_to_operations[course_id] = course_instructions
-        print(f'self.course_ids_to_operations is {self.course_ids_to_operations}, len is {len(self.course_ids_to_operations)}')
+        # print(f'self.course_ids_to_operations is {self.course_ids_to_operations}, len is {len(self.course_ids_to_operations)}')
         max_course = max([*self.course_ids_to_operations])
         if "all_rs_rows" in self._parser.parser.symbolTable or "all_rs_rounds" in self._parser.parser.symbolTable:
-            # print('hahaha')
             course_instructions = self.course_ids_to_operations[1]
             for course_id in range(3, max_course + 1, 2):
                 if course_id not in self.course_ids_to_operations:
@@ -159,7 +158,7 @@ class Knitspeak_Compiler:
                     static_repeats = instruction[1][0]
                     if static_repeats:
                         repeats = instruction[1][1]
-                        print(f'inside width check, is static repeat, instruction is {instruction}, repeats is {repeats}')
+                        # print(f'inside width check, is static repeat, instruction is {instruction}, repeats is {repeats}')
                         if isinstance(repeats, Num_Closure):
                             repeats = repeats.to_int()
                         if isinstance(stitches, Cable_Definition):
@@ -168,11 +167,11 @@ class Knitspeak_Compiler:
                             total += repeats
                     if not static_repeats:
                         use_remaining = True
-                        print(f'inside width check, is not static repeat, instruction is {instruction}')
+                        # print(f'inside width check, is not static repeat, instruction is {instruction}')
                     #     remaining_loops = instruction[1][1]
                     #     if isinstance(remaining_loops, Num_Closure):
                     #         remaining_loops = remaining_loops.to_int()
-                print(f'current row is {current_row}, total is {total}')
+                # print(f'current row is {current_row}, total is {total}')
                 if use_remaining == False:
                     assert starting_width % total == 0, f'given starting_width does not match the width of given knitspeak. starting_width should be a multiple of {total}'
                 else:
@@ -261,19 +260,26 @@ class Knitspeak_Compiler:
             print(f'loop_id is {loop_id}, stitch_def is {stitch_def}, stitch_def.offset_to_parent_loops is {stitch_def.offset_to_parent_loops}')
             for stack_position, parent_offset in enumerate(stitch_def.offset_to_parent_loops):
                 if is_row:
-                    parent_index = prior_course_index + parent_offset
+                    parent_index = prior_course_index + parent_offset #orginal version
+                    # debug version
+                    # if self._working_ws:
+                    #     parent_index = prior_course_index + parent_offset
+                    # else:
+                    #     parent_index = prior_course_index - parent_offset
                 elif is_round:
                     parent_index = prior_course_index - parent_offset
                 # parent_index = prior_course_index + parent_offset
                 # assert 0 <= parent_index < len(self.last_course_loop_ids), f"Knitspeak Error: Cannot find a loop at index {parent_index} with parent_offset {parent_offset}"
+                # print(f'prior_course_index is {prior_course_index}, parent_index is {parent_index}')
                 parent_loop_id = self.last_course_loop_ids[parent_index]
                 print(f'prior_course_index is {prior_course_index}, parent_offset is {parent_offset}, parent_index is {parent_index}, parent_loop_id is {parent_loop_id}')
                 assert parent_loop_id not in self.loop_ids_consumed_by_current_course, \
                     f"Knitspeak Error: Loop {parent_loop_id} has already been used"
                 self.loop_ids_consumed_by_current_course.add(parent_loop_id)
-                print(f'loop_ids_consumed_by_current_course is {self.loop_ids_consumed_by_current_course}')
+                # print(f'loop_ids_consumed_by_current_course is {self.loop_ids_consumed_by_current_course}')
                 if is_row:
-                    parent_offset = parent_offset
+                    parent_offset = parent_offset #original version
+                    # parent_offset = -parent_offset # debug version
                 elif is_round:
                     parent_offset = -parent_offset
                 self.knit_graph.connect_loops(parent_loop_id, loop_id, stitch_def.pull_direction,
@@ -290,7 +296,7 @@ class Knitspeak_Compiler:
                     parent_index = prior_course_index - parent_offset
                 assert 0 <= parent_index < len(self.last_course_loop_ids), f"Knitspeak Error: Cannot find a loop at index {parent_index}"
                 parent_loop_id = self.last_course_loop_ids[parent_index]
-                print(f'in slip prior_course_index is {prior_course_index}, parent_offset is {parent_offset}, parent_index is {parent_index}, parent_loop_id is {parent_loop_id}')
+                # print(f'in slip prior_course_index is {prior_course_index}, parent_offset is {parent_offset}, parent_index is {parent_index}, parent_loop_id is {parent_loop_id}')
                 assert parent_loop_id not in self.loop_ids_consumed_by_current_course, \
                     f"Knitspeak Error: Loop {parent_loop_id} has already been used"
                 self.loop_ids_consumed_by_current_course.add(parent_loop_id)
