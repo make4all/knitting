@@ -164,6 +164,8 @@ class Pocket_Generator_on_Sheet:
             staring_node_wale_id = starting_nodes_coor[i][1]
             ending_node_wale_id = ending_nodes_coor[i][1]
             course_id = starting_nodes_coor[i][0]
+            # here we change from course_id % 2 to i % 2 because we want the first course in in the direction of 
+            # left to right to make it consistent with machine in direction.
             if i % 2 == 0:
                 for wale_id in range(staring_node_wale_id, ending_node_wale_id + self.wale_dist, self.wale_dist):
                     node_to_course_and_wale[node] = (course_id, wale_id)
@@ -188,8 +190,8 @@ class Pocket_Generator_on_Sheet:
         for node in self.child_knitgraph.graph.nodes:
             course_id = node_to_course_and_wale[node][0]
             course_to_loop_ids[course_id].append(node)
-        print(f'course_to_loop_ids is {course_to_loop_ids}')
         self.child_knitgraph.course_to_loop_ids = course_to_loop_ids
+        print(f'self.child_knitgraph.course_to_loop_ids is {self.child_knitgraph.course_to_loop_ids}')
         assert max([*self.child_knitgraph.course_to_loop_ids.keys()]) < max([*self.parent_knitgraph.course_to_loop_ids.keys()]), f"the height of child fabric exceeds that of parent fabric"
         #reverse node_to_course_and_wale to get course_and_wale_to_node
         course_and_wale_to_node = {}
@@ -204,6 +206,7 @@ class Pocket_Generator_on_Sheet:
                 if (course_id + 1, wale_id) in course_and_wale_to_node.keys():
                     child_loop = course_and_wale_to_node[(course_id + 1, wale_id)]
                     self.child_knitgraph.connect_loops(node, child_loop, pull_direction = Pull_Direction.BtF)
+        # visualize the generated polygon
         KnitGraph_Visualizer = knitGraph_visualizer(knit_graph = self.child_knitgraph)
         KnitGraph_Visualizer.visualize()
              
@@ -310,18 +313,23 @@ class Pocket_Generator_on_Sheet:
         edge_nodes_bigger_wale_side_child: Dict[int: List[int]] = {}
         num_of_nodes_left_side = len(self.left_keynodes_child_fabric)
         num_of_nodes_right_side = len(self.right_keynodes_child_fabric)
+        j = 0
         for i in range(1, num_of_nodes_left_side):
             edge_nodes_smaller_wale_side_child[i-1] = [] # i-1 represents how the edge is indexed. Specifically, first edge would be indexed as 0 and so on so forth.
             curr_left_keynode = self.left_keynodes_child_fabric[i]
             curr_course_id = curr_left_keynode[0]
             last_left_keynode = self.left_keynodes_child_fabric[i-1] 
             last_course_id = last_left_keynode[0]
+            # here we change from course_id % 2 to j % 2 because we want the first course in in the direction of 
+            # left to right to make it consistent with machine in direction.
             for course_id in range(last_course_id, curr_course_id+1):
-                if course_id % 2 == 0:
+                if j % 2 == 0:
                     smaller_wale_edge_nodes = self.child_knitgraph.course_to_loop_ids[course_id][0]
-                elif course_id % 2 == 1:
+                elif j % 2 == 1:
                     smaller_wale_edge_nodes = self.child_knitgraph.course_to_loop_ids[course_id][-1]
                 edge_nodes_smaller_wale_side_child[i-1].append(smaller_wale_edge_nodes)
+                j += 1
+        j = 0
         for i in range(1, num_of_nodes_right_side):
             edge_nodes_bigger_wale_side_child[i-1] = [] # i-1 represents how the edge is indexed. Specifically, first edge would be indexed as 0 and so on so forth.
             curr_right_keynode = self.right_keynodes_child_fabric[i]
@@ -329,12 +337,13 @@ class Pocket_Generator_on_Sheet:
             last_right_keynode = self.right_keynodes_child_fabric[i-1]
             last_course_id = last_right_keynode[0]
             for course_id in range(last_course_id, curr_course_id+1):
-                if course_id % 2 == 0:
+                if j % 2 == 0:
                     bigger_wale_edge_nodes = self.child_knitgraph.course_to_loop_ids[course_id][-1]
-                elif course_id % 2 == 1:
+                elif j % 2 == 1:
                     bigger_wale_edge_nodes = self.child_knitgraph.course_to_loop_ids[course_id][0]
                 edge_nodes_bigger_wale_side_child[i-1].append(bigger_wale_edge_nodes)
-        print(f'edge nodes of each edges on smaller wale side on child knitgraph is {edge_nodes_smaller_wale_side_child}, edge nodes of each edges on bigger wale side on child knitgraph is {edge_nodes_bigger_wale_side_child}')
+                j += 1
+        print(f'edge nodes (i.e. split nodes) of each edges on smaller wale side on child knitgraph is {edge_nodes_smaller_wale_side_child}, edge nodes (i.e. split nodes) of each edges on bigger wale side on child knitgraph is {edge_nodes_bigger_wale_side_child}')
         return edge_nodes_smaller_wale_side_child, edge_nodes_bigger_wale_side_child
                  
     def get_mirror_nodes_on_each_edge_on_parent_fabric(self, edge_nodes_smaller_wale_side_child, edge_nodes_bigger_wale_side_child):
