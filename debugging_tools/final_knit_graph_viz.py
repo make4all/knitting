@@ -240,4 +240,4 @@ class knitGraph_visualizer:
         self.get_nodes_color()
         self.get_yarn_edges()
         self.get_stitch_edges()
-        return self.draw_graph_holoviews()
+        return self.draw_graph_holoviews(), self.knit_graph

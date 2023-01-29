@@ -174,8 +174,10 @@ class Knitspeak_Compiler:
                 # print(f'current row is {current_row}, total is {total}')
                 if use_remaining == False:
                     assert starting_width % total == 0, f'given starting_width does not match the width of given knitspeak. starting_width should be a multiple of {total}'
+                    # return f'given starting_width does not match the width of given knitspeak. starting_width should be a multiple of {total}'
                 else:
                     assert total <= starting_width, f'given starting_width does not match the width of given knitspeak. starting_width should be >= than {total}'
+                    # return f'given starting_width does not match the width of given knitspeak. starting_width should be >= than {total}'
                 if current_row == row_count:
                     break
 

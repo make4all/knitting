@@ -1,4 +1,6 @@
 from tests.test_knitspeak_compiler import generate_initial_graph
+from tests.test_knitspeak_compiler import generate_final_graph
+from tests.test_knitspeak_compiler import generate_file
 import pandas as pd
 import numpy as np
 import holoviews as hv
@@ -11,6 +13,10 @@ pn.extension('altair', 'tabulator')
 # panel serve knit_ui.py --autoreload --show
 
 ui = pn.Column()
+
+knit_graph = None
+html_graph = None
+
 
 # pattern type - button
 pattern_type_options = ["Tube", "Sheet"]
@@ -42,28 +48,35 @@ yarn_carrier = pn.widgets.Select(name='Color', options=yarn_carrier_options)
 
 
 # graph height and width - int sliders
-height = pn.widgets.IntSlider(name='Height', start=1, end=50, step=1, value=1)
+height = pn.widgets.IntInput(name='Height')
 
-width = pn.widgets.IntSlider(name='Width', start=1, end=50, step=1, value=1)
+width = pn.widgets.IntInput(name='Width')
 
 # create knit graph - button
 create_knit_graph_button = pn.widgets.Button(name='Create Knit Graph', button_type='primary')
 
 # knit graph generation section
 nodes = pn.widgets.TextInput(name='Node Select', value='Enter a comma separated list of nodes')
+
+hole_index = pn.widgets.TextInput(name='Yarn ID to use', value='Integer starting from 1')
+hole_nodes = pn.widgets.TextInput(name='Hole Nodes', value='Node IDs to delete for the hole')
+more_hole = pn.widgets.Button(name='Add more holes')
+
 update_map_button = pn.widgets.Button(name='Update Knit Graph', button_type='primary')
 confirm_graph = pn.widgets.Button(name='Confirm Graph', button_type='primary')
 back1 = pn.widgets.Button(name='Back', button_type='danger')
 
 # confirmation and download section
-file_download = pn.widgets.FileDownload(file='station_info.csv', filename='knit_graph.csv') # TODO update the filename
+filename_input = pn.widgets.TextInput(name='Knit Out File Name', value='Enter file name for knit out')
+confirm_filename = pn.widgets.Button(name='Confirm Knit Out')
 back2 = pn.widgets.Button(name='Back', button_type='danger')
 
 # widget sections
-widget1 = pn.WidgetBox('## Starter Selector', pattern_type, knitting_procedure, gauge,
+widget1 = pn.WidgetBox('## Starter Selector', pattern_type, knit_speak, knitting_procedure, gauge,
                        yarn_carrier, height, width, create_knit_graph_button)
-widget2 = pn.WidgetBox('## End Selector', nodes, back1, update_map_button, confirm_graph)
-widget3 = pn.WidgetBox('## Export', back2, file_download)
+
+widget2 = pn.WidgetBox('## End Selector', back1, update_map_button, confirm_graph)
+widget3 = pn.WidgetBox('## Export', filename_input, confirm_filename, back2)
 
 
 @pn.depends(pattern_type.param.value, watch=True)
@@ -86,31 +99,74 @@ def _update_gauge(a, b):
 def _create_knit_graph(event):
     ui.clear()
 
-    final_type = None
+    final_type = knit_speak.value
 
-    type = pattern_type.value
-    if(type == "Sheet"):
-        final_type = "all rs rows k. all ws rows p."
-    else:
-        final_type = "all rs rounds k. all ws rounds p."
+    # if(type == "Sheet"):
+    #     final_type = "all rs rows k. all ws rows p."
+    # else:
+    #     final_type = "all rs rounds k. all ws rounds p."
 
     g = gauge.value
     color = yarn_carrier.value
-    graph = generate_initial_graph(final_type, .5, 2)
-    html_pane = pn.pane.HTML(graph)
-    row = pn.Row(widget2, html_pane)
-    ui.append(row)
+    try:
+        gauge_map = {"1/4": 0.25, "1/3": 1/3, "1/2": 0.5}
+        global html_graph
+        global knit_graph
+        html_graph, knit_graph = generate_initial_graph(final_type, gauge_map[gauge.value], int(yarn_carrier.value), width.value, height.value)
+        html_pane = pn.pane.HTML(html_graph)
+        row = pn.Row(widget2, html_pane)
+        ui.append(row)
+
+        if knitting_procedure.value == "Hole":
+            holes = pn.Column(more_hole, pn.Row(hole_index, hole_nodes))
+            ui.append(holes)
+    except:
+        error_widget = pn.widgets.StaticText(value='Starting width should be greater than or equal to total and a multiple of total')
+        ui.append(error_widget)
+        ui.append(back1)
+    
 
 
 def _back_to_start(event):
     ui.clear()
     ui.append(widget1)
+    ui.append(widget2)
+
+
+def _update_graph(event):
+    # if knitting_procedure.value == "Hole" and pattern_type.value == "Sheet":
+    map =  {int(hole_index.value): [int(i) for i in hole_nodes.value.split(",")]}
+    print(f'nodes is {[int(i) for i in hole_nodes.value.split(",")]}')
+    print(f'map is {map}')
+    global html_graph
+    global knit_graph
+    final_html_graph, final_knit_graph = generate_final_graph(pattern_type.value, knitting_procedure.value, map, knit_graph)
+    # ui.remove(html_graph)
+    ui.append(final_html_graph)
+    html_graph = final_html_graph
+    knit_graph = final_knit_graph
+
+
+
+
+def _more_hole(event):
+    new_hole_index = pn.widgets.TextInput(name='Hole Index', value='Integer starting from 0')
+    new_hole_nodes = pn.widgets.TextInput(name='Hole Nodes', value='Node IDs to delete for the hole')
+    ui.append(pn.Row(new_hole_index, new_hole_nodes))
+
 
 
 def _confirm_graph(event):
     # TODO get the knit speak and put it into a file download
     ui.clear()
     ui.append(widget3)
+
+
+def _confirm_file_name(event):
+    global knit_graph
+    generate_file(knit_graph, filename_input.value + '.k')
+    file_download = pn.widgets.FileDownload(file=filename_input.value + '.k', embed=True)
+    ui.append(file_download)
 
 
 def _back_to_graph(event):
@@ -120,8 +176,11 @@ def _back_to_graph(event):
 
 create_knit_graph_button.on_click(_create_knit_graph)
 back1.on_click(_back_to_start)
+update_map_button.on_click(_update_graph)
 confirm_graph.on_click(_confirm_graph)
 back2.on_click(_back_to_graph)
+more_hole.on_click(_more_hole)
+confirm_filename.on_click(_confirm_file_name)
 
 # ui
 ui.append(widget1)
