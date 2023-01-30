@@ -63,7 +63,7 @@ def generate_initial_graph(pattern_used, gauge, color, width, height):
 
 
 
-def generate_final_graph(pattern_english, modification, nodes_dict, knit_graph):  
+def generate_final_graph_hole(pattern_english, modification, nodes_dict, knit_graph):  
     if (pattern_english == "Sheet" and modification == "Hole"):
         # add hole on sheet
         # below are for creating hole on rectangular shaped patterns 
@@ -82,7 +82,7 @@ def generate_final_graph(pattern_english, modification, nodes_dict, knit_graph):
         # yarns_and_holes_to_add = {3:[19, 20], 1:[34, 35], 4: [42]}  used to replicate another figures used for the paper
         # yarns_and_holes_to_add = {1:[29], 3:[35], 7:[27]} used for 
         # hole_generator = Hole_Generator_on_Sheet(yarns_and_holes_to_add = {1:[29, 27, 35, 19]}, knitgraph = knit_graph)
-        hole_generator = Hole_Generator_on_Sheet(nodes_dict, knitgraph = knit_graph) 
+        hole_generator = Hole_Generator_on_Sheet(yarns_and_holes_to_add = nodes_dict, knitgraph = knit_graph) 
         knitGraph = hole_generator.add_hole()
         # note that we only update (delete hole nodes on the self._knit_graph, we do not correspondingly update nodes in both self.node_on_front_or_back and self.node_to_course_and_wale)
         KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
@@ -100,7 +100,7 @@ def generate_final_graph(pattern_english, modification, nodes_dict, knit_graph):
         # hole_index_to_holes = {1: [25], 2:[27], 3:[49]} #get figure for paper
         # hole_index_to_holes = {1: [24]} #get figure in the slide
         # hole_generator = Hole_Generator_on_Tube(hole_index_to_holes = {1: [24]}, knitgraph = knit_graph)
-        hole_generator = Hole_Generator_on_Tube(nodes_dict, knitgraph = knit_graph)
+        hole_generator = Hole_Generator_on_Tube(hole_index_to_holes = nodes_dict, knitgraph = knit_graph)
         knitGraph = hole_generator.add_hole()
         KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
         html_graph, knit_graph = KnitGraph_Visualizer.visualize()
@@ -108,28 +108,31 @@ def generate_final_graph(pattern_english, modification, nodes_dict, knit_graph):
         assert knit_graph is not None
         return KnitGraph_Visualizer.visualize()
 
-#     if (pattern_english == "Sheet" and modification == "Pocket"):
-#         # add pocket on sheet
-#         # retangle pockect on stst
-#         # when gauge = 1/2: a square pocket -- pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = sheet_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 3), (6, 3)], right_keynodes_child_fabric=[(3, 11), (6, 11)], close_top = False, edge_connection_left_side = [True], edge_connection_right_side = [True])
-#         # when gauge = 1/2: a hexagonal pocket -- pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = sheet_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 5), (4, 3), (6, 3), (7, 5)], right_keynodes_child_fabric=[(3, 9), (7, 9)], close_top = False, edge_connection_left_side = [True, False, False], edge_connection_right_side = [True])
-#         # when gauge = 1/2: a trapezoid pocket -- pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = sheet_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 5), (5, 1)], right_keynodes_child_fabric=[(3, 9), (5, 13)], close_top = True, edge_connection_left_side = [False], edge_connection_right_side = [False])
-#         # when gauge = 1/3: pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = sheet_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 4), (6, 4)], right_keynodes_child_fabric=[(3, 13), (6, 13)], close_top = False, edge_connection_left_side = [True], edge_connection_right_side = [True])
-#         # pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = sheet_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 5), (5, 1)], right_keynodes_child_fabric=[(3, 9), (5, 13)], close_top = True, edge_connection_left_side = [False], edge_connection_right_side = [False])
-#         # knitGraph = pocket_generator.build_pocket_graph() 
-#         # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
-#         # KnitGraph_Visualizer.visualize()
+def generate_final_graph_pocket(pattern_english, modification, original_id, pocket_id, knit_graph, front_patch, left_keys, right_keys, top_connection, right_connection, left_connection):  
+    if (pattern_english == "Sheet" and modification == "Pocket"):
+        # add pocket on sheet
+        # retangle pockect on stst
+        # when gauge = 1/2: a square pocket -- pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = sheet_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 3), (6, 3)], right_keynodes_child_fabric=[(3, 11), (6, 11)], close_top = False, edge_connection_left_side = [True], edge_connection_right_side = [True])
+        # when gauge = 1/2: a hexagonal pocket -- pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = sheet_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 5), (4, 3), (6, 3), (7, 5)], right_keynodes_child_fabric=[(3, 9), (7, 9)], close_top = False, edge_connection_left_side = [True, False, False], edge_connection_right_side = [True])
+        # when gauge = 1/2: a trapezoid pocket -- pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = sheet_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 5), (5, 1)], right_keynodes_child_fabric=[(3, 9), (5, 13)], close_top = True, edge_connection_left_side = [False], edge_connection_right_side = [False])
+        # when gauge = 1/3: pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = sheet_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3,4), (6,4)], right_keynodes_child_fabric=[(3, 13), (6, 13)], close_top = False, edge_connection_left_side = [True], edge_connection_right_side = [True])
+        # pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = sheet_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 5), (5, 1)], right_keynodes_child_fabric=[(3, 9), (5, 13)], close_top = True, edge_connection_left_side = [False], edge_connection_right_side = [False])
+        pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = original_id, pocket_yarn_carrier_id = pocket_id, is_front_patch = front_patch, left_keynodes_child_fabric=left_keys, right_keynodes_child_fabric=right_keys, close_top = top_connection, edge_connection_left_side = left_connection, edge_connection_right_side = right_connection)
+        knitGraph = pocket_generator.build_pocket_graph() 
+        KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+        return KnitGraph_Visualizer.visualize()
 
-#     if (pattern_english == "Tube" and modification == "Pocket"):
-#         # add pocket on tube
-#         # when gauge = 1/3: left_keynodes_child_fabric=[(3, 4), (6, 4)], right_keynodes_child_fabric=[(3, 7), (6, 7)], edge_connection_left_side = [True], close_top = True, edge_connection_right_side = [True]
-#         # when gauge = 1/3: left_keynodes_child_fabric=[(3, 4), (4, 1), (6, 1)], right_keynodes_child_fabric=[(3, 7), (4,10), (6, 10)], close_top = True, edge_connection_left_side = [True, True], edge_connection_right_side = [True, True]
-#         # when gauge = 1/3: pocket_generator = Pocket_Generator_on_Tube(parent_knitgraph = knit_graph, tube_yarn_carrier_id = tube_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = True, left_keynodes_child_fabric=[(3, 4), (6, 4)], right_keynodes_child_fabric=[(3, 7), (6, 7)], close_top = True, edge_connection_left_side = [True], edge_connection_right_side = [True])
-#         # when gauge = 1/4: pocket_generator = Pocket_Generator_on_Tube(parent_knitgraph = knit_graph, tube_yarn_carrier_id = tube_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 5), (6, 5)], right_keynodes_child_fabric=[(3, 13), (6, 13)], close_top = True, edge_connection_left_side = [True], edge_connection_right_side = [True])
-#         pocket_generator = Pocket_Generator_on_Tube(parent_knitgraph = knit_graph, tube_yarn_carrier_id = tube_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 4), (6, 4)], right_keynodes_child_fabric=[(3, 7), (6, 7)], close_top = True, edge_connection_left_side = [False], edge_connection_right_side = [False])
-#         knitGraph = pocket_generator.build_pocket_graph() 
-#         KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
-#         KnitGraph_Visualizer.visualize()
+    if (pattern_english == "Tube" and modification == "Pocket"):
+        # add pocket on tube
+        # when gauge = 1/3: left_keynodes_child_fabric=[(3, 4), (6, 4)], right_keynodes_child_fabric=[(3, 7), (6, 7)], edge_connection_left_side = [True], close_top = True, edge_connection_right_side = [True]
+        # when gauge = 1/3: left_keynodes_child_fabric=[(3, 4), (4, 1), (6, 1)], right_keynodes_child_fabric=[(3, 7), (4,10), (6, 10)], close_top = True, edge_connection_left_side = [True, True], edge_connection_right_side = [True, True]
+        # when gauge = 1/3: pocket_generator = Pocket_Generator_on_Tube(parent_knitgraph = knit_graph, tube_yarn_carrier_id = tube_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = True, left_keynodes_child_fabric=[(3, 4), (6, 4)], right_keynodes_child_fabric=[(3, 7), (6, 7)], close_top = True, edge_connection_left_side = [True], edge_connection_right_side = [True])
+        # when gauge = 1/4: pocket_generator = Pocket_Generator_on_Tube(parent_knitgraph = knit_graph, tube_yarn_carrier_id = tube_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 5), (6, 5)], right_keynodes_child_fabric=[(3, 13), (6, 13)], close_top = True, edge_connection_left_side = [True], edge_connection_right_side = [True])
+        # pocket_generator = Pocket_Generator_on_Tube(parent_knitgraph = knit_graph, tube_yarn_carrier_id = tube_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 4), (6, 4)], right_keynodes_child_fabric=[(3, 7), (6, 7)], close_top = True, edge_connection_left_side = [False], edge_connection_right_side = [False])
+        pocket_generator = Pocket_Generator_on_Tube(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = original_id, pocket_yarn_carrier_id = pocket_id, is_front_patch = front_patch, left_keynodes_child_fabric=left_keys, right_keynodes_child_fabric=right_keys, close_top = top_connection, edge_connection_left_side = [left_connection], edge_connection_right_side = [right_connection])
+        knitGraph = pocket_generator.build_pocket_graph() 
+        KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+        KnitGraph_Visualizer.visualize()
 
 #     if (pattern_english == "Sheet" and modification == "Handle"):
 #         # add handle on sheet
