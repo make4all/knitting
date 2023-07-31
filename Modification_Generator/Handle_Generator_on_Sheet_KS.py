@@ -5,6 +5,7 @@ from debugging_tools.final_knit_graph_viz import knitGraph_visualizer
 from debugging_tools.simple_knitgraph_generator import Simple_Knitgraph_Generator
 from debugging_tools.polygon_generator import Polygon_Generator
 from knitspeak_compiler.knitspeak_compiler import Knitspeak_Compiler
+from debugging_tools.exceptions import ErrorException
 
 class Handle_Generator_on_Sheet:
     def __init__(self, parent_knitgraph: Knit_Graph, sheet_yarn_carrier_id: int, handle_yarn_carrier_id: int, is_front_patch: bool, left_keynodes_child_fabric, right_keynodes_child_fabric):
@@ -17,7 +18,8 @@ class Handle_Generator_on_Sheet:
         #self.handle_graph is handle graph, the result of processing given child graph and parent graph.
         self.handle_graph: Knit_Graph = Knit_Graph()
         self.parent_knitgraph: Knit_Graph = parent_knitgraph
-        assert self.parent_knitgraph.object_type == 'sheet', f'wrong object type of parent knitgraph'
+        if self.parent_knitgraph.object_type != 'sheet':
+            raise ErrorException(f'wrong object type of parent knitgraph')
         self.handle_graph.object_type = 'sheet'
         self.child_knitgraph: Knit_Graph = Knit_Graph()
         self.child_knitgraph.object_type = 'sheet'
@@ -27,7 +29,8 @@ class Handle_Generator_on_Sheet:
         self.parent_knitgraph_coors_connectivity: List[Tuple] = []
         self.left_keynodes_child_fabric: List[Tuple[int, int]] = left_keynodes_child_fabric
         self.right_keynodes_child_fabric: List[Tuple[int, int]] = right_keynodes_child_fabric
-        assert self.parent_knitgraph.gauge <= 0.5, f'the gauge of given parent knitgraph has to be less than 0.5, and we set it to 0.5 which is sufficient to keep texture for sheet case' #otherwise it will mess up because xfers involved.
+        if self.parent_knitgraph.gauge > 0.5:
+            raise ErrorException(f'the gauge of given parent knitgraph has to be less than 0.5, and we set it to 0.5 which is sufficient to keep texture for sheet case') #otherwise it will mess up because xfers involved.
         self.handle_graph.gauge = self.child_knitgraph.gauge = self.parent_knitgraph.gauge #this is true for adding handle on sheet case
         self.wale_dist = int(1/self.parent_knitgraph.gauge)
         #
@@ -47,7 +50,9 @@ class Handle_Generator_on_Sheet:
         self.child_knitgraph_course_and_wale_to_node: Dict[Tuple[int, int], int] 
         self.child_knitgraph_course_id_to_wale_ids: Dict[int, List[int]] = {}
         self.child_knitgraph.node_on_front_or_back: Dict[int, str] = {}
-        #     
+        #    
+        if sheet_yarn_carrier_id == handle_yarn_carrier_id:
+            raise ErrorException(f'yarn carrier id for sheet: {sheet_yarn_carrier_id} cannot be the same as yarn carrier id for tube: {handle_yarn_carrier_id}')
         self.sheet_yarn_carrier_id: int = sheet_yarn_carrier_id
         self.sheet_yarn: Yarn = Yarn("parent_yarn", self.handle_graph, carrier_id=self.sheet_yarn_carrier_id)
         self.handle_graph.add_yarn(self.sheet_yarn)
@@ -73,11 +78,15 @@ class Handle_Generator_on_Sheet:
         last_keynode_left = self.left_keynodes_child_fabric[-1]
         first_keynode_right =  self.right_keynodes_child_fabric[0]
         last_keynode_right = self.right_keynodes_child_fabric[-1]
-        assert first_keynode_left[0] == first_keynode_right[0], f'first keynode on the left and right do not share the same course_id'
-        assert last_keynode_left[0] == last_keynode_right[0], f'last keynode on the left and right do not share the same course_id'
+        if first_keynode_left[0] != first_keynode_right[0]:
+            raise ErrorException(f'first keynode on the left and right do not share the same course_id')
+        if last_keynode_left[0] != last_keynode_right[0]:
+            raise ErrorException(f'last keynode on the left and right do not share the same course_id')
         # keynode check 1: gauge check
-        assert (first_keynode_right[1] - first_keynode_left[1]) % self.wale_dist == 0, f'wale distance between first keynodes does not match the gauge setup'
-        assert (last_keynode_right[1] - last_keynode_left[1]) % self.wale_dist == 0, f'wale distance between last keynodes does not match the gauge setup'
+        if (first_keynode_right[1] - first_keynode_left[1]) % self.wale_dist != 0:
+            raise ErrorException(f'wale distance between first keynodes does not match the gauge setup')
+        if (last_keynode_right[1] - last_keynode_left[1]) % self.wale_dist != 0:
+            raise ErrorException(f'wale distance between last keynodes does not match the gauge setup')
         # keynode check 2: slope check
         num_of_nodes_left_side = len(self.left_keynodes_child_fabric)
         num_of_nodes_right_side = len(self.right_keynodes_child_fabric)
@@ -86,7 +95,8 @@ class Handle_Generator_on_Sheet:
             last_left_keynode = self.left_keynodes_child_fabric[i-1] 
             width_change_left = curr_left_keynode[1] - last_left_keynode[1]
             increase_height_left = curr_left_keynode[0] - last_left_keynode[0]
-            assert width_change_left % self.wale_dist == 0, f'wale distance between keynodes {i-1} and {i} does not match the gauge setup'
+            if width_change_left % self.wale_dist != 0:
+                raise ErrorException(f'wale distance between keynodes {i-1} and {i} does not match the gauge setup')
             #check if any other keynodes might be missed in between 
             if width_change_left % increase_height_left != 0:
                 print(f'some keynodes might exist bewtween given keynodes {last_left_keynode} and {curr_left_keynode} on the left side if these two keynodes are entered correctly')
@@ -96,7 +106,8 @@ class Handle_Generator_on_Sheet:
             last_right_keynode = self.right_keynodes_child_fabric[i-1]
             width_change_right = curr_right_keynode[1] - last_right_keynode[1]
             increase_height_right = curr_right_keynode[0] - last_right_keynode[0]
-            assert width_change_right % self.wale_dist == 0, f'wale distance between keynodes {i-1} and {i} does not match the gauge setup'
+            if width_change_right % self.wale_dist != 0:
+                raise ErrorException(f'wale distance between keynodes {i-1} and {i} does not match the gauge setup')
             if width_change_right % increase_height_right != 0:
                 print(f'some keynodes might exist bewtween given keynodes {last_right_keynode} and {curr_right_keynode} on the right side if these two keynodes are entered correctly')
                 exit()
@@ -184,7 +195,8 @@ class Handle_Generator_on_Sheet:
             course_to_loop_ids[course_id].append(node)
         print(f'course_to_loop_ids is {course_to_loop_ids}')
         self.child_knitgraph.course_to_loop_ids = course_to_loop_ids
-        assert max([*self.child_knitgraph.course_to_loop_ids.keys()]) < max([*self.parent_knitgraph.course_to_loop_ids.keys()]), f"the height of child fabric exceeds that of parent fabric"
+        if max([*self.child_knitgraph.course_to_loop_ids.keys()]) >= max([*self.parent_knitgraph.course_to_loop_ids.keys()]):
+            raise ErrorException(f"the height of child fabric exceeds that of parent fabric")
         #reverse node_to_course_and_wale to get course_and_wale_to_node
         course_and_wale_to_node = {}
         course_and_wale_to_node = {tuple(v): k for k, v in node_to_course_and_wale.items()}
@@ -316,6 +328,7 @@ class Handle_Generator_on_Sheet:
                     smaller_wale_edge_nodes = self.child_knitgraph.course_to_loop_ids[course_id][-1]
                 edge_nodes_smaller_wale_side_child[i-1].append(smaller_wale_edge_nodes)
                 j += 1
+        j = 0
         for i in range(1, num_of_nodes_right_side):
             edge_nodes_bigger_wale_side_child[i-1] = [] # i-1 represents how the edge is indexed. Specifically, first edge would be indexed as 0 and so on so forth.
             curr_right_keynode = self.right_keynodes_child_fabric[i]
@@ -350,10 +363,12 @@ class Handle_Generator_on_Sheet:
                     for wale_id_offset in range(search_max_width):
                         target_wale_id = wale_id + wale_id_offset
                         if (course_id, target_wale_id) in self.parent_knitgraph_course_and_wale_to_node:
-                            assert wale_id_offset!=0, f'wale_id of child fabric can not be the same as parent fabric, otherwise child fabric will not be able to achieve texturized pattern'
+                            if wale_id_offset == 0:
+                                raise ErrorException(f'wale_id of child fabric can not be the same as parent fabric, otherwise child fabric will not be able to achieve texturized pattern')
                             self.wale_id_offset = wale_id_offset
                             break
-                assert (course_id, wale_id+wale_id_offset) in self.parent_knitgraph_course_and_wale_to_node, f'cannot find mirror node at {(course_id, wale_id+wale_id_offset)}'
+                if (course_id, wale_id+wale_id_offset) not in self.parent_knitgraph_course_and_wale_to_node:
+                    raise ErrorException(f'cannot find mirror node at {(course_id, wale_id+wale_id_offset)}')
                 mirror_nodes_bigger_wale_side_parent[edge_index].append(self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id+wale_id_offset)])
         for edge_index in edge_nodes_smaller_wale_side_child.keys():
             mirror_nodes_smaller_wale_side_parent[edge_index] = []
@@ -361,7 +376,8 @@ class Handle_Generator_on_Sheet:
             for edge_node in edge_nodes:
                 course_id = self.child_knitgraph.node_to_course_and_wale[edge_node][0]
                 wale_id = self.child_knitgraph.node_to_course_and_wale[edge_node][1]
-                assert (course_id, wale_id+wale_id_offset) in self.parent_knitgraph_course_and_wale_to_node, f'cannot find mirror node at {(course_id, wale_id+wale_id_offset)}'
+                if (course_id, wale_id+wale_id_offset) not in self.parent_knitgraph_course_and_wale_to_node:
+                    raise ErrorException(f'cannot find mirror node at {(course_id, wale_id+wale_id_offset)}')
                 mirror_nodes_smaller_wale_side_parent[edge_index].append(self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id+wale_id_offset)])
         print(f'mirror nodes on parent knitgraph that correspond to edge nodes of each edge on smaller wale side on child knitgraph is {mirror_nodes_smaller_wale_side_parent}, \
             mirror nodes on parent knitgraph that correspond to edge nodes of each edge on bigger wale side on child knitgraph is {mirror_nodes_bigger_wale_side_parent}')
@@ -389,7 +405,8 @@ class Handle_Generator_on_Sheet:
                 parent_nodes = []
                 mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
                 parent_coors = self.find_parent_coors(child_coor = mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
-                assert len(parent_coors) > 0, f'this mirror node {mirror_node} can not form a branch structure because it has no parent'
+                if len(parent_coors) <= 0:
+                    raise ErrorException(f'this mirror node {mirror_node} can not form a branch structure because it has no parent')
                 for parent_coor in parent_coors:
                     parent_nodes.append(self.parent_knitgraph_course_and_wale_to_node[parent_coor])
                 root_nodes_bigger_wale_side_parent[edge_index][(mirror_node, split_node)] = parent_nodes
@@ -401,7 +418,8 @@ class Handle_Generator_on_Sheet:
                 parent_nodes = []
                 mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
                 parent_coors = self.find_parent_coors(child_coor = mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
-                assert len(parent_coors) > 0, f'this mirror node {mirror_node} can not form a branch structure because it has no parent'
+                if len(parent_coors) <= 0:
+                    raise ErrorException(f'this mirror node {mirror_node} can not form a branch structure because it has no parent')
                 for parent_coor in parent_coors:
                     parent_nodes.append(self.parent_knitgraph_course_and_wale_to_node[parent_coor])
                 root_nodes_smaller_wale_side_parent[edge_index][(mirror_node, split_node)] = parent_nodes

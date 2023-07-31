@@ -5,6 +5,7 @@ from knit_graphs.Knit_Graph import Knit_Graph, Pull_Direction
 from debugging_tools.final_knit_graph_viz import knitGraph_visualizer
 from debugging_tools.polygon_generator import Polygon_Generator
 from debugging_tools.simple_knitgraph_generator import Simple_Knitgraph_Generator
+from debugging_tools.exceptions import ErrorException
 import warnings
 
 class Hole_Generator_on_Sheet:
@@ -35,7 +36,8 @@ class Hole_Generator_on_Sheet:
         self._knit_graph.loop_id_to_course: Dict[int, float] = self._knit_graph.loop_ids_to_course
         self._knit_graph.course_to_loop_ids: Dict[int, List[int]] = self._knit_graph.course_to_loop_ids
         self._knit_graph.gauge = knitgraph.gauge
-        assert self._knit_graph.object_type == 'sheet', f'wrong object type of parent knitgraph'
+        if self._knit_graph.object_type != 'sheet':
+            raise ErrorException(f'wrong object type of parent knitgraph')
         self._knit_graph.object_type = 'sheet'
         assert self._knit_graph.course_to_loop_ids is not None
         assert self._knit_graph.node_to_course_and_wale is not None
@@ -43,16 +45,19 @@ class Hole_Generator_on_Sheet:
         self.float_length = int(1/self._knit_graph.gauge) - 1
         self.wale_dist = int(1/self._knit_graph.gauge)
         self.graph_nodes: set[int] = set(self._knit_graph.graph.nodes)
-        assert len(self._knit_graph.yarns) == 1, "This only supports modifying graphs that has only one yarn as input"
+        if len(self._knit_graph.yarns) != 1:
+            raise ErrorException(f"This only supports modifying graphs that has only one yarn as input")
         #since given knit graph has only one yarn before being modified
         self._old_yarn: Yarn = [*self._knit_graph.yarns.values()][0]
         # assert the type of keys is integer instead of str, otherwise will throw an error when it comes to create new yarn object in bring the new yarns() below
-        assert set(map(type, yarns_and_holes_to_add.keys())) == {int}, f'yarn carrier id should be of integer type'
+        if set(map(type, yarns_and_holes_to_add.keys())) != {int}:
+            raise ErrorException(f'yarn carrier id should be of integer type')
         # assert old yarn carrier is not in new carriers, otherwise cause confusion
         self.yarns_and_holes_to_add: Dict[int, List[int]] = yarns_and_holes_to_add
         self._new_carriers: List[int] = [*yarns_and_holes_to_add.keys()]
         for carrier_id in self._new_carriers:
-            assert carrier_id != self._old_yarn.carrier.carrier_ids, f'one of the carrier ids: {carrier_id} in provided yarn carriers for adding hole is the same as old yarn carrier id :{self._old_yarn.carrier.carrier_ids}'
+            if carrier_id == self._old_yarn.carrier.carrier_ids:
+                raise ErrorException(f'one of the carrier ids: {carrier_id} in provided yarn carriers for adding hole is the same as old yarn carrier id :{self._old_yarn.carrier.carrier_ids}')
         self.new_yarn_ids: List[str] = [str(new_yarn_id) for new_yarn_id in self._new_carriers]
         self._new_yarns: Dict[int, Yarn] = {}
 
@@ -70,7 +75,8 @@ class Hole_Generator_on_Sheet:
         self.course_to_hole_index: Dict[int, List[int]] = {}
         # note that below one is "real new yarn wales", different than the above "self.hole_index_to_course_id_to_new_yarn_wales"
         self.hole_index_to_course_id_to_real_new_yarn_wales: Dict[int, Dict[int, List[int]]] = {}
-   
+        self.sorted_hole_index: List = []
+
     def get_hole_size(self):
         """
         hole_start_course = self._pattern_height - 1
@@ -111,8 +117,10 @@ class Hole_Generator_on_Sheet:
             # assert len(wale_involved) <= 5, f'hole width is too large to achieve the racking bound by 2 on the machine'
             # cannot relax below constraints considering in our pipeline even though we have waste height for each knit object, otherwise yarn-over node would get wrong
             # target needle position with our pipeline.
-            assert self._hole_start_course > 1, f'bind-off would fail if hole_start_course <= 1'
-            assert self._hole_end_course < self._pattern_height - 1, f'hole height is too large that it is exceeding the knit graph border'
+            if self._hole_start_course <= 1:
+                raise ErrorException(f'bind-off would fail if hole_start_course <= 1')
+            if self._hole_end_course >= self._pattern_height - 1:
+                raise ErrorException(f'hole height is too large that it is exceeding the knit graph border')
             self._hole_height = self._hole_end_course - self._hole_start_course + 1
             self._hole_width = (self._hole_end_wale - self._hole_start_wale) + self.wale_dist
             self.holes_size[hole_index]['hole_start_course'] = self._hole_start_course
@@ -123,6 +131,20 @@ class Hole_Generator_on_Sheet:
             self.holes_size[hole_index]['hole_width'] = self._hole_width
             hole_index += 1
             # print(f'hole_start_course is {self._hole_start_course}, hole_end_course is {self._hole_end_course}, hole_start_wale is {self._hole_start_wale}, hole_end_wale is {self._hole_end_wale}')
+        # organize the self.holes_size() by hole_start_course -- hole with smaller hole_start_course will be processed first in 
+        # get_new_yarn_loop_ids_for_holes(). If there are more than one hole with the same hole_start_course, then see their hole_end_course,
+        # those with bigger hole_end_course will be placed later.
+        print(f'self.holes_size.items() is {self.holes_size.items()}, \
+              [*self.holes_size.items()] is {[*self.holes_size.items()]}')
+        dict_list = [*self.holes_size.items()]
+        
+            
+        a = sorted(dict_list, key=lambda x:(x[1]['hole_start_course'], x[1]['hole_end_course']))
+        # get the sorted index
+        for dict in a:
+            index= dict[0]
+            self.sorted_hole_index.append(index) 
+        print(f'a is {a}, sorted_hole_index is {self.sorted_hole_index}')
         print(f'holes_size is {self.holes_size}')
     
     # use self._hole_course_to_wale_ids inside the get_new_yarn_loop_ids()
@@ -254,7 +276,8 @@ class Hole_Generator_on_Sheet:
         odd number or even number, though the use of wale id and course id.
         """
         # wale_dist = self.float_length+1
-        for hole_index in [*self.holes_size.keys()]:
+        #for hole_index in [*self.holes_size.keys()]:
+        for hole_index in self.sorted_hole_index:
             new_yarn_course_to_loop_ids: Dict[float, List[int]]= {}
             old_yarn_course_to_margin_loop_ids: Dict[float, List[int]]= {}
             new_yarn_course_to_margin_loop_ids: Dict[float, List[int]]= {}
@@ -329,6 +352,8 @@ class Hole_Generator_on_Sheet:
             real_old_yarn_nodes = real_old_yarn_nodes.intersection(old_yarn_nodes)
         # get nodes for different new yarns
         hole_index_to_new_yarn_nodes = {}
+        # 
+        hole_index_pair_intersect = []
         for hole_index in self.holes_to_old_and_new_yarns.keys():
             real_new_yarn_nodes = self.holes_to_old_and_new_yarns[hole_index]['new_yarn_nodes']
             for hole_index_inside in self.holes_to_old_and_new_yarns.keys():
@@ -337,10 +362,17 @@ class Hole_Generator_on_Sheet:
                     continue
                 else:
                     if len(real_new_yarn_nodes.intersection(other_new_yarn_nodes)) != 0:
-                        if real_new_yarn_nodes.issubset(other_new_yarn_nodes):
-                            continue
-                        else:
-                            real_new_yarn_nodes = real_new_yarn_nodes.difference(other_new_yarn_nodes)
+                        # if real_new_yarn_nodes.issubset(other_new_yarn_nodes):
+                        #     continue
+                        # else:
+                        #     if [hole_index, hole_index_inside] in hole_index_pair_intersect:
+                        #         continue
+                        #     real_new_yarn_nodes = real_new_yarn_nodes.difference(other_new_yarn_nodes)
+                        #     hole_index_pair_intersect.append([hole_index_inside, hole_index])
+                        if [hole_index, hole_index_inside] in hole_index_pair_intersect:
+                                continue
+                        real_new_yarn_nodes = real_new_yarn_nodes.difference(other_new_yarn_nodes)
+                        hole_index_pair_intersect.append([hole_index_inside, hole_index])
             # finally, we need to delete the all hole nodes if it is included on the real_new_yarn_nodes
             for hole in self.yarns_and_holes_to_add.values():
                 for node in hole:
@@ -457,9 +489,11 @@ class Hole_Generator_on_Sheet:
                                         for predecessor in predecessors:
                                             # this only applies to case where yarn starting direction is from right to left
                                             if course_id % 2 == 0:
-                                                assert self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] <= 0, f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {potential_node_to_connect}' 
+                                                if self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] > 0:
+                                                    raise ErrorException(f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {potential_node_to_connect}')
                                             else:
-                                                assert self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] >= 0, f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {potential_node_to_connect}' 
+                                                if self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] < 0:
+                                                    raise ErrorException(f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {potential_node_to_connect}')
                                         self._knit_graph.connect_loops(node, potential_node_to_connect, parent_offset = int((parent_wale_id - child_wale_id)/self.wale_dist), pull_direction = pull_direction)
                                     else:
                                         # then it is actually a single cable stitch (special, because no crossing between two or more stitches here), thus we need to set the depth as 1.

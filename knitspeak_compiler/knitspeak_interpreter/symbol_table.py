@@ -3,6 +3,7 @@ from typing import Dict, Union
 
 from knit_graphs.Knit_Graph import Pull_Direction
 from knitspeak_compiler.knitspeak_interpreter.cable_definitions import Cable_Definition
+from knitspeak_compiler.knitspeak_interpreter.increase_definitions import *
 from knitspeak_compiler.knitspeak_interpreter.stitch_definitions import Stitch_Definition, Stitch_Lean
 
 
@@ -13,9 +14,11 @@ class Symbol_Table:
 
     def __init__(self):
         self._symbol_table: Dict[str, Union[Cable_Definition, Stitch_Definition, int]] = {"k": self._knit(), "p": self._purl(),
-                                                                                         "yo": self._yo(), "slip": self._slip()}
+                                                                                         "yo": self._yo(), "slip": self._slip(),
+                                                                                         "row_courses": set(), "round_courses": set()}
         self._decreases()
         self._cables()
+        self._Loop_Cast_On()
         # set current row variable
         self._symbol_table["current_row"] = 0
 
@@ -66,12 +69,18 @@ class Symbol_Table:
         for n in [1, 2]:
             offsets = [offset for offset in range(0, n + 1)]
             k = ""
-            if n >= 2:
+            if n >= 2: 
                 k = str(n)
             self[f"s{k}kpo"] = Stitch_Definition(offset_to_parent_loops=offsets)
             self[f"s{k}ppo"] = Stitch_Definition(Pull_Direction.FtB, offset_to_parent_loops=offsets)
         self["sk2po"] = Stitch_Definition(offset_to_parent_loops=[-1, 0, 1])
         self["sp2po"] = Stitch_Definition(Pull_Direction.FtB, offset_to_parent_loops=[-1, 0, 1])
+
+    def _Loop_Cast_On(self): #_single_leading_underscore: This convention is used to indicate that a name is intended for internal use within a module.
+        self[f"RCO"] = Increase_Stitch_Definition(inc_lean = Stitch_Lean.Right, lean_stitch_pull_direction = Pull_Direction.BtF)
+        self[f"LCO"] = Increase_Stitch_Definition(inc_lean = Stitch_Lean.Left, lean_stitch_pull_direction = Pull_Direction.BtF)
+        self[f"RCO|P"] = Increase_Stitch_Definition(inc_lean = Stitch_Lean.Right, lean_stitch_pull_direction = Pull_Direction.FtB)
+        self[f"LCO|P"] = Increase_Stitch_Definition(inc_lean = Stitch_Lean.Left, lean_stitch_pull_direction = Pull_Direction.FtB)
 
     @staticmethod
     def _slip() -> Stitch_Definition:

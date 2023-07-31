@@ -34,7 +34,7 @@ class knitGraph_visualizer:
         print('node_to_course_and_wale viz', self.node_to_course_and_wale)
         print('node_on_front_or_back viz', self.node_on_front_or_back)
         # print('course_and_wale_and_bed_to_node viz', self.course_and_wale_and_bed_to_node)
-        self.nodes_to_positions: Dict[int, Dict[str, float]] = {} 
+        self.nodes_to_positions: Dict[int, Dict[str, float]] = {}
         # we assume different carrier carry yarns of differnt color, though practically they can be the same.
         self.carrier_id_to_color = {1:'black', 2:'skyblue', 3:'orange', 4:'green', 5: 'yellow', 6:'blue', 7: 'pink', 8: 'purple', 9:'cyan', 10:'red'}
         self.cable_depth_to_color = {1:'grey', -1:'magenta'}
@@ -47,7 +47,7 @@ class knitGraph_visualizer:
         #distance related param for tube
         self.h_back2front, self.w_back2front, self.w_between_node, self.h_course = 0.4, 0.1, 1, 1
     #below are skeletal functions to complete visualization
-    #set node postion 
+    #set node postion
     def get_nodes_position(self):
         x0 = 0
         y0 = 0
@@ -59,7 +59,7 @@ class knitGraph_visualizer:
             if self.node_on_front_or_back[node] == 'f':
                 x0 = 0 #initialize x0 from 0.3 to 0
                 if self.yarn_start_direction == 'left to right':
-                    self.nodes_to_positions[node]['x'] = x0 + wale * self.w_between_node       
+                    self.nodes_to_positions[node]['x'] = x0 + wale * self.w_between_node
                 elif self.yarn_start_direction == 'right to left':
                     self.nodes_to_positions[node]['x'] = x0 - wale * self.w_between_node
                 self.nodes_to_positions[node]['y'] = y0 + course * self.h_course
@@ -67,11 +67,11 @@ class knitGraph_visualizer:
                 # if self.object_type == 'pocket' or self.object_type == 'handle':
                 if self.object_type == 'tube':
                     x0 = 0  #0.6
-                    h_course =  1*self.h_course 
+                    h_course =  1*self.h_course
                     if self.yarn_start_direction == 'left to right':
-                        self.nodes_to_positions[node]['x'] = x0 + wale * self.w_between_node 
+                        self.nodes_to_positions[node]['x'] = x0 + wale * self.w_between_node
                     elif self.yarn_start_direction == 'right to left':
-                        self.nodes_to_positions[node]['x'] = x0 - wale * self.w_between_node 
+                        self.nodes_to_positions[node]['x'] = x0 - wale * self.w_between_node
                     # self.nodes_to_positions[node]['y'] = y0 + course * h_course
                     self.nodes_to_positions[node]['y'] = y0 + course * self.h_course + self.h_back2front
                 else:
@@ -147,18 +147,24 @@ class knitGraph_visualizer:
         G.add_nodes_from(pos.keys())
         #draw nodes
         for node in G.nodes():
+            # node_size = 300 
+            # small version: node_size = 250 
             nx.draw_networkx_nodes(G, pos, nodelist=[node], node_size = 300, node_color = self.node_color_property[node]['color'], alpha = self.node_color_property[node]['alpha'])
         #draw edges
         for edge in [*self.edge_color_property.keys()]:
-            nx.draw_networkx_edges(G, pos, edgelist=[edge], width=3.0, edge_color = self.edge_color_property[edge]['color'], style = 'solid', alpha = self.edge_color_property[edge]['alpha'])
+            # width = 3.0
+            # small version: width = 1
+            nx.draw_networkx_edges(G, pos, edgelist=[edge], width = 3.0, edge_color = self.edge_color_property[edge]['color'], style = 'solid', alpha = self.edge_color_property[edge]['alpha'])
         #draw node labels
         node_labels = {x: x for x in G.nodes}
         nx.draw_networkx_labels(G, pos, labels=node_labels, font_size=9, font_color='w')
         #draw edge labels
-        nx.draw_networkx_edge_labels(G, pos, edge_labels = self.stitch_labels, label_pos=0.5, font_size=5, font_color='k', rotate=False)
+        # label_pos = 0.5, font_size = 5
+        # small version: label_pos = 0.5, font_size = 0.0005
+        nx.draw_networkx_edge_labels(G, pos, edge_labels = self.stitch_labels, label_pos = 0.5, font_size = 5, font_color='k', rotate=False)
         plt.show()
 
-    def draw_graph_holoviews(self):
+    def deprecated_draw_graph_holoviews(self):
         #create a graph
         G = nx.DiGraph()
         #derive position of nodes
@@ -174,7 +180,7 @@ class knitGraph_visualizer:
         # print("begin")
         # print(list(G.nodes))
         # print("done")
-        # directed_graph = simple_graph.opts(inspection_policy='nodes', arrowhead_length=0.015, directed=True, width=1000, height=1000, aspect='equal') 
+        # directed_graph = simple_graph.opts(inspection_policy='nodes', arrowhead_length=0.015, directed=True, width=1000, height=1000, aspect='equal')
 
         # #create a graph
         # G = nx.DiGraph()
@@ -189,18 +195,18 @@ class knitGraph_visualizer:
         # p = figure(x_range=(-10, 5), y_range=(-5, 10),
         #    x_axis_location=None, y_axis_location=None,
         #    tools="hover", tooltips="wale: @wale")
-        
+
         # #graph.node_renderer.data_source.data['colors'] = 'red'
         # graph.node_renderer.glyph.update(size=10)
         # p.renderers.append(graph)
         p = hv.render(simple_graph)
-        
+
         x_range = np.abs(p.x_range.start - p.x_range.end)
         y_range = np.abs(p.y_range.start - p.y_range.end)
 
         hover = HoverTool(tooltips=[("Course:", "@course"), ("Wale:", "@wale")])
         p.add_tools(hover, TapTool(), BoxSelectTool(), WheelZoomTool())
-        
+
 
         for edge in [*self.edge_color_property.keys()]:
             vec_start = np.array([pos[edge[0]][0], pos[edge[0]][1]])
@@ -231,13 +237,71 @@ class knitGraph_visualizer:
         graph.edge_renderer.data_source.data['alpha'] = [0 for edge in G.edges()]
         graph.node_renderer.glyph.update(size=20, fill_color="colors", fill_alpha="alpha")
         graph.edge_renderer.glyph.update(line_alpha="alpha")
-        
+
         html = file_html(p, CDN, "knit graph visualization")
         return html
-    
+
+    def draw_graph_holoviews(self):
+        # create a graph
+        G = nx.DiGraph()
+        # derive position of nodes
+        pos = {}
+        for node in self.nodes_to_positions:
+            pos[node] = [*self.nodes_to_positions[node].values()]
+
+        # add nodes
+        G.add_nodes_from(pos.keys())
+        hv.extension('bokeh')
+        simple_graph = hv.Graph.from_networkx(G, pos).opts(width=950, height=1000, inspection_policy='nodes')
+        p = hv.render(simple_graph)
+
+        x_range = np.abs(p.x_range.start - p.x_range.end)
+        y_range = np.abs(p.y_range.start - p.y_range.end)
+
+        hover = HoverTool(tooltips=[("Course:", "@course"), ("Wale:", "@wale")])
+        p.add_tools(hover, TapTool(), BoxSelectTool(), WheelZoomTool())
+
+        for edge in [*self.edge_color_property.keys()]:
+            vec_start = np.array([pos[edge[0]][0], pos[edge[0]][1]])
+            vec_end = np.array([pos[edge[1]][0], pos[edge[1]][1]])
+            vec_dir = (vec_start - vec_end) / np.linalg.norm(vec_start - vec_end)
+            radius_x = 0.008 * x_range
+            radius_y = 0.01 * y_range
+            # p.add_layout(Arrow(end=NormalHead(fill_color=self.edge_color_property[edge]['color'], fill_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha']), size=7),
+            #     x_start=(pos[edge[0]][0] - radius_x * vec_dir[0]), y_start=(pos[edge[0]][1] - radius_y * vec_dir[1]), x_end=(pos[edge[1]][0] + radius_x * vec_dir[0]), \
+            #         y_end=(pos[edge[1]][1] + radius_y * vec_dir[1]), line_width=3, line_color=self.edge_color_property[edge]['color'], line_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha'])))
+            p.add_layout(Arrow(end=NormalHead(fill_color=self.edge_color_property[edge]['color'], fill_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha']), size=7),
+                x_start=(pos[edge[0]][0]), y_start=(pos[edge[0]][1]), x_end=(pos[edge[1]][0]), \
+                    y_end=(pos[edge[1]][1]), line_width=3, line_color=self.edge_color_property[edge]['color'], line_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha'])))
+            edge_x = (pos[edge[0]][0] + pos[edge[1]][0]) / 2
+            edge_y = (pos[edge[0]][1] + pos[edge[1]][1]) / 2
+            if edge in self.stitch_labels:
+                label = Label(x=edge_x, y=edge_y, text=str(self.stitch_labels[edge]), x_offset=-8, y_offset=-6, text_color="black", text_alpha=1, text_font_size='9px', text_font_style='bold')
+                p.add_layout(label)
+
+        for node in G.nodes:
+            label = Label(x=pos[node][0], y=pos[node][1], text=str(node), x_offset=(-3 * len(str(node))), y_offset=-3.5, text_color="white", text_font_size='10px', text_font_style='bold')
+            p.add_layout(label)
+
+        graph = p.renderers[-1]
+        graph.node_renderer.data_source.data['colors'] = [self.node_color_property[node]['color'] for node in G.nodes()]
+        graph.node_renderer.data_source.data['alpha'] = [self.node_color_property[node]['alpha'] * self.node_color_property[node]['alpha'] for node in G.nodes()]
+        graph.node_renderer.data_source.data['course'] = [self.node_to_course_and_wale[node][0] for node in self.node_to_course_and_wale]
+        graph.node_renderer.data_source.data['wale'] = [self.node_to_course_and_wale[node][1] for node in self.node_to_course_and_wale]
+        graph.edge_renderer.data_source.data['alpha'] = [0 for edge in G.edges()]
+        graph.node_renderer.glyph.update(size=20, fill_color="colors", fill_alpha="alpha")
+        graph.edge_renderer.glyph.update(line_alpha="alpha")
+        graph.edge_renderer.glyph.line_width = 'scale_width'
+
+        return p
+
     def visualize(self):
         self.get_nodes_position()
         self.get_nodes_color()
         self.get_yarn_edges()
         self.get_stitch_edges()
-        return self.draw_graph_holoviews(), self.knit_graph
+        # self.draw_graph() #comment out this line if focusing on UI testing.
+        return self.draw_graph_holoviews(), self.knit_graph #for bokeh knit_ui
+        # return self.deprecated_draw_graph_holoviews(), self.knit_graph #for panel knit_ui
+
+    

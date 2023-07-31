@@ -1,6 +1,6 @@
 """The graph structure used to represent knitted objects"""
 from enum import Enum
-from typing import Dict, Optional, List, Tuple, Union
+from typing import Dict, Optional, List, Tuple, Union, Set
 
 import networkx
 
@@ -60,7 +60,23 @@ class Knit_Graph:
         self.node_on_front_or_back: Dict[int, str] = {}
         self.course_and_wale_and_bed_to_node: Dict[((int, int), str), int] = {}
         self.yarn_start_direction: str = yarn_start_direction
+
+        self.loops_on_front_part_of_the_tube: Set[int] = set()
+        self.loops_on_back_part_of_the_tube: Set[int] = set()
         
+        self.yarn_over_loop_to_loop_index: Dict[int, int] = {}
+
+        self.course_id_to_walking_direction: Dict[int, str] = {}
+
+    def add_loop_to_front_part(self, loop_id: int):
+        self.loops_on_front_part_of_the_tube.add(loop_id)
+
+    def add_loop_to_back_part(self, loop_id: int):
+        self.loops_on_back_part_of_the_tube.add(loop_id)
+    
+    def add_index_for_yarn_over_loop(self, loop_id, index):
+        self.yarn_over_loop_to_loop_index[loop_id] = index
+
     def add_loop(self, loop: Loop):
         """
         :param loop: the loop to be added in as a node in the graph
@@ -131,10 +147,11 @@ class Knit_Graph:
             self.loop_ids_to_course[loop_id] = course
             # print(f'current_course_set is {current_course_set}')
         self.course_to_loop_ids[course] = current_course
-        # print(f'course_to_loop_ids in Knit_Graph is {self.course_to_loop_ids}')
+        print(f'course_to_loop_ids in Knit_Graph is {self.course_to_loop_ids}')
         return self.loop_ids_to_course, self.course_to_loop_ids
 
     def get_wales(self) :
+        print(f'self.yarn_over_loop_to_loop_index is {self.yarn_over_loop_to_loop_index}')
         yarns = [*self.yarns.values()]
         #since given knit graph has only one yarn before being modified
         yarn = yarns[0]
@@ -154,103 +171,181 @@ class Knit_Graph:
         for course_id in [*self.course_to_loop_ids.keys()][1:]:
             next_row_loop_ids = self.course_to_loop_ids[course_id]
             for loop_id in next_row_loop_ids:
+                self.has_parent_of_0_offset = False
                 parent_ids = [*self.graph.predecessors(loop_id)]
                 if len(parent_ids) > 0:
                     for parent_id in self.graph.predecessors(loop_id):
                         parent_offset = self.graph[parent_id][loop_id]['parent_offset']
-                        wale = self.loop_ids_to_wale[parent_id] - parent_offset*self.wale_dist
-                        # if self.object_type == 'sheet':
-                        #     wale = self.loop_ids_to_wale[parent_id] - parent_offset*self.wale_dist
-                        # elif self.object_type == 'tube':
-                        #     wale = self.loop_ids_to_wale[parent_id] + parent_offset*self.wale_dist
-                        self.loop_ids_to_wale[loop_id] = wale
-                        if wale not in self.wale_to_loop_ids:
-                            self.wale_to_loop_ids[wale] = []
-                            self.wale_to_loop_ids[wale].append(loop_id)
-                        else:
-                            self.wale_to_loop_ids[wale].append(loop_id)
-                        break
+                        if parent_offset == 0:
+                            wale = self.loop_ids_to_wale[parent_id]
+                            self.loop_ids_to_wale[loop_id] = wale
+                            if wale not in self.wale_to_loop_ids:
+                                self.wale_to_loop_ids[wale] = []
+                                self.wale_to_loop_ids[wale].append(loop_id)
+                            else:
+                                self.wale_to_loop_ids[wale].append(loop_id)
+                            # print(f'loop id is {loop_id}, parent id is {parent_id}, wale is {wale}')
+                            self.has_parent_of_0_offset = True
+                            break
+                    if self.has_parent_of_0_offset == False:
+                        for parent_id in self.graph.predecessors(loop_id):
+                            parent_offset = self.graph[parent_id][loop_id]['parent_offset']
+                            wale = self.loop_ids_to_wale[parent_id] - parent_offset*self.wale_dist
+                            # if self.object_type == 'sheet':
+                            #     wale = self.loop_ids_to_wale[parent_id] - parent_offset*self.wale_dist
+                            # elif self.object_type == 'tube':
+                            #     wale = self.loop_ids_to_wale[parent_id] + parent_offset*self.wale_dist
+                            self.loop_ids_to_wale[loop_id] = wale
+                            if wale not in self.wale_to_loop_ids:
+                                self.wale_to_loop_ids[wale] = []
+                                self.wale_to_loop_ids[wale].append(loop_id)
+                            else:
+                                self.wale_to_loop_ids[wale].append(loop_id)
+                            break
                 else:
                     #If its predecessor node on yarn has wale, then combined with corresponding course_id, its wale can be inferred
                     #Since a node on yarn always has one predecessor, except that starting node has 0 predecessor.
-                    yarn_predecessor = [*yarn.yarn_graph.predecessors(loop_id)][0]
-                    # yarn_successor = [*yarn.yarn_graph.successors(loop_id)][0]
-                    if yarn_predecessor in self.loop_ids_to_wale.keys():
-                        pre_wale = self.loop_ids_to_wale[yarn_predecessor]
-                        if self.object_type == 'sheet':
-                            if course_id % 2 == 1:
-                                wale = pre_wale - self.wale_dist
-                                self.loop_ids_to_wale[loop_id] = wale
-                            else: 
-                                wale = pre_wale + self.wale_dist
-                                self.loop_ids_to_wale[loop_id] = wale
-                        elif self.object_type == 'tube':
-                            wale = pre_wale + self.wale_dist
+                    # yarn_predecessor = [*yarn.yarn_graph.predecessors(loop_id)][0]
+                    # # yarn_successor = [*yarn.yarn_graph.successors(loop_id)][0]
+                    # if yarn_predecessor in self.loop_ids_to_wale.keys():
+                    #     pre_wale = self.loop_ids_to_wale[yarn_predecessor]
+                    #     if self.object_type == 'sheet':
+                    #         if course_id % 2 == 1:
+                    #             wale = pre_wale - self.wale_dist
+                    #             self.loop_ids_to_wale[loop_id] = wale
+                    #         else: 
+                    #             wale = pre_wale + self.wale_dist
+                    #             self.loop_ids_to_wale[loop_id] = wale
+                    #     elif self.object_type == 'tube':
+                    #         wale = pre_wale + self.wale_dist
+                    #         self.loop_ids_to_wale[loop_id] = wale
+                    #     if wale not in self.wale_to_loop_ids:
+                    #         self.wale_to_loop_ids[wale] = [loop_id]
+                    #     else:
+                    #         self.wale_to_loop_ids[wale].append(loop_id)
+                    # else:
+                    #     print(f'Error: wale of node {loop_id} cannot be determined')
+                    #     exit()
+
+                    #----#
+                    if self.object_type == 'sheet':
+                        if course_id % 2 == 1:
+                            wale = self.loop_ids_to_wale[self.course_to_loop_ids[course_id-1][-1]] - self.yarn_over_loop_to_loop_index[loop_id]*self.wale_dist
                             self.loop_ids_to_wale[loop_id] = wale
-                            # if course_id % 2 == 1:
-                            #     wale = pre_wale + self.wale_dist
-                            #     self.loop_ids_to_wale[loop_id] = wale
-                            # else: 
-                            #     wale = pre_wale - self.wale_dist
-                            #     self.loop_ids_to_wale[loop_id] = wale
-                        if wale not in self.wale_to_loop_ids:
-                            self.wale_to_loop_ids[wale] = [loop_id]
                         else:
-                            self.wale_to_loop_ids[wale].append(loop_id)
+                            wale = self.loop_ids_to_wale[self.course_to_loop_ids[course_id-1][-1]] + self.yarn_over_loop_to_loop_index[loop_id]*self.wale_dist
+                            self.loop_ids_to_wale[loop_id] = wale
                     else:
-                        print(f'Error: wale of node {loop_id} cannot be determined')
-                        exit()
-        # print(f'loop_ids_to_wale in KnitGraph is {self.loop_ids_to_wale}, wale_to_loop_ids in KnitGraph is {self.wale_to_loop_ids}')
+                        if loop_id in self.loops_on_front_part_of_the_tube:
+                            wale = self.yarn_over_loop_to_loop_index[loop_id]*self.wale_dist
+                            self.loop_ids_to_wale[loop_id] = wale
+                        else:
+                            mid_node =self.course_to_loop_ids[0][int(len(first_course_loop_ids)/2) - 1]
+                            print(f'self.yarn_over_loop_to_loop_index[loop_id] is {self.yarn_over_loop_to_loop_index[loop_id]}')
+                            wale = self.loop_ids_to_wale[mid_node] -1 - self.yarn_over_loop_to_loop_index[loop_id]*self.wale_dist
+                            self.loop_ids_to_wale[loop_id] = wale
+                    #----#
+        print(f'loop_ids_to_wale in KnitGraph is {self.loop_ids_to_wale}, wale_to_loop_ids in KnitGraph is {self.wale_to_loop_ids}')
         return self.loop_ids_to_wale, self.wale_to_loop_ids
 
     def get_node_course_and_wale(self):
-        # node_to_course_and_wale = {}
+        """
+        this used real wale id self.loop_ids_to_wale above to calculate the final wale id used for visualization for tube.
+        """
         for node in self.graph.nodes:
             course = self.loop_ids_to_course[node]
             wale = self.loop_ids_to_wale[node]
             self.node_to_course_and_wale[node] = (course, wale)
         if self.object_type == 'tube':
-            first_course_loops = self.course_to_loop_ids[0] # first course loops is considered because there will be no slip for it.
-            mid_node_pos = int(len(first_course_loops)/2) - 1
-            mid_node = first_course_loops[mid_node_pos]
+            #-----deprecated as this not accommodate tube object with increase
+            # first_course_loops = self.course_to_loop_ids[0] # first course loops is considered because there will be no slip for it.
+            # mid_node_pos = int(len(first_course_loops)/2) - 1
+            # mid_node = first_course_loops[mid_node_pos]
+            # mid_node_wale = self.loop_ids_to_wale[mid_node]
+            # last_node = first_course_loops[-1]
+            # max_wale = self.loop_ids_to_wale[last_node]
+            # #below is original version that works well except for tube with increase stitch
+            # for node in self.graph.nodes:
+            #     course = self.loop_ids_to_course[node]
+            #     wale = self.loop_ids_to_wale[node]
+            #     if wale > mid_node_wale:
+            #         adjusted_wale = max_wale - wale -1 #-1 is because we use half gauging to avoid loop collision. And by doing this, the wale of the mirror
+            #         #node on the back is always one wale smaller than that of corresponding node on the front.
+            #         self.node_to_course_and_wale[node] = (course, adjusted_wale)
+            #----deprecated-----
+            #--- this version aims to accommodate tube object with increase---
+            first_course_loop_ids = self.course_to_loop_ids[0] 
+            mid_node_pos = int(len(first_course_loop_ids)/2) - 1
+            mid_node = first_course_loop_ids[mid_node_pos]
             mid_node_wale = self.loop_ids_to_wale[mid_node]
-            last_node = first_course_loops[-1]
+            last_node = first_course_loop_ids[-1]
             max_wale = self.loop_ids_to_wale[last_node]
-            for node in self.graph.nodes:
+            #we do the wale adjustment only on the first course
+            for node in first_course_loop_ids:
                 course = self.loop_ids_to_course[node]
                 wale = self.loop_ids_to_wale[node]
                 if wale > mid_node_wale:
                     adjusted_wale = max_wale - wale -1 #-1 is because we use half gauging to avoid loop collision. And by doing this, the wale of the mirror
                     #node on the back is always one wale smaller than that of corresponding node on the front.
                     self.node_to_course_and_wale[node] = (course, adjusted_wale)
-            #below is deprecated as it does not work for slip case as in test_write_slipped_rib(), i.e. when the len(loops_in_the_course) < swatch_width
-            # for node in self.graph.nodes:
-            #     course = loop_ids_to_course[node]
-            #     node_pos = course_to_loop_ids[course].index(node)
-            #     mid_node_pos = int(len(course_to_loop_ids[course])/2) - 1
-            #     if node_pos > mid_node_pos:
-            #         mirror_node_pos = len(course_to_loop_ids[course]) - 1 - node_pos
-            #         mirror_node = course_to_loop_ids[course][mirror_node_pos]
-            #         adjusted_wale = mirror_node_wale = loop_ids_to_wale[mirror_node]
-            #         node_to_course_and_wale[node] = [course, adjusted_wale]
-        # print(f'node_to_course_and_wale in KnitGraph is {self.node_to_course_and_wale}')
+            #then for the remaining course, we use the adjusted wale to compute
+            yarns = [*self.yarns.values()]
+            #since given knit graph has only one yarn before being modified
+            yarn = yarns[0]
+            for course_id in [*self.course_to_loop_ids.keys()][1:]:
+                next_row_loop_ids = self.course_to_loop_ids[course_id]
+                for loop_id in next_row_loop_ids:
+                    self.has_parent_of_0_offset = False
+                    parent_ids = [*self.graph.predecessors(loop_id)]
+                    if len(parent_ids) > 0:
+                        for parent_id in self.graph.predecessors(loop_id):
+                            parent_offset = self.graph[parent_id][loop_id]['parent_offset']
+                            if parent_offset == 0:
+                                wale = self.node_to_course_and_wale[parent_id][1]
+                                self.node_to_course_and_wale[loop_id] = (course_id, wale)
+                                # print(f'in tube wale recomputation, loop id is {loop_id}, parent id is {parent_id}, wale is {wale}')
+                                self.has_parent_of_0_offset = True
+                                break
+                        if self.has_parent_of_0_offset == False:
+                            for parent_id in self.graph.predecessors(loop_id):
+                                parent_offset = self.graph[parent_id][loop_id]['parent_offset']
+                                wale = self.node_to_course_and_wale[parent_id][1] - parent_offset*self.wale_dist
+                                self.node_to_course_and_wale[loop_id] = (course_id, wale)
+                                break
+                    else:
+                        #If its predecessor node on yarn has wale, then combined with corresponding course_id, its wale can be inferred
+                        #Since a node on yarn always has one predecessor, except that starting node has 0 predecessor.
+                        # yarn_predecessor = [*yarn.yarn_graph.predecessors(loop_id)][0]
+                        # # yarn_successor = [*yarn.yarn_graph.successors(loop_id)][0]
+                        # if yarn_predecessor in self.node_to_course_and_wale.keys():
+                        #     pre_wale = self.node_to_course_and_wale[yarn_predecessor][1]
+                        #     if self.object_type == 'tube':
+                        #         wale = pre_wale + self.wale_dist
+                        #         self.node_to_course_and_wale[loop_id] = (course_id, wale)
+                        # else:
+                        #     print(f'Error: wale of node {loop_id} cannot be determined')
+                        #     exit()
+                        #----#
+                        if loop_id in self.loops_on_front_part_of_the_tube:
+                            wale = self.yarn_over_loop_to_loop_index[loop_id]*self.wale_dist
+                        else:
+                            wale = mid_node_wale -1 - self.yarn_over_loop_to_loop_index[loop_id]*self.wale_dist
+                        #----#
+        #-------
+        print(f'node_to_course_and_wale in KnitGraph is {self.node_to_course_and_wale}')
         return self.node_to_course_and_wale
 
     def get_node_bed(self):
-        # node_on_front_or_back = {}
         if self.object_type == 'sheet':
             for node in self.graph.nodes:
                 self.node_on_front_or_back[node] = 'f'
-        # below require update later
         elif self.object_type == 'tube':
             for node in self.graph.nodes:
-                course = self.loop_ids_to_course[node]
-                index_last_node_on_front = int(len(self.course_to_loop_ids[course])/2) - 1
-                last_node_on_front = self.course_to_loop_ids[course][index_last_node_on_front]
-                if self.loop_ids_to_wale[node] <= self.loop_ids_to_wale[last_node_on_front]: 
+                if node in self.loops_on_front_part_of_the_tube:
                     self.node_on_front_or_back[node] = 'f'
                 else:
                     self.node_on_front_or_back[node] = 'b'
+        print(f'self.node_on_front_or_back in Knit Graph is {self.node_on_front_or_back}')
         return self.node_on_front_or_back
 
     def get_course_and_wale_and_bed_to_node(self):
@@ -272,14 +367,17 @@ class Knit_Graph:
                 for parent_id in self.graph.predecessors(loop_id):
                     parent_offset = self.graph[parent_id][loop_id]['parent_offset']
                     if parent_offset != 0:
-                        print(f'parent id is {parent_id}, original parent offset is {parent_offset}')
+                        # print(f'loop id is {loop_id}, parent id is {parent_id}, original parent offset is {parent_offset}')
                         # we deprecated this because the actual wale_id we use to visualize graph is self.node_to_course_and_wale rather than self.loop_ids_to_wale.
                         # self.graph[parent_id][loop_id]['parent_offset'] =  int((self.loop_ids_to_wale[parent_id] - self.loop_ids_to_wale[loop_id])/self.wale_dist)
                         # print(f'wale of parent id {parent_id} is {self.loop_ids_to_wale[parent_id]}, wale of loop id {loop_id} is {self.loop_ids_to_wale[loop_id]}')
-                        self.graph[parent_id][loop_id]['parent_offset'] =  int((self.node_to_course_and_wale[parent_id][1] - self.node_to_course_and_wale[loop_id][1])/self.wale_dist)
-                        print(f'wale of parent id {parent_id} is {self.node_to_course_and_wale[parent_id][1]}, wale of loop id {loop_id} is {self.node_to_course_and_wale[loop_id][1]}')
-                        updated_parent_offset = int(self.graph[parent_id][loop_id]['parent_offset'])
-                        print(f'parent id is {parent_id}, updated parent offset is {updated_parent_offset}')
+                        # self.graph[parent_id][loop_id]['parent_offset'] =  int((self.node_to_course_and_wale[parent_id][1] - self.node_to_course_and_wale[loop_id][1])/self.wale_dist)
+                        # above is deprecated because it does not work for stitch like point from b2 to f1.
+                        updated_parent_offset = (self.node_to_course_and_wale[parent_id][1] - self.node_to_course_and_wale[loop_id][1])/self.wale_dist
+                        if parent_offset != updated_parent_offset:
+                            print(f'offset update for loop id is {loop_id}! parent id is {parent_id}, original parent offset is {parent_offset}, updated parent offset is {updated_parent_offset}')
+                        self.graph[parent_id][loop_id]['parent_offset'] = (self.node_to_course_and_wale[parent_id][1] - self.node_to_course_and_wale[loop_id][1])/self.wale_dist
+                        # print(f'wale of parent id {parent_id} is {self.node_to_course_and_wale[parent_id][1]}, wale of loop id {loop_id} is {self.node_to_course_and_wale[loop_id][1]}')
 
     def get_carriers(self) -> List[Yarn_Carrier]:
         """

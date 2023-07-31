@@ -101,6 +101,7 @@ class Stitch_Definition:
         new_offsets = [offset * -1 for offset in reversed(self.offset_to_parent_loops)]
         self.offset_to_parent_loops = new_offsets
 
+
     def copy(self):
         """
         :return: a deep copy of this stitch definition
@@ -116,6 +117,7 @@ class Stitch_Definition:
         copy = self.copy()
         copy.flip()
         return copy
+
 
     def __eq__(self, other):
         instance = isinstance(other, Stitch_Definition)
@@ -133,7 +135,7 @@ class Stitch_Definition:
     def __str__(self):
         return f"{len(self)}-{self.pull_direction}-c{self.cabling_depth}->{self.child_loops}"
 
-    def __repr__(self):
+    def __repr__(self): 
         return str(self)
 
     def __len__(self) -> int:

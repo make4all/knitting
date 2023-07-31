@@ -61,8 +61,8 @@ def knit(machine_state: Machine_State, direction: Pass_Direction, needle: Needle
     """
     machine_state.add_loop(loop_id, needle.position, needle.is_front, carrier_set)
     carriers = make_carrier_set(carrier_set, needle)
-    return f"knit {direction} {needle}{carriers} ; knit loop {loop_id}, {comment}\n"
-    # return f"knit {direction} {needle}{carriers} ;\n"
+    # return f"knit {direction} {needle}{carriers} ; knit loop {loop_id}, {comment}\n"
+    return f"knit {direction} {needle}{carriers} ;\n"
 
 
 def tuck(machine_state: Machine_State, direction: Pass_Direction, needle: Needle, carrier_set: Yarn_Carrier,
@@ -80,8 +80,8 @@ def tuck(machine_state: Machine_State, direction: Pass_Direction, needle: Needle
     """
     machine_state.add_loop(loop_id, needle.position, needle.is_front, carrier_set, drop_prior_loops=False)
     carriers = make_carrier_set(carrier_set, needle)
-    return f"tuck {direction} {needle}{carriers} ; tuck loop {loop_id}, {comment}\n"
-    # return f"tuck {direction} {needle}{carriers} ;\n"
+    # return f"tuck {direction} {needle}{carriers} ; tuck loop {loop_id}, {comment}\n"
+    return f"tuck {direction} {needle}{carriers} ;\n"
 
 
 def split(machine_state: Machine_State, direction: Pass_Direction, needle_1: Needle, needle_2,
@@ -102,7 +102,8 @@ def split(machine_state: Machine_State, direction: Pass_Direction, needle_1: Nee
     front_to_back, racking = _prepare_xfer(machine_state, needle_1, needle_2)
     machine_state.add_loop(loop_id, needle_1.position, on_front=front_to_back, carrier_set=carrier_set)
     carriers = make_carrier_set(carrier_set, needle_1)
-    return f"{racking}split {direction} {needle_1} {needle_2}{carriers} ; split loop {loop_id}, {comment}\n"
+    # return f"{racking}split {direction} {needle_1} {needle_2}{carriers} ; split loop {loop_id}, {comment}\n"
+    return f"{racking}split {direction} {needle_1} {needle_2}{carriers} ;\n"
 
 
 def _prepare_xfer(machine_state, needle_1, needle_2) -> Tuple[bool, str]:

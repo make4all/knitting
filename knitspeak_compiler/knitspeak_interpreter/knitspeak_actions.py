@@ -21,19 +21,29 @@ def course_ids(context, nodes) -> List[Union[int, Num_Closure, Iterator_Closure]
     :param nodes: the nodes of the parsed content should be of length 2
     :return: a list of course_id integers
     """
+    print(f'inside course_ids, context is {context}, nodes is {nodes}')
     row_node = 1
     course_range = nodes[0]
     if len(nodes) == 3:
         row_node = 2
         if "rs" == nodes[1]:
             course_range = [1]
+            context.parser.symbolTable["row_courses"].add(1)
         else:
             course_range = [2]
+            context.parser.symbolTable["row_courses"].add(2)
         # context.parser.symbolTable[f"all_{nodes[1]}"] = course_range
         context.parser.symbolTable[f"all_{nodes[1]}_{nodes[2]}"] = course_range
+        
     elif len(nodes) == 2:
+        # print(f'len(nodes) == 2, nodes is {nodes}')
         row_node = 1
         context.parser.symbolTable[f"{nodes[1]}"] = 'true'
+        for node in course_range:
+            if nodes[1] == "row":
+                context.parser.symbolTable["row_courses"].add(node)
+            else:
+                context.parser.symbolTable["round_courses"].add(node)
     # assert "ow" in nodes[row_node], "Currently this parser only accepts rows (not rounds)"
     return course_range
 
@@ -51,6 +61,7 @@ def course_statement(_, nodes) -> Dict[str, list]:
     :return: A dictionary with two keys: "courseIds" to the list of course_ids (ints)
         and "stitch-operations" keyed to the list of stitch operation tuples with repeat data
     """
+    print(f'inside course_statement, _ is {_}, nodes is {nodes}')
     if nodes[0] is not None:
         newStitchDefs = _flipStitchList(nodes[2])
         return {"courseIds": nodes[1], "stitch-operations": newStitchDefs}
@@ -63,6 +74,7 @@ def _flipStitchList(operation_tuple_list: List[tuple]) -> list:
     :param operation_tuple_list: the list of operations that need to be flipped
     :return: the flipped operation in the original order
     """
+    print(f'inside _flipStitchList, operation_tuple_list is {operation_tuple_list}')
     newStitchDefs = []
     for operation in operation_tuple_list:
         stDef = operation[0]
@@ -81,6 +93,7 @@ def side(_, nodes: str) -> str:
     :param nodes: should be one node with the side information
     :return: will return "rs" or "ws"
     """
+    print(f'inside side, _ is {_}, nodes is {nodes}')
     sideToLower = nodes
     if sideToLower[0:1] == "(":
         sideToLower = sideToLower[1:]
@@ -97,6 +110,7 @@ def course_id_list(_, nodes: list) -> List[Union[int, Num_Closure, Iterator_Clos
     :param nodes: the node data passed by the parser
     :return: a list of course_identifiers processed from the course_id_list
     """
+    print(f'inside course_id_list, _ is {_}, nodes is {nodes}')
     if len(nodes) == 1:
         if type(nodes[0]) is int or isinstance(nodes[0], Num_Closure) or isinstance(nodes[0], Iterator_Closure):
             course_identifiers = [nodes[0]]
@@ -131,6 +145,7 @@ def stitch_statement_List(_, nodes) -> List[tuple]:
     :param nodes: the nodes passed by parglare
     :return: processes a list of stitch statements into the needed tuples
     """
+    print(f'inside stitch_statement_List, _ is {_}, nodes is {nodes}')
     if len(nodes) == 1:
         if type(nodes[0]) is list:
             return nodes[0]
@@ -153,7 +168,7 @@ def stitch_statement_List(_, nodes) -> List[tuple]:
 
 
 @action
-def repeated_Stitch(_, nodes: list) -> Tuple[Union[Stitch_Definition, Cable_Definition], Tuple[bool, int]]:
+def repeated_Stitch(_, nodes: list) -> Tuple[Union[Stitch_Definition, Cable_Definition], Tuple[bool, int]]: 
     """
     :param _: context provided by parglare but not used
     :param nodes:
@@ -161,8 +176,10 @@ def repeated_Stitch(_, nodes: list) -> Tuple[Union[Stitch_Definition, Cable_Defi
     node[1], if exists, the number of repeats. Defaults to 1
     :return: returns the repeated stitch tuple. the operation followed by a tuple declaring the repeat structure
     """
+    print(f'inside repeated_Stitch, _ is {_}, nodes is {nodes}')
     if nodes[1] is None:
         nodes[1] = 1
+    print(f'inside repeated_Stitch, return is {nodes[0], (True, nodes[1])}')
     return nodes[0], (True, nodes[1])
 
 
@@ -181,6 +198,7 @@ def repeated_stitch_group(_, nodes):
 
 @action
 def static_stitch_group(_, nodes) -> Tuple[List[tuple], Tuple[bool, int]]:
+    print(f'inside static_stitch_group, _ is {_}, nodes is {nodes}')
     """
     :param _: the context passed by parglare but not used
     :param nodes:nodes[1] the stitch statement list to be repeated, nodes[3] the repetition count
@@ -188,16 +206,19 @@ def static_stitch_group(_, nodes) -> Tuple[List[tuple], Tuple[bool, int]]:
     """
     if nodes[3] is None:
         nodes[3] = 1
+    print(f'inside static_stitch_group, return is {nodes[1], (True, nodes[3])}')
     return nodes[1], (True, nodes[3])
 
 
 @action
 def conditional_stitch_group(_, nodes: list) -> Tuple[List[Tuple], Tuple[bool, int]]:
+    print(f'inside conditional_stitch_group, _ is {_}, nodes is {nodes}')
     """
     :param _: the context passed by parglare but not used
     :param nodes: nodes[1] the stitch statement list to be repeated, nodes[3] the repetition instructions
     :return: the stitch statement list to be repeated and the repeat instruction in a tuple
     """
+    print(f'inside conditional_stitch_group, return is {nodes[1], nodes[3]}')
     return nodes[1], nodes[3]
 
 
@@ -209,6 +230,7 @@ def between_courses(context, nodes) -> Union[Iterator_Closure, List[int]]:
     :param nodes: the nodes from the statement to process
     :return: list of course ids
     """
+    print(f'inside between_courses, context is {context}, nodes is {nodes}')
     start_num = nodes[2]
     end_num = nodes[4]
     include_ws = True
@@ -228,6 +250,7 @@ def between_courses(context, nodes) -> Union[Iterator_Closure, List[int]]:
                 ints.append(i)
             elif i % 2 == 0 and include_ws:
                 ints.append(i)
+        print(f'inside between_courses, return is {ints}')
         return ints
 
 
@@ -238,6 +261,7 @@ def rep_condition(_, nodes: list) -> Tuple[bool, Union[int, Num_Closure]]:
     :param nodes: the nodes needed to parse the rep_condition and repeat information
     :return: the type of repetition policy "stitches", the number of loops that must remain to follow this replications
     """
+    print(f'inside rep_condition, _ is {_}, nodes is {nodes}')
     if len(nodes) == 2:
         assert nodes[1] == "end"
         remaining_sts = 0
@@ -247,6 +271,7 @@ def rep_condition(_, nodes: list) -> Tuple[bool, Union[int, Num_Closure]]:
     else:
         assert len(nodes) == 4 and nodes[3] == "sts"
         remaining_sts = nodes[2]
+    print(f'inside rep_condition, return is {False, remaining_sts}')
     return False, remaining_sts
 
 

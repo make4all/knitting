@@ -6,6 +6,7 @@ from knit_graphs.Knit_Graph import Knit_Graph, Pull_Direction
 from debugging_tools.final_knit_graph_viz import knitGraph_visualizer
 from debugging_tools.polygon_generator import Polygon_Generator
 from debugging_tools.simple_knitgraph_generator import Simple_Knitgraph_Generator
+from debugging_tools.exceptions import ErrorException
 import warnings
 
 class Hole_Generator_on_Tube:
@@ -15,7 +16,7 @@ class Hole_Generator_on_Tube:
     Biggest assumption: the function currently only apply for hole that are rectagular and only one hole. More yarns are needed if 
     the above condition is not satisfied.
     """
-    def __init__(self, hole_index_to_holes: Dict[int, List[int]], knitgraph, simple_knitgraph_generator: Simple_Knitgraph_Generator = None):
+    def __init__(self, list_of_holes: List[List[int]], knitgraph, simple_knitgraph_generator: Simple_Knitgraph_Generator = None):
         # print(f'simple_knitgraph_generator.pattern is {simple_knitgraph_generator.pattern}')
         # if simple_knitgraph_generator != None:
         #     self._knit_graph: Knit_Graph = simple_knitgraph_generator.generate_knitgraph()
@@ -36,13 +37,15 @@ class Hole_Generator_on_Tube:
         self._knit_graph.loop_id_to_course: Dict[int, float] = self._knit_graph.loop_ids_to_course
         self._knit_graph.course_to_loop_ids: Dict[int, List[int]] = self._knit_graph.course_to_loop_ids
         self._knit_graph.gauge = knitgraph.gauge
-        assert self._knit_graph.object_type == 'tube', f'wrong object type of parent knitgraph'
+        if self._knit_graph.object_type != 'tube':
+            raise ErrorException(f'wrong object type of parent knitgraph')
         self._knit_graph.object_type = 'tube'
-        self.hole_index_to_holes = hole_index_to_holes
+        self.list_of_holes = list_of_holes
         self.float_length = int(1/self._knit_graph.gauge) - 1
         self.wale_dist = int(1/self._knit_graph.gauge)
         self.graph_nodes: set[int] = set(self._knit_graph.graph.nodes)
-        assert len(self._knit_graph.yarns) == 1, "This only supports modifying graphs that has only one yarn as input"
+        if len(self._knit_graph.yarns) != 1:
+            raise ErrorException(f"This only supports modifying graphs that has only one yarn as input")
         #since given knit graph has only one yarn before being modified
         self._old_yarn: Yarn = [*self._knit_graph.yarns.values()][0]
         self._new_yarns: Union[Yarn, List[Yarn]] = []
@@ -65,7 +68,7 @@ class Hole_Generator_on_Tube:
         """
         # wale_involved = set()
         # index starts from 0
-        for hole_index, hole in self.hole_index_to_holes.items():
+        for hole_index, hole in enumerate(self.list_of_holes):
             self._hole_start_course: int = self._pattern_height - 1
             self._hole_end_course: int = 0
             self._hole_start_wale: int = 10000
@@ -93,8 +96,10 @@ class Hole_Generator_on_Tube:
             # assert len(wale_involved) <= 5, f'hole width is too large to achieve the racking bound by 2 on the machine'
             # relax below constraints considering in our pipeline we have waste height for each knit object, otherwise yarn-over node would get wrong
             # target needle position with our pipeline.
-            assert self._hole_start_course > 1, f'bind-off would fail if hole_start_course <= 1'
-            assert self._hole_end_course < self._pattern_height - 1, f'hole height is too large that it is exceeding the knit graph border'
+            if self._hole_start_course <= 1:
+                raise ErrorException(f'bind-off would fail if hole_start_course <= 1')
+            if self._hole_end_course >= self._pattern_height - 1:
+                raise ErrorException(f'hole height is too large that it is exceeding the knit graph border')
             self._hole_height = self._hole_end_course - self._hole_start_course + 1
             self._hole_width = self._hole_end_wale - self._hole_start_wale + self.wale_dist
             self.holes_size[hole_index]['hole_start_course'] = self._hole_start_course
@@ -108,7 +113,7 @@ class Hole_Generator_on_Tube:
     
     # @deprecated because used in connect_hole_edge_nodes() which is deprecated as well.
     def get_hole_course_to_wale_ids(self):
-        for hole_index, hole in self.hole_index_to_holes.items():
+        for hole_index, hole in enumerate(self.list_of_holes):
             self._hole_course_to_wale_ids[hole_index] = {}
             for node in hole:
                 course_id = self._knit_graph.node_to_course_and_wale[node][0]
@@ -125,7 +130,7 @@ class Hole_Generator_on_Tube:
         check if any ready-to-be-hole node might break any special stitch or suspicious for lacking some property,
         signaling something might go wrong with the given knit graph.
         """
-        for hole in self.hole_index_to_holes.values():
+        for hole in self.list_of_holes:
             for node in hole:
                 #first, each node should have exactly one parent. 
                 #If more than one, it is part of a decrease; If less than one, it itself is an increase.
@@ -169,7 +174,7 @@ class Hole_Generator_on_Tube:
                 #         exit()
 
     def hole_location_errors(self):
-        for hole in self.hole_index_to_holes.values():
+        for hole in self.list_of_holes:
             for node in hole:
                 #First, if a node has no child and is not a node on top course/top border 
                 #it would be an error/unstable node in the knit graph signaling something wrong with the given knitgraph.
@@ -204,7 +209,7 @@ class Hole_Generator_on_Tube:
         # set up three types of weights: 1. yarn-wise edge weight. 2. vertical edge weight. 3. diagonally-above edge weight. note that 1 and 3 can be the same type 
         # based on the fact and if we want to.
         yarn_edge_weight = -10
-        vertical_weight = -10 #or -1
+        vertical_weight = -10 #-1 or -10
         diagonal_weight = -10
         # 1. add yarn paths of opposite direction in addition to the original direction for any neighbor nodes on the same course
         for prior_node, next_node in self._old_yarn.yarn_graph.edges:
@@ -245,10 +250,11 @@ class Hole_Generator_on_Tube:
                 wale_ids_on_above_course = self.course_id_to_wale_ids[course_id+1]
                 # 3.1 for node on left edge front
                 if wale_id == max_wale_id_on_the_course_front:
-                    #node right above it
+                    #find node right above it
                     if ((course_id+1, wale_id), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
                         above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_id), bed)]
-                        G1.add_edge(node, above_node, weight = vertical_weight)   
+                        if self._knit_graph.graph.has_edge(node, above_node): #newly_added if statement to avoid one parent two child case.
+                            G1.add_edge(node, above_node, weight = vertical_weight)   
                     min_wale_difference = 10000
                     # find smaller_wale_neighbor_node on the same bed
                     for wale_id_above_course in wale_ids_on_above_course:
@@ -277,10 +283,11 @@ class Hole_Generator_on_Tube:
                         G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
                 # 3.2 for node on left edge back
                 if wale_id == max_wale_id_on_the_course_back:
-                    #node right above it
+                    #find node right above it
                     if ((course_id+1, wale_id), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
                         above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_id), bed)]
-                        G1.add_edge(node, above_node, weight = vertical_weight)   
+                        if self._knit_graph.graph.has_edge(node, above_node): #newly_added if statement to avoid one parent two child case.
+                            G1.add_edge(node, above_node, weight = vertical_weight)   
                     min_wale_difference = 10000
                     # find smaller_wale_neighbor_node (on the same bed)
                     for wale_id_above_course in wale_ids_on_above_course:
@@ -309,10 +316,17 @@ class Hole_Generator_on_Tube:
                         G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
                 # 3.3 for node in between on each course 
                 elif min_wale_id_on_the_course_front < wale_id < max_wale_id_on_the_course_back:
+                    # first see if this node has a stitch with parent_offset not equal to 0, if so, just add this edge. Otherwise, add all three edges as below
+                    if len([*self._knit_graph.graph.successors(node)])>0:
+                        child_node = [*self._knit_graph.graph.successors(node)][0]
+                        if self._knit_graph.graph[node][child_node]['parent_offset'] != 0:
+                            G1.add_edge(node, child_node, weight = vertical_weight)
+                            break
                     # find node right above it
                     if ((course_id+1, wale_id), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
                         above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_id), bed)]
-                        G1.add_edge(node, above_node, weight = vertical_weight)
+                        if self._knit_graph.graph.has_edge(node, above_node): #newly_added if statement to avoid one parent two child case.
+                            G1.add_edge(node, above_node, weight = vertical_weight)
                     # find small_wale_neighbor_node (the nearest neighbor with smaller wale) on the same bed
                     min_wale_difference = 10000
                     for wale_id_above_course in wale_ids_on_above_course:
@@ -330,16 +344,16 @@ class Hole_Generator_on_Tube:
                         if wale_difference % self.wale_dist == 0 and wale_difference > 0 and wale_difference < min_wale_difference: 
                             min_wale_difference = wale_difference
                             wale_of_bigger_nearest_neighbor = wale_id_above_course
-                    assert min_wale_difference == self.wale_dist 
                     if ((course_id+1, wale_of_bigger_nearest_neighbor), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
                         big_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_bigger_nearest_neighbor), bed)]
                         G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
                 # 3.4 for node on right edge front
                 elif wale_id == min_wale_id_on_the_course_front:
-                    #node right above it
+                    #find node right above it
                     if ((course_id+1, wale_id), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
                         above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_id), bed)]
-                        G1.add_edge(node, above_node, weight = vertical_weight)   
+                        if self._knit_graph.graph.has_edge(node, above_node): #newly_added if statement to avoid one parent two child case.
+                            G1.add_edge(node, above_node, weight = vertical_weight)   
                     min_wale_difference = 10000
                     # find small_wale_neighbor_node (on the opposite bed)
                     for wale_id_above_course in wale_ids_on_above_course:
@@ -368,10 +382,11 @@ class Hole_Generator_on_Tube:
                         G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
                 # 3.5 for node on right edge back
                 elif wale_id == min_wale_id_on_the_course_back:
-                    #node right above it
+                    #find node right above it
                     if ((course_id+1, wale_id), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
                         above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_id), bed)]
-                        G1.add_edge(node, above_node, weight = vertical_weight)   
+                        if self._knit_graph.graph.has_edge(node, above_node): #newly_added if statement to avoid one parent two child case.
+                            G1.add_edge(node, above_node, weight = vertical_weight)   
                     min_wale_difference = 10000
                     # find bigger_wale_neighbor_node (on the opposite bed)
                     for wale_id_above_course in wale_ids_on_above_course:
@@ -401,7 +416,7 @@ class Hole_Generator_on_Tube:
         # remove hole nodes
         # the reason we preprocess the Graph G1 before remove the hole nodes is to avoid the error "RuntimeError: dictionary changed size during iteration".
         # caused by "for node in G1.nodes: xxx"
-        for hole in self.hole_index_to_holes.values():
+        for hole in self.list_of_holes:
             G1.remove_nodes_from(hole)
 
     # Second, path search algorithm for the graph of tube with holes.
@@ -452,7 +467,7 @@ class Hole_Generator_on_Tube:
         remove the nodes for hole from both knit graph and yarn
         """
         print(f'self._knit_graph.node_to_course_and_wale_and_bed is {self._knit_graph.node_to_course_and_wale_and_bed}')
-        for hole in self.hole_index_to_holes.values():
+        for hole in self.list_of_holes:
             self._knit_graph.graph.remove_nodes_from(hole)
             self._old_yarn.yarn_graph.remove_nodes_from(hole)
             for hole_node in hole:
@@ -518,6 +533,8 @@ class Hole_Generator_on_Tube:
                 G2.remove_nodes_from(path)
                 path, remain_nodes = self.path_search(G2)
                 for loop_id in path:
+                    #doing clip here:
+                    # if len([*self._knit_graph.graph.successors(parent_id)])
                     child_id, loop = new_yarn.add_loop_to_end(loop_id = loop_id)
     
     # @deprecated 
@@ -598,7 +615,8 @@ class Hole_Generator_on_Tube:
                                     predecessors = [*self._knit_graph.graph.predecessors(potential_node_to_connect)]
                                     pull_direction = self._knit_graph.graph[predecessors[0]][potential_node_to_connect]['pull_direction']
                                     for predecessor in predecessors:
-                                        assert self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] >= 0, f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {potential_node_to_connect}' 
+                                        if self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] < 0:
+                                            raise ErrorException(f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {potential_node_to_connect}')
                                     self._knit_graph.connect_loops(node, potential_node_to_connect, parent_offset = int((parent_wale_id - child_wale_id)/self.wale_dist), pull_direction = pull_direction)
                                     print(f'inside 1, node is {node}, potential node to connect is {potential_node_to_connect}')
                                     break
@@ -694,7 +712,7 @@ class Hole_Generator_on_Tube:
             self._knit_graph.connect_loops(parent_node, child_node, pull_direction = pull_direction, depth = depth, parent_offset = parent_offset)
         # print(f'self._knit_graph.graph.edges after reconnect stitch is {self._knit_graph.graph.edges}')
 
-    def add_hole(self):
+    def add_hole(self, bind_off: bool = True):
         #first determine the validity of the input hole
         # self.hole_shape_and_number_constraints()
         #return info including hole_start_wale, hole_end_wale, hole_start_course, hole_end_course, hole_height and hole_width.
@@ -722,7 +740,8 @@ class Hole_Generator_on_Tube:
         #leading the hole bigger and bigger.
         # self.connect_hole_edge_nodes()
         # to prevent hole deformation, we can also use the bind-off
-        self.bind_off()
+        if bind_off == True:
+            self.bind_off()
         # note that we only update (delete hole nodes on the self._knit_graph, we do not correspondingly update nodes in both self._knit_graph.node_on_front_or_back and self._knit_graph.node_to_course_and_wale)
         return self._knit_graph
 

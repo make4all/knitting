@@ -29,6 +29,7 @@ class Knitout_Generator:
         self.old_courses_to_loop_id = knit_graph.course_to_loop_ids
         self.old_loop_id_to_courses = knit_graph.loop_ids_to_course
         self._loop_id_to_courses, self._courses_to_loop_ids = knit_graph.get_courses()
+        # print(f'self._courses_to_loop_ids in knitout interpreter is {self._courses_to_loop_ids}')
         # because we have used bind-off to secure the bottom loops that has no child, so we actually updated the course_to_loop_ids by bind-off,
         # thus we need to get new one by invoke .get_courses().
         self.node_to_course_and_wale: Dict[int, Tuple[int, int]] = knit_graph.node_to_course_and_wale
@@ -124,11 +125,11 @@ class Knitout_Generator:
         # print(f'self.courses_to_min_wale_on_front is {self.courses_to_min_wale_on_front}, self.courses_to_max_wale_on_front is {self.courses_to_max_wale_on_front},\
         # self.courses_to_min_wale_on_back is {self.courses_to_min_wale_on_back}, self.courses_to_max_wale_on_back is {self.courses_to_max_wale_on_back}')
 
-    # only needed for tube 
     def get_loop_id_to_knit_dir(self):
-        # logic below is based on the assumption that the yarn walking direction of given knit_graph starts from left to right. so we would
-        # need to revert the derived self.loop_id_to_knit_dir if the knit_graph starts from right to left.
+        # ****logic below is based on the assumption that the yarn walking direction of given knit_graph starts from left to right. so we would
+        # need to revert the derived self.loop_id_to_knit_dir if the knit_graph starts from right to left. ****
         if self.object_type == 'tube':
+            print(f'yarn.yarn_graph.nodes in Knitout interpreter is {self.yarns[0].yarn_graph.nodes}, self._knit_graph.graph.nodes is {self._knit_graph.graph.nodes}')
             for yarn in self.yarns:
                 if len(yarn.yarn_graph.nodes) > 1: # that means this yarn will have at least one yarn edge.
                     for edges in yarn.yarn_graph.edges:
@@ -151,12 +152,29 @@ class Knitout_Generator:
                                     self.loop_id_to_knit_dir[prior_loop] = dir
                                 self.loop_id_to_knit_dir[next_loop] = dir
                             else:
+                                # in this case, we would need the third node to help the dir.
                                 if prior_loop in self.loop_id_to_knit_dir.keys():
-                                    dir = self.loop_id_to_knit_dir[prior_loop]
-                                    dir = '+' if dir == '-' else '-'
+                                    if len([*yarn.yarn_graph.successors(next_loop)]) > 0:
+                                        the_third_loop =  [*yarn.yarn_graph.successors(next_loop)][0]
+                                        if self.node_on_front_or_back[next_loop] == self.node_on_front_or_back[the_third_loop]:
+                                            if self.node_to_course_and_wale[next_loop][1] < self.node_to_course_and_wale[the_third_loop][1]:
+                                                dir = '+'
+                                            elif self.node_to_course_and_wale[next_loop][1] > self.node_to_course_and_wale[the_third_loop][1]:
+                                                dir = '-'
+                                        else:
+                                            next_loop_course_id = self._loop_id_to_courses[next_loop]
+                                            if self.node_to_course_and_wale[next_loop][1] == self.courses_to_min_wale_on_front[next_loop_course_id] or \
+                                                self.node_to_course_and_wale[next_loop][1] == self.courses_to_min_wale_on_back[next_loop_course_id]:
+                                                dir = '-'
+                                            elif self.node_to_course_and_wale[next_loop][1] == self.courses_to_max_wale_on_front[next_loop_course_id] or \
+                                                self.node_to_course_and_wale[next_loop][1] == self.courses_to_max_wale_on_back[next_loop_course_id]:
+                                                dir = '+'
+                                    else:
+                                        dir = self.loop_id_to_knit_dir[prior_loop]
+                                        dir = '+' if dir == '-' else '-'
                                     self.loop_id_to_knit_dir[next_loop] = dir
                                 else:
-                                    self.loop_id_to_knit_dir[prior_loop] = '-'
+                                    self.loop_id_to_knit_dir[prior_loop] = '-' #bc first in dir is '-' on the machine
                                     self.loop_id_to_knit_dir[next_loop] = '+'  
                         elif next_bed != current_bed:
                             if prior_loop in self.loop_id_to_knit_dir.keys():
@@ -168,14 +186,16 @@ class Knitout_Generator:
                                     or (self.node_on_front_or_back[prior_loop] == 'b' and self.node_to_course_and_wale[prior_loop][1] == self.courses_to_max_wale_on_back[prior_loop_course_id]):
                                     dir = '+'
                                     self.loop_id_to_knit_dir[prior_loop] = dir
-                                    dir = '+' if dir == '-' else '-'
-                                    self.loop_id_to_knit_dir[next_loop] = dir
+                                    #dir = '+' if dir == '-' else '-'
+                                    #self.loop_id_to_knit_dir[next_loop] = dir
+                                    self.loop_id_to_knit_dir[next_loop] = '-'
                                 elif (self.node_on_front_or_back[prior_loop] == 'b' and self.node_to_course_and_wale[prior_loop][1] == self.courses_to_min_wale_on_back[prior_loop_course_id]) \
                                     or (self.node_on_front_or_back[prior_loop] == 'f' and self.node_to_course_and_wale[prior_loop][1] == self.courses_to_min_wale_on_front[prior_loop_course_id]):
                                     dir = '-'
                                     self.loop_id_to_knit_dir[prior_loop] = dir
-                                    dir = '+' if dir == '-' else '-'
-                                    self.loop_id_to_knit_dir[next_loop] = dir
+                                    # dir = '+' if dir == '-' else '-'
+                                    # self.loop_id_to_knit_dir[next_loop] = dir
+                                    self.loop_id_to_knit_dir[next_loop] = '+'
                 else:
                     node = [*yarn.yarn_graph.nodes][0]
                     dir = '-' #(the direction that the carrier first comes in)
@@ -294,6 +314,92 @@ class Knitout_Generator:
             # print(i, cur_dir, dirr, same_pass, pass_with_dir)
         print(f'self.courses_to_passes is {self.courses_to_passes}')
 
+    #below is used to reproduce the deprecated version of sort_passes_by_dir_per_course() where passes do not get split by bed and yarns further like above.
+    def sort_passes_by_dir_per_course2(self):
+        # self.courses_to_passes: Dict[int, Dict[str, List[int]]] = {}
+        # example of return: self.courses_to_passes is 
+        # {0: [['-', [0, 1, 2, 3, 4, 5]], ['+', [6, 7, 8, 9, 10, 11]]], 
+        # 1: [['-', [12, 13, 14, 15, 16, 17]], ['+', [18, 19, 20, 21, 22, 23]]], 2: [['-', [24, 25, 26, 27, 28, 29]],
+        #  ['+', [30, 31, 32, 33, 34, 35]]], 3: [['-', [36, 37, 38, 39, 40, 41]], ['+', [42, 43, 44, 45, 46, 47]]], 
+        # 4: [['-', [48, 49, 50, 52, 53]], ['+', [54, 55, 56, 57, 58, 59]]], 5: [['+', [60, 61, 62]], ['-', [64, 65, 66, 67, 68, 69]], 
+        # ['+', [70, 71]]], 6: [['-', [72]], ['+', [73, 74, 75, 76]], ['-', [77, 78, 79, 80, 81, 82]], ['+', [83]]], 
+        # 7: [['-', [84]], ['+', [85, 86, 87, 88, 89]], ['-', [90, 91, 92, 93, 94, 95]]], 
+        # 8: [['+', [96]], ['-', [97]], ['+', [98, 99, 100, 101, 102]], ['-', [103, 104, 105, 106, 107]]], 
+        # 9: [['+', [108]], ['-', [109]], ['+', [110, 111, 112, 113, 114, 115]], ['-', [116, 117, 118, 119]]], 
+        # 10: [['+', [120]], ['-', [121, 122]], ['+', [123, 124, 125, 126, 127, 128]], ['-', [129, 130, 131]]]}
+        self.courses_to_passes: Dict[int, List[List[str, List[int]]]] = {}
+        for course in self._courses_to_loop_ids:
+            loops = self._courses_to_loop_ids[course]
+            cur_dir = ''
+            same_pass = []
+            pass_with_dir = []
+            for i, loop in enumerate(loops):
+                if loop in self.loop_id_to_knit_dir:
+                    dirr = self.loop_id_to_knit_dir[loop]
+                    if cur_dir == '':
+                        cur_dir = dirr
+                        same_pass.append(loop)
+                    elif dirr == cur_dir:
+                        same_pass.append(loop)
+                    elif dirr != cur_dir:
+                        pass_with_dir.append([cur_dir, same_pass])
+                        cur_dir = dirr
+                        same_pass = [loop]
+                    if i==len(loops)-1 and len(same_pass)!=0:
+                        pass_with_dir.append([cur_dir, same_pass])
+            self.courses_to_passes[course] = pass_with_dir
+            # print(i, cur_dir, dirr, same_pass, pass_with_dir)
+        print(f'self.courses_to_passes is {self.courses_to_passes}')
+
+
+    #below is used to reproduce the deprecated version of sort_passes_by_dir_per_course() where passes get split by bed and but not by yarns further like above.
+    def sort_passes_by_dir_per_course3(self):
+        # self.courses_to_passes: Dict[int, Dict[str, List[int]]] = {}
+        # example of return: self.courses_to_passes is 
+        # {0: [['-', [0, 1, 2, 3, 4, 5]], ['+', [6, 7, 8, 9, 10, 11]]], 
+        # 1: [['-', [12, 13, 14, 15, 16, 17]], ['+', [18, 19, 20, 21, 22, 23]]], 2: [['-', [24, 25, 26, 27, 28, 29]],
+        #  ['+', [30, 31, 32, 33, 34, 35]]], 3: [['-', [36, 37, 38, 39, 40, 41]], ['+', [42, 43, 44, 45, 46, 47]]], 
+        # 4: [['-', [48, 49, 50, 52, 53]], ['+', [54, 55, 56, 57, 58, 59]]], 5: [['+', [60, 61, 62]], ['-', [64, 65, 66, 67, 68, 69]], 
+        # ['+', [70, 71]]], 6: [['-', [72]], ['+', [73, 74, 75, 76]], ['-', [77, 78, 79, 80, 81, 82]], ['+', [83]]], 
+        # 7: [['-', [84]], ['+', [85, 86, 87, 88, 89]], ['-', [90, 91, 92, 93, 94, 95]]], 
+        # 8: [['+', [96]], ['-', [97]], ['+', [98, 99, 100, 101, 102]], ['-', [103, 104, 105, 106, 107]]], 
+        # 9: [['+', [108]], ['-', [109]], ['+', [110, 111, 112, 113, 114, 115]], ['-', [116, 117, 118, 119]]], 
+        # 10: [['+', [120]], ['-', [121, 122]], ['+', [123, 124, 125, 126, 127, 128]], ['-', [129, 130, 131]]]}
+        self.courses_to_passes: Dict[int, List[List[str, List[int]]]] = {}
+        for course in self._courses_to_loop_ids:
+            loops = self._courses_to_loop_ids[course]
+            cur_dir = ''
+            same_pass = []
+            pass_with_dir = []
+            for i, loop in enumerate(loops):
+                if loop in self.loop_id_to_knit_dir:
+                    dirr = self.loop_id_to_knit_dir[loop]
+                    if cur_dir == '':
+                        cur_dir = dirr
+                        same_pass.append(loop)
+                    elif dirr == cur_dir:
+                        same_pass.append(loop)
+                    elif dirr != cur_dir:
+                        passes_with_dir = self.split_pass_with_loops_on_two_beds(dir_loops_pair = [cur_dir, same_pass])
+                        if passes_with_dir != None:
+                            for each_pass_with_dir in passes_with_dir:
+                                pass_with_dir.append(each_pass_with_dir)
+                        else:
+                            dir_loops_pair = [cur_dir, same_pass]
+                            pass_with_dir.append(dir_loops_pair)
+                        cur_dir = dirr
+                        same_pass = [loop]
+                    if i==len(loops)-1 and len(same_pass)!=0:
+                        passes_with_dir = self.split_pass_with_loops_on_two_beds(dir_loops_pair = [cur_dir, same_pass])
+                        if passes_with_dir != None:
+                            for each_pass_with_dir in passes_with_dir:
+                                pass_with_dir.append(each_pass_with_dir)
+                        else:
+                            dir_loops_pair = [cur_dir, same_pass]
+                            pass_with_dir.append(dir_loops_pair)
+            self.courses_to_passes[course] = pass_with_dir
+            # print(i, cur_dir, dirr, same_pass, pass_with_dir)
+        print(f'self.courses_to_passes is {self.courses_to_passes}')
 
     def split_pass_with_loops_on_two_beds(self, dir_loops_pair: List[Union[str, List[int]]]): #we need this function to address the challenge described in slides pp.270.
         knit_dir = dir_loops_pair[0]
@@ -389,7 +495,7 @@ class Knitout_Generator:
         # get carrier to use for the very first course loops
         carriers = self.first_course_in_to_carrier[0]
         for carrier in carriers:
-            self._cast_on(carrier)
+            self._cast_on(carrier, is_interlock=False)
         for course in self._sorted_courses:
             # bring in new yarns in the order they are used
             if course > 0:  # not cast on
@@ -413,10 +519,30 @@ class Knitout_Generator:
         """
         loops_not_home_yet = []
         conflicted_passes = []
+        # move here: trial block
+        # ----- we can't do this like below otherwise tangling will happen without the proper segregration of loops into different passes.
+        # all_loop_id_to_target_needle = []
+        # print(f'----start xfer-------')
+        # for i, each_pass in enumerate(passes):
+        #     loop_ids = each_pass[1]
+        #     # Put xfer for row() below would cause some pattern that should be knittable become unknittable. See pp.277 in the slide. thus
+        #     # we move it above.
+        #     loop_id_to_target_needle, split_offsets = self._do_xfers_for_row(loop_ids, course_number)
+        #     all_loop_id_to_target_needle.append(loop_id_to_target_needle)
+        # print(f'----End xfer-------')
+        # -------
         for i, each_pass in enumerate(passes):
+            print(f'this pass is {each_pass}')
             knit_dir  = each_pass[0]
             loop_ids = each_pass[1]
+            # Put xfer for row() below would cause some pattern that should be knittable become unknittable. See pp.277 in the slide. thus
+            # we move it above. however, this unknittable knitgraph actually does not fall into the scope of what our pipeline considers as a tube object ---
+            # the front layer and the back layer of a tube is connected (i.e. stitch edge that connect parent node and child node from two differnt beds
+            # exists.), so our pass "navigation" algorithm still works well.
             loop_id_to_target_needle, split_offsets = self._do_xfers_for_row(loop_ids, course_number)
+            # 
+            print(f'-----start knit & split------')
+            # loop_id_to_target_needle = all_loop_id_to_target_needle[i] #this is related to trial block
             knit_and_split_data: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = {}
             for loop_id, target_needle in loop_id_to_target_needle.items():          
                 carrier = self.loop_id_to_carrier[loop_id]
@@ -434,14 +560,14 @@ class Knitout_Generator:
             carriage_pass = Carriage_Pass(pass_direction, knit_and_split_data, self._machine_state)
             # print('knit_and_split_data', knit_and_split_data)
             self._add_carriage_pass(carriage_pass, f"Knit & Split course {course_number}")
-
-            if each_pass in conflicted_passes:
-                conflicted_passes.remove(each_pass)
-                print(f'conflicted_pass {each_pass} has been removed, now conflicted_passes becomes {conflicted_passes}')
-                # assert len(conflicted_passes) == 0, f'conflicted_passes do not get to empty'
-                if len(conflicted_passes)==0:
-                    self.xfer_strayed_loops_back_home(loops_not_home_yet)
-                    loops_not_home_yet = []
+            no_conflict = True
+            # if each_pass in conflicted_passes:
+            #     conflicted_passes.remove(each_pass)
+            #     print(f'conflicted_pass {each_pass} has been removed, now conflicted_passes becomes {conflicted_passes}')
+            #     # assert len(conflicted_passes) == 0, f'conflicted_passes do not get to empty'
+            #     if len(conflicted_passes)==0:
+            #         self.xfer_strayed_loops_back_home(loops_not_home_yet)
+            #         loops_not_home_yet = []
             for loop_id in loop_ids:
                 # because below can cause error sometimes, so we print sth here to help debugging
                 print(f'loop_id is {loop_id} before is_strayed')
@@ -467,20 +593,28 @@ class Knitout_Generator:
                             if len(conflicted_loops) > 0:  
                                 min_wale2, max_wale2 = self.get_range_of_bed_for_the_pass(conflicted_loops)
                                 if (min_wale1 < min_wale2 < max_wale1) or (min_wale2 < min_wale1 < max_wale2):
-                                    if the_pass not in conflicted_passes:
+                                    if the_pass not in conflicted_passes: # we need this if statement, otherwise we would have duplicates in conflicted_passes.
                                         conflicted_passes.append(the_pass) 
                                         print(f'the pass put in conflicted_passes is {the_pass}')
-                                    # assert len(conflicted_passes) == 1, f'conflicted_passes has one pass at most given the range of supported knitted objects in our pipeline' #Ans: well.. tube with hole with bind-off on front bed may not satisfy this. 
-                                    # But with split_pass_with_loops_on_two_beds(), this assertion should be satisfied.
-                                else:
-                                    self.xfer_strayed_loops_back_home(loops_not_home_yet)
-                                    loops_not_home_yet = []     
-                    if len(conflicted_passes)==0:
-                        self.xfer_strayed_loops_back_home(loops_not_home_yet)
-                        loops_not_home_yet = []
+                                        no_conflict = False
+                        if no_conflict == True:
+                            self.xfer_strayed_loops_back_home(loops_not_home_yet)
+                            loops_not_home_yet = [] 
+                    # if len(conflicted_passes)==0:
+                    #     self.xfer_strayed_loops_back_home(loops_not_home_yet)
+                    #     loops_not_home_yet = []
+            if each_pass in conflicted_passes:
+                conflicted_passes.remove(each_pass)
+                print(f'conflicted_pass {each_pass} has been removed, now conflicted_passes becomes {conflicted_passes}')
+                # assert len(conflicted_passes) == 0, f'conflicted_passes do not get to empty' #this won't hold true when we build multiple pockets on the same side.
+                if len(conflicted_passes)==0:
+                    self.xfer_strayed_loops_back_home(loops_not_home_yet)
+                    loops_not_home_yet = []
+                
+            print(f'----End Knit & Split-------')
         assert len(conflicted_passes) == 0, f'conflicted_passes do not get to empty'
 
-    def _cast_on(self, carrier:Yarn_Carrier):
+    def _cast_on(self, carrier:Yarn_Carrier, is_interlock: bool = False):
         """
         Does a standard alternating tuck cast on then 2 stabilizing knit rows.
         for sheet, when self._knit_graph.yarn_start_direction == 'right to left", the first tuck direction should be from left to right,
@@ -577,12 +711,16 @@ class Knitout_Generator:
             first_course_back_loops = []
             front_bed_needles_to_tuck_on = []
             first_course_front_loops = []
+            interlock_needles_to_tuck_on_first = []
+            interlock_needles_to_tuck_on_second = []
             first_front_tucks_data: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = {}
             first_back_tucks_data: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = {}
             second_front_tucks_data: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = {}
             second_back_tucks_data: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = {}
             first_all_front: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = {}
             first_all_back: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = {}
+            interlock_tuck_on_first_data: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = {}
+            interlock_tuck_on_second_data: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = {}
             for loop_id in first_course_loops:
                 needle_pos = self.node_to_course_and_wale[loop_id][1]
                 bed = self.node_on_front_or_back[loop_id]
@@ -593,68 +731,103 @@ class Knitout_Generator:
                     front_bed_needles_to_tuck_on.append(needle_pos)
                     first_course_front_loops.append(loop_id)
             if carrier == first_carrier_in_use:
-                if self._knit_graph.yarn_start_direction == 'right to left':
-                    #note that +2 is because we purposely put loops on front bed and on back bed on exclusive slot to work as half gauging.
-                    back_bed_needles_to_tuck_on = [i+2 for i in back_bed_needles_to_tuck_on]
-                    needles_to_tuck_on_front_bed_first = front_bed_needles_to_tuck_on[::-2]
-                else:
-                    needles_to_tuck_on_front_bed_first = front_bed_needles_to_tuck_on[::2]
-                needles_to_tuck_on_front_bed_second = list(set(front_bed_needles_to_tuck_on) - set(needles_to_tuck_on_front_bed_first))
+                #note that +2 is because we purposely put loops on front bed and on back bed on exclusive slot to work as half gauging.
+                back_bed_needles_to_tuck_on = [i+2 for i in back_bed_needles_to_tuck_on]
                 # below line might subject to change upon testing: if tuck on sent out warning, we will change to see if caused by this.
                 needles_to_tuck_on_back_bed_first = back_bed_needles_to_tuck_on[::2]
                 needles_to_tuck_on_back_bed_second = list(set(back_bed_needles_to_tuck_on) - set(needles_to_tuck_on_back_bed_first))
-                # print(f'needles_to_tuck_on_front_bed_first is {needles_to_tuck_on_front_bed_first}, needles_to_tuck_on_front_bed_second is {needles_to_tuck_on_front_bed_second}\
-                #     , needles_to_tuck_on_back_bed_first is {needles_to_tuck_on_back_bed_first}, needles_to_tuck_on_back_bed_second is {needles_to_tuck_on_back_bed_second}')
-                for needle_pos in needles_to_tuck_on_front_bed_first:
-                    needle_1 = Needle(True, needle_pos)
-                    first_front_tucks_data[needle_1] = (Instruction_Parameters(needle_1, involved_loop=-1, carrier=carrier), Instruction_Type.Tuck)  # note, fake loop_id
-                for needle_pos in needles_to_tuck_on_back_bed_first:
-                    needle_1 = Needle(False, needle_pos)
-                    first_back_tucks_data[needle_1] = (Instruction_Parameters(needle_1, involved_loop=-1, carrier=carrier), Instruction_Type.Tuck)  # note, fake loop_id
-                for needle_pos in needles_to_tuck_on_front_bed_second:
-                    needle_1 = Needle(True, needle_pos)
-                    second_front_tucks_data[needle_1] = (Instruction_Parameters(needle_1, involved_loop=-1, carrier=carrier), Instruction_Type.Tuck)  # note, fake loop_id
-                for needle_pos in needles_to_tuck_on_back_bed_second:
-                    needle_1 = Needle(False, needle_pos)
-                    second_back_tucks_data[needle_1] = (Instruction_Parameters(needle_1, involved_loop=-1, carrier=carrier), Instruction_Type.Tuck)  # note, fake loop_id
                 if self._knit_graph.yarn_start_direction == 'right to left':
-                    first_pass_front = Carriage_Pass(Pass_Direction.Right_to_Left, first_front_tucks_data, self._machine_state)
-                    self._add_carriage_pass(first_pass_front, f"first front cast-on for {carrier}")
-                    first_pass_back = Carriage_Pass(Pass_Direction.Left_to_Right, first_back_tucks_data, self._machine_state)
-                    self._add_carriage_pass(first_pass_back, f"first back cast-on for {carrier}")
-                    second_pass_front = Carriage_Pass(Pass_Direction.Right_to_Left, second_front_tucks_data, self._machine_state)
-                    self._add_carriage_pass(second_pass_front, f"second front cast-on for {carrier}")
-                    second_pass_back = Carriage_Pass(Pass_Direction.Left_to_Right, second_back_tucks_data, self._machine_state)
-                    self._add_carriage_pass(second_pass_back, f"second back cast-on for {carrier}")
-                    for needle_pos, loop_id in zip(sorted(front_bed_needles_to_tuck_on, reverse = True), first_course_front_loops):
-                        needle_1 = Needle(True, needle_pos)
-                        first_all_front[needle_1] = (Instruction_Parameters(needle_1, involved_loop=loop_id, carrier=carrier), Instruction_Type.Knit)  
-                    for needle_pos, loop_id in zip(sorted(back_bed_needles_to_tuck_on), first_course_back_loops):
-                        needle_1 = Needle(False, needle_pos)
-                        first_all_back[needle_1] = (Instruction_Parameters(needle_1, involved_loop=loop_id, carrier=carrier), Instruction_Type.Knit)  
-                    carriage_pass = Carriage_Pass(Pass_Direction.Right_to_Left, first_all_front, self._machine_state)
-                    self._add_carriage_pass(carriage_pass, f"first row loops on front bed for for {carrier}")
-                    carriage_pass = Carriage_Pass(Pass_Direction.Left_to_Right, first_all_back, self._machine_state)
-                    self._add_carriage_pass(carriage_pass, f"first row loops on back bed for {carrier}")
+                    #note that +2 is because we purposely put loops on front bed and on back bed on exclusive slot to work as half gauging.
+                    #back_bed_needles_to_tuck_on = [i+2 for i in back_bed_needles_to_tuck_on]
+                    needles_to_tuck_on_front_bed_first = front_bed_needles_to_tuck_on[::-2]
+                    needles_to_tuck_on_front_bed_second = list(set(front_bed_needles_to_tuck_on) - set(needles_to_tuck_on_front_bed_first))
+                    interlock_needles_to_tuck_on_first = sorted(needles_to_tuck_on_front_bed_first + needles_to_tuck_on_back_bed_second)
+                    interlock_needles_to_tuck_on_second = sorted(needles_to_tuck_on_front_bed_second + needles_to_tuck_on_back_bed_first)
                 else:
-                    first_pass_front = Carriage_Pass(Pass_Direction.Left_to_Right, first_front_tucks_data, self._machine_state)
-                    self._add_carriage_pass(first_pass_front, f"first front cast-on for {carrier}")
-                    first_pass_back = Carriage_Pass(Pass_Direction.Right_to_Left, first_back_tucks_data, self._machine_state)
-                    self._add_carriage_pass(first_pass_back, f"first back cast-on for {carrier}")
-                    second_pass_front = Carriage_Pass(Pass_Direction.Left_to_Right, second_front_tucks_data, self._machine_state)
-                    self._add_carriage_pass(second_pass_front, f"second front cast-on for {carrier}")
-                    second_pass_back = Carriage_Pass(Pass_Direction.Right_to_Left, second_back_tucks_data, self._machine_state)
-                    self._add_carriage_pass(second_pass_back, f"second back cast-on for {carrier}")
-                    for needle_pos, loop_id in zip(front_bed_needles_to_tuck_on, first_course_front_loops):
+                    needles_to_tuck_on_front_bed_first = front_bed_needles_to_tuck_on[::2]
+                    needles_to_tuck_on_front_bed_second = list(set(front_bed_needles_to_tuck_on) - set(needles_to_tuck_on_front_bed_first))
+                print(f'needles_to_tuck_on_front_bed_first is {needles_to_tuck_on_front_bed_first}, needles_to_tuck_on_front_bed_second is {needles_to_tuck_on_front_bed_second}\
+                    , needles_to_tuck_on_back_bed_first is {needles_to_tuck_on_back_bed_first}, needles_to_tuck_on_back_bed_second is {needles_to_tuck_on_back_bed_second},\
+                      interlock_needles_to_tuck_on_first is {interlock_needles_to_tuck_on_first}, interlock_needles_to_tuck_on_second is {interlock_needles_to_tuck_on_second}')
+                if is_interlock == False:
+                    for needle_pos in needles_to_tuck_on_front_bed_first:
                         needle_1 = Needle(True, needle_pos)
-                        first_all_front[needle_1] = (Instruction_Parameters(needle_1, involved_loop=loop_id, carrier=carrier), Instruction_Type.Knit)  
-                    for needle_pos, loop_id in zip(back_bed_needles_to_tuck_on, first_course_back_loops):
+                        first_front_tucks_data[needle_1] = (Instruction_Parameters(needle_1, involved_loop=-1, carrier=carrier), Instruction_Type.Tuck)  # note, fake loop_id
+                    for needle_pos in needles_to_tuck_on_back_bed_first:
                         needle_1 = Needle(False, needle_pos)
-                        first_all_back[needle_1] = (Instruction_Parameters(needle_1, involved_loop=loop_id, carrier=carrier), Instruction_Type.Knit)  
-                    carriage_pass = Carriage_Pass(Pass_Direction.Left_to_Right, first_all_front, self._machine_state)
-                    self._add_carriage_pass(carriage_pass, f"first row loops on front bed for for {carrier}")
-                    carriage_pass = Carriage_Pass(Pass_Direction.Right_to_Left, first_all_back, self._machine_state)
-                    self._add_carriage_pass(carriage_pass, f"first row loops on back bed for {carrier}")
+                        first_back_tucks_data[needle_1] = (Instruction_Parameters(needle_1, involved_loop=-1, carrier=carrier), Instruction_Type.Tuck)  # note, fake loop_id
+                    for needle_pos in needles_to_tuck_on_front_bed_second:
+                        needle_1 = Needle(True, needle_pos)
+                        second_front_tucks_data[needle_1] = (Instruction_Parameters(needle_1, involved_loop=-1, carrier=carrier), Instruction_Type.Tuck)  # note, fake loop_id
+                    for needle_pos in needles_to_tuck_on_back_bed_second:
+                        needle_1 = Needle(False, needle_pos)
+                        second_back_tucks_data[needle_1] = (Instruction_Parameters(needle_1, involved_loop=-1, carrier=carrier), Instruction_Type.Tuck)  # note, fake loop_id
+                    if self._knit_graph.yarn_start_direction == 'right to left':
+                        first_pass_front = Carriage_Pass(Pass_Direction.Right_to_Left, first_front_tucks_data, self._machine_state)
+                        self._add_carriage_pass(first_pass_front, f"first front cast-on for {carrier}")
+                        first_pass_back = Carriage_Pass(Pass_Direction.Left_to_Right, first_back_tucks_data, self._machine_state)
+                        self._add_carriage_pass(first_pass_back, f"first back cast-on for {carrier}")
+                        second_pass_front = Carriage_Pass(Pass_Direction.Right_to_Left, second_front_tucks_data, self._machine_state)
+                        self._add_carriage_pass(second_pass_front, f"second front cast-on for {carrier}")
+                        second_pass_back = Carriage_Pass(Pass_Direction.Left_to_Right, second_back_tucks_data, self._machine_state)
+                        self._add_carriage_pass(second_pass_back, f"second back cast-on for {carrier}")
+                        for needle_pos, loop_id in zip(sorted(front_bed_needles_to_tuck_on, reverse = True), first_course_front_loops):
+                            needle_1 = Needle(True, needle_pos)
+                            first_all_front[needle_1] = (Instruction_Parameters(needle_1, involved_loop=loop_id, carrier=carrier), Instruction_Type.Knit)  
+                        for needle_pos, loop_id in zip(sorted(back_bed_needles_to_tuck_on), first_course_back_loops):
+                            needle_1 = Needle(False, needle_pos)
+                            first_all_back[needle_1] = (Instruction_Parameters(needle_1, involved_loop=loop_id, carrier=carrier), Instruction_Type.Knit)  
+                        carriage_pass = Carriage_Pass(Pass_Direction.Right_to_Left, first_all_front, self._machine_state)
+                        self._add_carriage_pass(carriage_pass, f"first row loops on front bed for for {carrier}")
+                        carriage_pass = Carriage_Pass(Pass_Direction.Left_to_Right, first_all_back, self._machine_state)
+                        self._add_carriage_pass(carriage_pass, f"first row loops on back bed for {carrier}")
+                    else:
+                        first_pass_front = Carriage_Pass(Pass_Direction.Left_to_Right, first_front_tucks_data, self._machine_state)
+                        self._add_carriage_pass(first_pass_front, f"first front cast-on for {carrier}")
+                        first_pass_back = Carriage_Pass(Pass_Direction.Right_to_Left, first_back_tucks_data, self._machine_state)
+                        self._add_carriage_pass(first_pass_back, f"first back cast-on for {carrier}")
+                        second_pass_front = Carriage_Pass(Pass_Direction.Left_to_Right, second_front_tucks_data, self._machine_state)
+                        self._add_carriage_pass(second_pass_front, f"second front cast-on for {carrier}")
+                        second_pass_back = Carriage_Pass(Pass_Direction.Right_to_Left, second_back_tucks_data, self._machine_state)
+                        self._add_carriage_pass(second_pass_back, f"second back cast-on for {carrier}")
+                        for needle_pos, loop_id in zip(front_bed_needles_to_tuck_on, first_course_front_loops):
+                            needle_1 = Needle(True, needle_pos)
+                            first_all_front[needle_1] = (Instruction_Parameters(needle_1, involved_loop=loop_id, carrier=carrier), Instruction_Type.Knit)  
+                        for needle_pos, loop_id in zip(back_bed_needles_to_tuck_on, first_course_back_loops):
+                            needle_1 = Needle(False, needle_pos)
+                            first_all_back[needle_1] = (Instruction_Parameters(needle_1, involved_loop=loop_id, carrier=carrier), Instruction_Type.Knit)  
+                        carriage_pass = Carriage_Pass(Pass_Direction.Left_to_Right, first_all_front, self._machine_state)
+                        self._add_carriage_pass(carriage_pass, f"first row loops on front bed for for {carrier}")
+                        carriage_pass = Carriage_Pass(Pass_Direction.Right_to_Left, first_all_back, self._machine_state)
+                        self._add_carriage_pass(carriage_pass, f"first row loops on back bed for {carrier}")
+                else: #if is_interlock == True
+                    if self._knit_graph.yarn_start_direction == 'right to left':
+                        for needle_pos in interlock_needles_to_tuck_on_first:
+                            if needle_pos in front_bed_needles_to_tuck_on: 
+                                needle_1 = Needle(True, needle_pos)
+                            else:
+                                needle_1 = Needle(False, needle_pos)
+                            interlock_tuck_on_first_data[needle_1] = (Instruction_Parameters(needle_1, involved_loop=-1, carrier=carrier), Instruction_Type.Tuck)  # note, fake loop_id
+                        for needle_pos in sorted(interlock_needles_to_tuck_on_second, reverse=True):
+                            if needle_pos in front_bed_needles_to_tuck_on: 
+                                needle_1 = Needle(True, needle_pos)
+                            else:
+                                needle_1 = Needle(False, needle_pos)
+                            interlock_tuck_on_second_data[needle_1] = (Instruction_Parameters(needle_1, involved_loop=-1, carrier=carrier), Instruction_Type.Tuck)  # note, fake loop_id
+                        first_pass_interlock = Carriage_Pass(Pass_Direction.Right_to_Left, interlock_tuck_on_first_data, self._machine_state)
+                        self._add_carriage_pass(first_pass_interlock, f"first front interlock cast-on for {carrier}")
+                        second_pass_interlock = Carriage_Pass(Pass_Direction.Left_to_Right, interlock_tuck_on_second_data, self._machine_state)
+                        self._add_carriage_pass(second_pass_interlock, f"first back interlock cast-on for {carrier}")
+                        for needle_pos, loop_id in zip(sorted(front_bed_needles_to_tuck_on, reverse = True), first_course_front_loops):
+                            needle_1 = Needle(True, needle_pos)
+                            first_all_front[needle_1] = (Instruction_Parameters(needle_1, involved_loop=loop_id, carrier=carrier), Instruction_Type.Knit)  
+                        for needle_pos, loop_id in zip(sorted(back_bed_needles_to_tuck_on), first_course_back_loops):
+                            needle_1 = Needle(False, needle_pos)
+                            first_all_back[needle_1] = (Instruction_Parameters(needle_1, involved_loop=loop_id, carrier=carrier), Instruction_Type.Knit)  
+                        carriage_pass = Carriage_Pass(Pass_Direction.Right_to_Left, first_all_front, self._machine_state)
+                        self._add_carriage_pass(carriage_pass, f"first row loops on front bed for for {carrier}")
+                        carriage_pass = Carriage_Pass(Pass_Direction.Left_to_Right, first_all_back, self._machine_state)
+                        self._add_carriage_pass(carriage_pass, f"first row loops on back bed for {carrier}")
             elif carrier != first_carrier_in_use:
                 # for other carriers, tuck on needles on the side to avoid messing the designed pattern, but note that tuck on which side is determined by the pass direction,
                 # if ignore this, introducing a new yarn could fail
@@ -847,7 +1020,17 @@ class Knitout_Generator:
                         is_split_node = True
                         # method 1
                         # parent_needle = parent_loops_to_needles[parent_id]
-                        parent_needle = self._machine_state.get_needle_of_loop(parent_id)
+                        # parent_needle = self._machine_state.get_needle_of_loop(parent_id) #original version
+                        if len(parent_ids) > 1: #usually true for split nodes on the second row and above for pocket/handle/strap patch.
+                            for parent_id in parent_ids:
+                                if self._knit_graph.loops[parent_id].yarn_id in ['pocket_yarn', 'handle_yarn'] or ('strap_yarn' in self._knit_graph.loops[parent_id].yarn_id):
+                                    parent_needle = self._machine_state.get_needle_of_loop(parent_id) 
+                                    break
+                        else:
+                            parent_needle = self._machine_state.get_needle_of_loop(parent_id)#to make parent_needle detection more robust here for the case where we purposely didn't divide each pass further by yarn, (so there might a pass loops from multiple yarns), if there are also 
+                        # split involved in this pass, let's say we are building a pocket and a loop on f2 is xfer to b3 after splitting, that is to say, the corresponding split node should be also knit on b3, however, with the above detection method, let's say the parent_id above happens to 
+                        # be the root node rather than the parent node that is also on the same pocket patch (if any), then target needle below would be f2, leading to a mismatch needle position when knit this split node. Thus, we change the detection method into "if parent node on the patch exist,
+                        # use this parent node rather than the root node" like above
                         target_needle = parent_needle
                         loop_id_to_target_needle[loop_id] = target_needle
                         split_nodes.append(loop_id)
@@ -874,7 +1057,12 @@ class Knitout_Generator:
                 # use parent_needle to identify target needle here because yarn over loop has no parent..
                 # below doesn't work for the case where we do special cable on the first course resulted from hole creation on the second
                 # course. so we use get_yarn_over_needle_position().
-                max_wale = max([*self.courses_to_max_wale_on_front.values()]) #we can only use this assuming that the object is same width vertically.
+                #we can only use this assuming that the object is same width vertically.
+                # front_max = max([*self.courses_to_max_wale_on_front.values()])
+                # back_max = max([*self.courses_to_max_wale_on_back.values()])
+                front_max = self.courses_to_max_wale_on_front[0]
+                back_max = self.courses_to_max_wale_on_back[0]
+                max_wale = front_max if front_max > back_max else back_max
                 if self._knit_graph.yarn_start_direction == 'right to left':    
                     position = max_wale - self.node_to_course_and_wale[loop_id][1]
                 else:
@@ -892,15 +1080,21 @@ class Knitout_Generator:
                 if parent_id in self.nodes_on_patch_side:
                     self.nodes_on_patch_side.append(loop_id)
                 pull_direction = self._knit_graph.graph[parent_id][loop_id]["pull_direction"]
-                if pull_direction == Pull_Direction.FtB:
-                    if self.node_on_front_or_back[parent_id] == 'f': 
-                            front_bed = False
-                    elif self.node_on_front_or_back[parent_id] == 'b': 
-                        front_bed = True
-                elif pull_direction == Pull_Direction.BtF:
-                    if self.node_on_front_or_back[parent_id] == 'f': 
+                if self.node_on_front_or_back[loop_id] == self.node_on_front_or_back[parent_id]:
+                    if pull_direction == Pull_Direction.FtB:
+                        if self.node_on_front_or_back[parent_id] == 'f': 
+                                front_bed = False
+                        elif self.node_on_front_or_back[parent_id] == 'b': 
                             front_bed = True
-                    elif self.node_on_front_or_back[parent_id] == 'b': 
+                    elif pull_direction == Pull_Direction.BtF:
+                        if self.node_on_front_or_back[parent_id] == 'f': 
+                                front_bed = True
+                        elif self.node_on_front_or_back[parent_id] == 'b': 
+                            front_bed = False
+                else: #this is applicable to the case where we have a cable stitch in which parent node and child node are on different beds.
+                    if self.node_on_front_or_back[loop_id] == 'f': 
+                        front_bed = True
+                    elif self.node_on_front_or_back[loop_id] == 'b': 
                         front_bed = False
                 parent_needle = parent_loops_to_needles[parent_id]
                 if self._knit_graph.yarn_start_direction == 'right to left':  
@@ -914,27 +1108,29 @@ class Knitout_Generator:
                 target_needle = Needle(is_front=front_bed, position=offset_needle.position)
                 loop_id_to_target_needle[loop_id] = target_needle
                 parents_to_offsets[parent_id] = parent_offset
-                if parent_offset != 0 and parent_needle.is_front == target_needle.is_front:
-                    print(f'cable detected! loop id is {loop_id}, parent_offset is {parent_offset}, parent_id is {parent_id}, target_needle is {target_needle}')
+                # if parent_offset != 0 and parent_needle.is_front == target_needle.is_front: #deprecated because not applicable to cable stitch crossing two beds.
+                if parent_offset != 0:
                     cable_depth = self._knit_graph.graph[parent_id][loop_id]["depth"]
                     # update below to a warning rather than assertion, because for a decreased-tube, stitch on edge can disguise as cable stitch but the depth is 0, refer to
                     # pp. 219
                     # assert cable_depth != 0, f"cables must have a non-zero depth to cross at"
-                    if cable_depth != 0:
-                        if cable_depth == 1:
-                            front_cable_offsets[parent_id] = parent_offset #here not *self.wale_dist is because has done so above.
-                        else:
-                            back_cable_offsets[parent_id] = parent_offset
+                    # if cable_depth != 0: #exclude this bc for tube with hole added, a cable-like stitch can occur with cable_depth = 0, leading no xfer to do xfer.
+                    if cable_depth == 1:
+                        print(f'front cable detected! loop id is {loop_id}, parent_offset is {parent_offset}, parent_id is {parent_id}, target_needle is {target_needle}')
+                        front_cable_offsets[parent_id] = parent_offset #here not *self.wale_dist is because has done so above.
+                    else:
+                        print(f'back cable detected! loop id is {loop_id}, parent_offset is {parent_offset}, parent_id is {parent_id}, target_needle is {target_needle}')
+                        back_cable_offsets[parent_id] = parent_offset
                 else:
                     print(f'k/p stitch detected! loop id is {loop_id}, parent_id is {parent_id}, parent_offset is {parent_offset}, target_needle is {target_needle}')
             # detect decrease
             is_bindoff: bool = False
             if len(parent_ids) > 1: # decrease, the bottom parent loop in the stack will be on the target needle
                 # screen to get rid of fake decrease
-                if self._knit_graph.loops[loop_id].yarn_id == 'pocket_yarn' or self._knit_graph.loops[loop_id].yarn_id == 'handle_yarn':
+                if self._knit_graph.loops[loop_id].yarn_id == 'pocket_yarn' or self._knit_graph.loops[loop_id].yarn_id == 'handle_yarn' or ('strap_yarn' in self._knit_graph.loops[loop_id].yarn_id):
                     actual_parents = []
                     for parent_id in parent_ids:
-                        if self._knit_graph.loops[parent_id].yarn_id == 'pocket_yarn':
+                        if self._knit_graph.loops[parent_id].yarn_id == 'pocket_yarn' or self._knit_graph.loops[parent_id].yarn_id == 'handle_yarn' or ('strap_yarn' in self._knit_graph.loops[loop_id].yarn_id):
                             actual_parents.append(parent_id)
                     parent_ids = actual_parents
                 if len(parent_ids) > 1:
@@ -942,8 +1138,8 @@ class Knitout_Generator:
                         bind_off_loops.append(loop_id) 
                         is_bindoff = True
                     target_needle = None  # re-assigned on first iteration to needle of first parent
-                    # this for loop is used to get target needle for the loop id, and we can achieve this by using only one parent loop,
-                    # that's why we break the for loop when we finish first loop.
+                    # this for loop is used to get target needle for the loop id, and we can achieve this by using only one of the parent loops,
+                    # that's why we break the for loop immediately after we find the target needle for the first time.
                     for parent_id in parent_ids:
                         # print(f'in first for loop, parent id {parent_id} is on {self.node_on_front_or_back[parent_id]}, loop id {loop_id} is on \
                         #     {self.node_on_front_or_back[loop_id]}') #with this we can see 
@@ -958,7 +1154,7 @@ class Knitout_Generator:
                             if self.node_on_front_or_back[loop_id] == 'f':
                                 offset = int(self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist)
                             else:
-                                offset = int(-self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist)
+                                offset = int(self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist)
                         offset_needle = parent_needle.offset(offset)
                         pull_direction = self._knit_graph.graph[parent_id][loop_id]["pull_direction"]
                         if pull_direction == Pull_Direction.FtB:
@@ -982,7 +1178,7 @@ class Knitout_Generator:
                             # close top for handle.
                             parents_on_child_fabric_for_closetop_decrease.append(parent_id)
                         if self._knit_graph.yarn_start_direction == 'right to left':  
-                            if self.node_on_front_or_back[loop_id] == 'f':
+                            if self.node_on_front_or_back[loop_id] == 'f': #for both front and back bed, the sign is all '-' as below is because we have recalculate wale and use this updated wale to implement update_parent_offsets()
                                 offset = int(-self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist)
                             else:
                                 offset = int(-self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist) #changed from + to -
@@ -990,7 +1186,7 @@ class Knitout_Generator:
                             if self.node_on_front_or_back[loop_id] == 'f':
                                 offset = int(self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist)
                             else:
-                                offset = int(-self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist)
+                                offset = int(self._knit_graph.graph[parent_id][loop_id]["parent_offset"]*self.wale_dist)
                         print(f'in decrease detection, parent id is {parent_id}, offset is {offset}')
                         if offset != 0:
                             decrease_offsets[parent_id] = offset
@@ -1037,13 +1233,13 @@ class Knitout_Generator:
                     #no need to xfer to opposite without racking, which would be a waste of carriage
                     if offset not in offset_to_xfers_to_target_for_child_fabric_to_closetop:
                         offset_to_xfers_to_target_for_child_fabric_to_closetop[offset] = {}
-                    offset_to_xfers_to_target_for_child_fabric_to_closetop[offset][parent_needle] = (Instruction_Parameters(parent_needle, needle_2=offset_needle.opposite()), Instruction_Type.Xfer)
+                    offset_to_xfers_to_target_for_child_fabric_to_closetop[offset][parent_needle] = (Instruction_Parameters(parent_needle, involved_loop=self._machine_state.held_loops[parent_needle.position], needle_2=offset_needle.opposite()), Instruction_Type.Xfer)
                 else:
                     holding_needle = parent_needle.opposite()
-                    xfers_to_holding_bed[parent_needle] = (Instruction_Parameters(parent_needle, needle_2=holding_needle), Instruction_Type.Xfer)
+                    xfers_to_holding_bed[parent_needle] = (Instruction_Parameters(parent_needle, involved_loop=self._machine_state.front_bed.held_loops[parent_needle.position] if parent_needle.is_front==True else self._machine_state.back_bed.held_loops[parent_needle.position], needle_2=holding_needle), Instruction_Type.Xfer)
                     if offset not in offset_to_xfers_to_target:
                         offset_to_xfers_to_target[offset] = {}
-                    offset_to_xfers_to_target[offset][holding_needle] = (Instruction_Parameters(holding_needle, needle_2=offset_needle), Instruction_Type.Xfer)
+                    offset_to_xfers_to_target[offset][holding_needle] = (Instruction_Parameters(holding_needle, involved_loop=self._machine_state.front_bed.held_loops[parent_needle.position] if parent_needle.is_front==True else self._machine_state.back_bed.held_loops[parent_needle.position], needle_2=offset_needle), Instruction_Type.Xfer)
         carriage_pass = Carriage_Pass(None, xfers_to_holding_bed, self._machine_state)
         self._add_carriage_pass(carriage_pass, "send loops to decrease to back")
         # self._add_carriage_pass(carriage_pass)

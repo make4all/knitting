@@ -66,9 +66,11 @@ class Cable_Definition:
                      for _ in range(0, stable_offset_magnitude)]
         stable = [Stitch_Definition(stable_pull_direction, -1, [-1 * crossing_offset_direction * stable_offset_magnitude])
                   for _ in range(0, crossing_offset_magnitude)]
-        if self.lean is Stitch_Lean.Left:
+        # below is because we always need the stitch with most negative to be connected first (think of this on the right side, since
+        # for wrong side we will flip the stitch so that's the same.)
+        if self.lean is Stitch_Lean.Left: #thus, equivalent to "if self.lean.offset_direction == 1:"
             return stable + crossings
-        else:
+        else: #thus, equivalent to "if self.lean.offset_direction == -1:"
             return crossings + stable
 
     def copy(self):
@@ -87,6 +89,7 @@ class Cable_Definition:
                                 self._right_crossing_pull_direction, self._left_crossing_pull_direction,
                                 self.lean.flip())
 
+    
     def __str__(self):
         return f"C{self.lean}{self._left_crossing_loops}-{self._left_crossing_pull_direction}/{self._right_crossing_loops}-{self._right_crossing_pull_direction}"
 

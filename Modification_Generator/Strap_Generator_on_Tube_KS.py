@@ -1,13 +1,14 @@
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict, Tuple, Union
 from knit_graphs.Yarn import Yarn
 from knit_graphs.Knit_Graph import Knit_Graph, Pull_Direction
 from debugging_tools.final_knit_graph_viz import knitGraph_visualizer
 from debugging_tools.simple_knitgraph_generator import Simple_Knitgraph_Generator
 from debugging_tools.polygon_generator import Polygon_Generator
 from knitspeak_compiler.knitspeak_compiler import Knitspeak_Compiler
+from debugging_tools.exceptions import ErrorException
 
 class Strap_Generator_on_Tube:
-    def __init__(self, parent_knitgraph: Knit_Graph, tube_yarn_carrier_id: int, straps_coor_info: Dict[int, Dict[str, Tuple[int, int]]], strap_height: int):
+    def __init__(self, parent_knitgraph: Knit_Graph, tube_yarn_carrier_id: int, straps_coor_info: Dict[int, Dict[str, List[Union[Tuple[int, int], int]]]], strap_height: int):
         """
         note that we do not use left_keynodes and right_keynodes here anymore for strap case, because we assume straps are all rectangular
         shape, we do not support polygon-shaped strap here.
@@ -18,16 +19,19 @@ class Strap_Generator_on_Tube:
         # similarly, we would need course_to_loop_ids for different straps
         # {1:{'front':(small_wale_front, big_wale_front), 'back':(small_wale_back, big_wale_back)},
         #  2:{'front':(small_wale_front, big_wale_front), 'back':(small_wale_back, big_wale_back)}}
-
+        
+        # updated strap info: straps_coor_info={1:{'front':[(2, 6), 2], 'back':[(1, 5), 3]}, 2:{'front':[(8, 12), 4], 'back':[(7, 11), 5]}}
         #self.strap_graph is strap graph, the result of processing given child graph and parent graph.
         self.strap_graph: Knit_Graph = Knit_Graph()
         self.parent_knitgraph: Knit_Graph = parent_knitgraph
-        assert self.parent_knitgraph.object_type == 'tube', f'wrong object type of parent knitgraph'
+        if self.parent_knitgraph.object_type != 'tube':
+            raise ErrorException(f'wrong object type of parent knitgraph')
         self.strap_graph.object_type = 'tube'
         self.child_knitgraph: Knit_Graph = Knit_Graph()
         self.child_knitgraph.object_type = 'sheet'
         self.straps_coor_info = straps_coor_info
         self.ordered_strap_coor: List[Tuple(int, int)] = []
+        self.orderes_strap_carrier_id: List[int] = []
         self.ordered_straps_yarns: List[Yarn] = []
         self.ordered_straps_node_to_course_and_wale: List[Dict[int, Tuple(int, int)]] = []
         self.front_straps_top_course_wale_ids: Dict[int, List[int]] = {} #used in bind_off()
@@ -37,7 +41,8 @@ class Strap_Generator_on_Tube:
         self.child_knitgraph_coors_connectivity: List[Tuple] = []
         self.parent_knitgraph_coors_connectivity: List[Tuple] = []
         # assert 1/3 <= self.parent_knitgraph.gauge <= 0.5, f'the gauge of given parent knitgraph has to be less than 0.5, and suggested gauge should be larger than 1/3 to avoid racking over +-2.' #otherwise it will mess up because xfers involved.
-        assert self.parent_knitgraph.gauge <= 0.5, f'the gauge of given parent knitgraph has to be less than 0.5, and we set it to 0.5 which is sufficient to keep texture for strap on tube case' #otherwise it will mess up because xfers involved.
+        if self.parent_knitgraph.gauge > 0.5:
+            raise ErrorException(f'the gauge of given parent knitgraph has to be less than 0.5, and we set it to 0.5 which is sufficient to keep texture for strap on tube case') #otherwise it will mess up because xfers involved.
         self.strap_graph.gauge = self.child_knitgraph.gauge = self.parent_knitgraph.gauge #this is true for adding strap on sheet case
         self.wale_dist = int(1/self.parent_knitgraph.gauge)
         #
@@ -71,23 +76,42 @@ class Strap_Generator_on_Tube:
     def check_strap_coor_validity(self):
         strap_starting_course = max([*self.parent_knitgraph.course_to_loop_ids.keys()])
         for i, strap_coor_info in enumerate(self.straps_coor_info.values()):
-            front_strap_coor = strap_coor_info['front']
-            back_strap_coor = strap_coor_info['back']
+            front_strap_coor = strap_coor_info['front'][0]
+            back_strap_coor = strap_coor_info['back'][0]
+            print(f'front_strap_coor is {front_strap_coor}')
             # keynode check 1: gauge check
-            assert (front_strap_coor[1] - front_strap_coor[0]) % self.wale_dist == 0, f'wale distance for the front half of strap {i} does not match the gauge setup'
-            assert (back_strap_coor[1] - back_strap_coor[0]) % self.wale_dist == 0, f'wale distance for the back half of strap {i} does not match the gauge setup'
+            if (front_strap_coor[1] - front_strap_coor[0]) % self.wale_dist != 0:
+                raise ErrorException(f'wale distance for the front half of strap {i} does not match the gauge setup')
+            if (back_strap_coor[1] - back_strap_coor[0]) % self.wale_dist != 0:
+                raise ErrorException(f'wale distance for the back half of strap {i} does not match the gauge setup')
             # keynode check 2: wale id check -- unlike pocket and handle case where we don't like wale id of the child fabric to be the same 
             # as that of nodes on parent fabric, here for strap, all front halves need to share the same wale id of the part of the parent fabric that is on the front bed,
             # and all back halves need to share the same wale id of the part of the parent fabric that is on the back bed.
-            assert (strap_starting_course, front_strap_coor[0]) in self.parent_knitgraph_course_and_wale_to_bed and self.parent_knitgraph_course_and_wale_to_bed[(strap_starting_course, front_strap_coor[0])] == 'f', f'wale id of the front half of strap {i} does not match any wale id of the front part of the parent fabric'
-            assert (strap_starting_course, back_strap_coor[0]) in self.parent_knitgraph_course_and_wale_to_bed and self.parent_knitgraph_course_and_wale_to_bed[(strap_starting_course, back_strap_coor[0])] == 'b', f'wale id of the back half of strap {i} does not match any wale id of the back part of the parent fabric'
+            if not((strap_starting_course, front_strap_coor[0]) in self.parent_knitgraph_course_and_wale_to_bed and self.parent_knitgraph_course_and_wale_to_bed[(strap_starting_course, front_strap_coor[0])] == 'f'):
+                raise ErrorException(f'wale id of the front half of strap {i} does not match any wale id of the front part of the parent fabric')
+            if not ((strap_starting_course, back_strap_coor[0]) in self.parent_knitgraph_course_and_wale_to_bed and self.parent_knitgraph_course_and_wale_to_bed[(strap_starting_course, back_strap_coor[0])] == 'b'):
+                raise ErrorException(f'wale id of the back half of strap {i} does not match any wale id of the back part of the parent fabric')
             # keynode check 3: no interference check -- we want space between all the front halves, and that should hold true for all the back halves too.
             # we will do this check inside order_strap_coor_for_graph_buildin() below.
             for front_strap_wale, back_strap_wale in zip(front_strap_coor, back_strap_coor):
                 # both front_strap_left_wale and front_strap_right_wale need to be one wale larger than back_strap_left_wale and back_strap_right_wale.
                 # (because in Knit_Graph file we set back node wale is always one wale smaller (check "adjusted_wale = max_wale - wale -1" in knit_graph file))
-                assert (front_strap_wale - back_strap_wale) == 1, f'given strap coor info is wrong'
+                if (front_strap_wale - back_strap_wale) != 1:
+                    raise ErrorException(f'given strap coor info is wrong')
 
+    # Function to check if any two intervals overlap
+    def isIntersect(self, arr):
+        # Sort intervals in increasing order of start time
+        arr.sort(key=lambda x: x[0])
+        # In the sorted array, if start time of an interval
+        # is less than end of previous interval, then there
+        # is an overlap
+        for i in range(1, len(arr)):
+            if (arr[i - 1][1] > arr[i][0]):
+                return True
+        # If we reach here, then no overlap
+        return False
+        
     def order_strap_coor_for_graph_building(self):
         """
         we would need to build front halves first before starting to build the back halves. so separate front ones and back ones from the
@@ -95,33 +119,51 @@ class Strap_Generator_on_Tube:
         """
         i = 1
         for strap_coor_info in self.straps_coor_info.values():
-            front_strap_coor = strap_coor_info['front']
+            front_strap_coor = strap_coor_info['front'][0]
+            carrier_id = strap_coor_info['front'][1]
+            if carrier_id == self.tube_yarn_carrier_id:
+                raise ErrorException(f'carrier id for one of the front strap halves is the same as the carrier id: {self.tube_yarn_carrier_id} for the tube')
             self.ordered_strap_coor.append(front_strap_coor)
+            assert carrier_id not in self.orderes_strap_carrier_id, f'carrier id: {carrier_id} is used more than once'
+            self.orderes_strap_carrier_id.append(carrier_id)
             # 
-            yarn = Yarn("front_strap_yarn"+str(i), self.strap_graph, carrier_id=i)
+            yarn = Yarn("front_strap_yarn"+str(i), self.strap_graph, carrier_id = carrier_id)
             self.ordered_straps_yarns.append(yarn)
             self.strap_graph.add_yarn(yarn) 
             i+=1
         for strap_coor_info in self.straps_coor_info.values():
-            back_strap_coor = strap_coor_info['back']
+            back_strap_coor = strap_coor_info['back'][0]
+            carrier_id = strap_coor_info['back'][1]
+            if carrier_id == self.tube_yarn_carrier_id:
+                raise ErrorException(f'carrier id for one of the back strap halves is the same as the carrier id: {self.tube_yarn_carrier_id} for the tube')
             self.ordered_strap_coor.append(back_strap_coor)
+            assert carrier_id not in self.orderes_strap_carrier_id, f'carrier id: {carrier_id} is used more than once'
+            self.orderes_strap_carrier_id.append(carrier_id)
             # 
-            yarn = Yarn("back_strap_yarn"+str(i), self.strap_graph, carrier_id=i)
+            yarn = Yarn("back_strap_yarn"+str(i), self.strap_graph, carrier_id = carrier_id)
             self.ordered_straps_yarns.append(yarn)
             self.strap_graph.add_yarn(yarn) 
             i+=1
-        print(f'self.ordered_strap_coor is {self.ordered_strap_coor}')
+        print(f'self.ordered_strap_coor is {self.ordered_strap_coor}, self.orderes_strap_carrier_id is {self.orderes_strap_carrier_id}')
         # keynode check 3: no interference check
         half = int(len(self.ordered_strap_coor)/2)
-        for i in range(half-1):
-            left_front_strap = self.ordered_strap_coor[i]
-            right_front_strap = self.ordered_strap_coor[i+1]
-            print(f'left_front_strap[1] is {left_front_strap[1]}, right_front_strap[0] is {right_front_strap[0]}')
-            assert left_front_strap[1] < right_front_strap[0], f'wale id of front half of strap {i} interferes with that of front half of strap {i+1}'
-        for i in range(half, 2*half-1):
-            left_back_strap = self.ordered_strap_coor[i]
-            right_back_strap = self.ordered_strap_coor[i+1]
-            assert left_back_strap[1] < right_back_strap[0], f'wale id of back half of strap {i-half} interferes with that of back half of strap {i+1-half}'
+        if self.isIntersect(self.ordered_strap_coor[:half]) == True:
+            raise ErrorException(f'intersects exist among wale id intervals of front half of straps')
+        if self.isIntersect(self.ordered_strap_coor[half:]) == True:
+            raise ErrorException(f'intersects exist among wale id intervals of back half of straps')
+        #below is deprecated bc it expects the users to enter the front straps in an order of smaller wale id to bigger wale id; the same hold
+        # true for the back straps, while the above method doesn't make this requirement, thus more flexible.
+        # for i in range(half-1):
+        #     left_front_strap = self.ordered_strap_coor[i]
+        #     right_front_strap = self.ordered_strap_coor[i+1]
+        #     #print(f'left_front_strap[1] is {left_front_strap[1]}, right_front_strap[0] is {right_front_strap[0]}')
+        #     if left_front_strap[1] >= right_front_strap[0]:
+        #         raise ErrorException(f'wale id of front half of strap {i} interferes with that of front half of strap {i+1}')
+        # for i in range(half, 2*half-1):
+        #     left_back_strap = self.ordered_strap_coor[i]
+        #     right_back_strap = self.ordered_strap_coor[i+1]
+        #     if left_back_strap[1] >= right_back_strap[0]:
+        #         raise ErrorException(f'wale id of back half of strap {i-half} interferes with that of back half of strap {i+1-half}')
 
     def generate_polygon_from_keynodes(self):
         #derive node_to_course_and_wale from above starting_nodes_coor and ending_nodes_coor
@@ -133,11 +175,11 @@ class Strap_Generator_on_Tube:
             strap_to_node_to_course_and_wale = {}
             if i<int(len(self.ordered_strap_coor)/2):
                 self.front_straps_top_course_wale_ids[i] = []
-                self.child_knitgraph_demo_strap_yarn = Yarn("demo_yarn"+'front_strap'+str(i), self.child_knitgraph, carrier_id=i+1)
+                self.child_knitgraph_demo_strap_yarn = Yarn("demo_yarn"+'front_strap'+str(i), self.child_knitgraph, carrier_id=self.orderes_strap_carrier_id[i])
                 self.child_knitgraph.add_yarn(self.child_knitgraph_demo_strap_yarn)
             else:
                 self.back_straps_top_course_wale_ids[i] = []
-                self.child_knitgraph_demo_strap_yarn = Yarn("demo_yarn"+'back_strap'+str(i), self.child_knitgraph, carrier_id=i+1)
+                self.child_knitgraph_demo_strap_yarn = Yarn("demo_yarn"+'back_strap'+str(i), self.child_knitgraph, carrier_id=self.orderes_strap_carrier_id[i])
                 self.child_knitgraph.add_yarn(self.child_knitgraph_demo_strap_yarn)
             j = 0
             for course_id in range(strap_starting_course, strap_starting_course + self.strap_height):
@@ -306,7 +348,8 @@ class Strap_Generator_on_Tube:
         return parent_coors
 
     def build_front_straps(self):
-        assert len(self.ordered_straps_node_to_course_and_wale)%2==0, f'suspicious number of straps in given strap info'
+        if len(self.ordered_straps_node_to_course_and_wale)%2 != 0:
+            raise ErrorException(f'suspicious number of straps in given strap info')
         half = int(len(self.ordered_straps_node_to_course_and_wale)/2)
         strap_starting_course = [*self.parent_knitgraph_course_id_to_wale_ids.keys()][-1]
         bottom_course_wale_ids = []
@@ -338,7 +381,8 @@ class Strap_Generator_on_Tube:
             parent_nodes = []
             mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
             parent_coors = self.find_parent_coors(child_coor = mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
-            assert len(parent_coors) > 0, f'this mirror node {mirror_node} can not form a branch structure because it has no parent'
+            if len(parent_coors) <= 0:
+                raise ErrorException(f'this mirror node {mirror_node} can not form a branch structure because it has no parent')
             for parent_coor in parent_coors:
                 parent_nodes.append(self.parent_knitgraph_course_and_wale_to_node[parent_coor])
             self.branches_on_front[(mirror_node, split_node)] = parent_nodes
@@ -369,7 +413,8 @@ class Strap_Generator_on_Tube:
             parent_nodes = []
             mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
             parent_coors = self.find_parent_coors(child_coor = mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
-            assert len(parent_coors) > 0, f'this mirror node {mirror_node} can not form a branch structure because it has no parent'
+            if len(parent_coors) <= 0:
+                raise ErrorException(f'this mirror node {mirror_node} can not form a branch structure because it has no parent')
             for parent_coor in parent_coors:
                 parent_nodes.append(self.parent_knitgraph_course_and_wale_to_node[parent_coor])
             self.branches_on_back[(mirror_node, split_node)] = parent_nodes
@@ -544,8 +589,9 @@ class Strap_Generator_on_Tube:
         self.connect_stitches_on_knitgraph()
         self.reconnect_branches()
         self.bind_off()
-        print(f'self.child_knitgraph.node_to_course_and_wale is {self.child_knitgraph.node_to_course_and_wale}, len is {len(self.child_knitgraph.node_to_course_and_wale)}; self.parent_knitgraph.node_to_course_and_wale is {self.parent_knitgraph.node_to_course_and_wale}, len is {len(self.parent_knitgraph.node_to_course_and_wale)}')
+        # print(f'self.child_knitgraph.node_to_course_and_wale is {self.child_knitgraph.node_to_course_and_wale}, len is {len(self.child_knitgraph.node_to_course_and_wale)}; self.parent_knitgraph.node_to_course_and_wale is {self.parent_knitgraph.node_to_course_and_wale}, len is {len(self.parent_knitgraph.node_to_course_and_wale)}')
         self.strap_graph.node_to_course_and_wale = self.parent_knitgraph.node_to_course_and_wale|self.child_knitgraph.node_to_course_and_wale
-        print(f'len(self.strap_graph.node_to_course_and_wale) is {len(self.strap_graph.node_to_course_and_wale)}')
+        # print(f'len(self.strap_graph.node_to_course_and_wale) is {len(self.strap_graph.node_to_course_and_wale)}')
+        # print(f'self.strap_graph.node_to_course_and_wale in strap generator is {self.strap_graph.node_to_course_and_wale} ')
         return self.strap_graph
   
