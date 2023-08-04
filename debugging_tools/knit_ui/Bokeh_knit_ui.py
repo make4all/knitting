@@ -4,7 +4,7 @@ from knit_ui_wrapper import *
 import holoviews as hv
 import re
 from bokeh.models.widgets import Button, TextInput, Select, NumericInput, CheckboxGroup, RadioButtonGroup, Toggle, \
-    PreText
+    PreText, TextAreaInput
 from bokeh.layouts import column, row
 from bokeh.plotting import curdoc
 import bokeh.events
@@ -31,7 +31,8 @@ pattern_type_options = ["Tube", "Sheet"]
 pattern_type = RadioButtonGroup(name='Pattern Type', labels=pattern_type_options, active=0)
 
 # knit speak - text input
-knit_speak = TextInput(title='Knit Speak', placeholder='Enter knit speak, e.g.: all rs rounds k. all ws rounds p.')
+# knit_speak = TextInput(title='Knit Speak', placeholder='Enter knit speak, e.g.: all rs rounds k. all ws rounds p.', height=300)
+knit_speak = TextAreaInput(value = 'Enter knit speak, e.g.: all rs rounds k. all ws rounds p.', rows=15, cols=30, title='Knit Speak')
 
 # knitting procedure - radio button
 tube_knitting_procedure_options = ["Handle", "Pocket", "Hole", "Strap"]

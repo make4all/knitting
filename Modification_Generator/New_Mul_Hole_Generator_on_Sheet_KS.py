@@ -288,6 +288,7 @@ class Hole_Generator_on_Sheet:
                 for course_id in range(hole_info['hole_start_course'], hole_info['hole_end_course'] + 1):
                     smallest_wale_id = min(self._hole_course_to_wale_ids[hole_index][course_id])
                     biggest_wale_id = max(self._hole_course_to_wale_ids[hole_index][course_id])
+                    #-----we don't need margin loop ids for now---
                     if (course_id, smallest_wale_id - self.wale_dist) not in self._knit_graph.course_and_wale_to_node.keys():
                         print(f'no node is found on the hole margin near the old yarn side {(course_id, smallest_wale_id - self.wale_dist)}')
                     else:
@@ -296,6 +297,7 @@ class Hole_Generator_on_Sheet:
                         print(f'no node is found on the hole margin near the new yarn side {(course_id, biggest_wale_id + self.wale_dist)}')   
                     else:
                         new_yarn_course_to_margin_loop_ids[course_id] = self._knit_graph.course_and_wale_to_node[(course_id, biggest_wale_id + self.wale_dist)]
+                    #-----we don't need margin loop ids for now---
                     new_yarn_course_to_loop_ids[course_id] = []
                     if course_id % 2 == 0:
                         for wale_id in range(biggest_wale_id + self.wale_dist, self.course_id_to_end_wale_id[course_id] + self.wale_dist):
@@ -316,6 +318,7 @@ class Hole_Generator_on_Sheet:
                 for course_id in range(hole_info['hole_start_course'], hole_info['hole_end_course'] + 1):
                     smallest_wale_id = min(self._hole_course_to_wale_ids[hole_index][course_id])
                     biggest_wale_id = max(self._hole_course_to_wale_ids[hole_index][course_id])
+                    #-----we don't need margin loop ids for now---
                     if (course_id, biggest_wale_id + (self.wale_dist)) not in self._knit_graph.course_and_wale_to_node.keys():
                         print(f'no node is found on the hole margin near the old yarn side {(course_id, biggest_wale_id + (self.wale_dist))}')
                     else:
@@ -324,6 +327,7 @@ class Hole_Generator_on_Sheet:
                         print(f'no node is found on the hole margin near the new yarn side {(course_id, smallest_wale_id - (self.wale_dist))}')
                     else:
                         new_yarn_course_to_margin_loop_ids[course_id] = self._knit_graph.course_and_wale_to_node[(course_id, smallest_wale_id - (self.wale_dist))]
+                    #-----we don't need margin loop ids for now---
                     new_yarn_course_to_loop_ids[course_id] = []
                     if course_id % 2 == 0:
                         for wale_id in range(self.course_id_to_start_wale_id[course_id], smallest_wale_id):
@@ -350,15 +354,21 @@ class Hole_Generator_on_Sheet:
         for hole_index in self.holes_to_old_and_new_yarns.keys():
             old_yarn_nodes = self.holes_to_old_and_new_yarns[hole_index]['old_yarn_nodes']
             real_old_yarn_nodes = real_old_yarn_nodes.intersection(old_yarn_nodes)
+        print(f'in get_new_yarn_loop_ids_for_holes(), hole_index is {hole_index}, real_old_yarn_nodes is {real_old_yarn_nodes}')
+
         # get nodes for different new yarns
         hole_index_to_new_yarn_nodes = {}
         # 
         hole_index_pair_intersect = []
         for hole_index in self.holes_to_old_and_new_yarns.keys():
             real_new_yarn_nodes = self.holes_to_old_and_new_yarns[hole_index]['new_yarn_nodes']
+            print(f'in get_new_yarn_loop_ids_for_holes(), before snip, hole_index is {hole_index}, real_new_yarn_nodes is {real_new_yarn_nodes}')
+            # flag = False
             for hole_index_inside in self.holes_to_old_and_new_yarns.keys():
                 other_new_yarn_nodes = self.holes_to_old_and_new_yarns[hole_index_inside]['new_yarn_nodes']
-                if real_new_yarn_nodes == other_new_yarn_nodes:
+                if hole_index_inside == hole_index:
+                    print(f'hole_index is {hole_index}, hole_index_inside is {hole_index_inside}, same new yarn nodes, continue')
+                    # flag = True
                     continue
                 else:
                     if len(real_new_yarn_nodes.intersection(other_new_yarn_nodes)) != 0:
@@ -369,16 +379,26 @@ class Hole_Generator_on_Sheet:
                         #         continue
                         #     real_new_yarn_nodes = real_new_yarn_nodes.difference(other_new_yarn_nodes)
                         #     hole_index_pair_intersect.append([hole_index_inside, hole_index])
-                        if [hole_index, hole_index_inside] in hole_index_pair_intersect:
+                        if [hole_index, hole_index_inside] in hole_index_pair_intersect or [hole_index_inside, hole_index] in hole_index_pair_intersect:
+                                print(f'hole_index is {hole_index}, hole_index_inside is {hole_index_inside}, snip has existed, continue')
                                 continue
-                        real_new_yarn_nodes = real_new_yarn_nodes.difference(other_new_yarn_nodes)
-                        hole_index_pair_intersect.append([hole_index_inside, hole_index])
+                        print(f'hole_index is {hole_index}, hole_index_inside is {hole_index_inside}, real_new_yarn_nodes is {real_new_yarn_nodes}, other_new_yarn_nodes is\
+                              {other_new_yarn_nodes}, real_new_yarn_nodes.issubset(other_new_yarn_nodes) is {real_new_yarn_nodes.issubset(other_new_yarn_nodes)}')
+                        if  real_new_yarn_nodes.issubset(other_new_yarn_nodes) == False:
+                            real_new_yarn_nodes = real_new_yarn_nodes.difference(other_new_yarn_nodes)
+                            print(f'hole_index is {hole_index}, hole_index_inside is {hole_index_inside}, updated real_new_yarn_nodes is {real_new_yarn_nodes}, other_new_yarn_nodes is\
+                                {other_new_yarn_nodes}')
+                            hole_index_pair_intersect.append([hole_index, hole_index_inside])
+    
             # finally, we need to delete the all hole nodes if it is included on the real_new_yarn_nodes
+            print(f'in get_new_yarn_loop_ids_for_holes(), after snip, hole_index is {hole_index}, real_new_yarn_nodes is {real_new_yarn_nodes}')
+            # if flag == True:
             for hole in self.yarns_and_holes_to_add.values():
                 for node in hole:
                     if node in real_new_yarn_nodes:
                         real_new_yarn_nodes.remove(node)
             hole_index_to_new_yarn_nodes[hole_index] = sorted(real_new_yarn_nodes)
+        print(f'hole_index_to_new_yarn_nodes is {hole_index_to_new_yarn_nodes}')
         return real_old_yarn_nodes, hole_index_to_new_yarn_nodes
 
     def bring_new_yarn(self):
@@ -407,7 +427,8 @@ class Hole_Generator_on_Sheet:
         self._old_yarn.last_loop_id = None
         for loop_id in real_old_yarn_nodes:
             child_id, loop = self._old_yarn.add_loop_to_end(loop_id = loop_id)
-        
+    
+    #@deprecated
     def connect_hole_edge_nodes(self):
         for hole_index in [*self.holes_size.keys()]:
             if len(self._hole_course_to_wale_ids[hole_index].keys()) > 1:

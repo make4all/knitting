@@ -187,7 +187,7 @@ class Knitspeak_Compiler:
                     self.course_ids_to_operations[course_id] = course_instructions
         # max_course = max([*self.course_ids_to_operations])
         max_course = self.row_count
-        if "all_rs_rows" in self._parser.parser.symbolTable or "all_rs_rounds" in self._parser.parser.symbolTable:
+        if "all_rs_rows" in self._parser.parser.symbolTable:
             course_instructions = self.course_ids_to_operations[1]
             for course_id in range(3, max_course + 1, 2):
                 if course_id not in self.course_ids_to_operations:
@@ -195,7 +195,15 @@ class Knitspeak_Compiler:
                     self._parser.parser.symbolTable._symbol_table["row_courses"].add(course_id)
                 else:
                     print(f"KnitSpeak Warning: course {course_id} overrides rs-instructions")
-        if "all_ws_rows" in self._parser.parser.symbolTable or "all_ws_rounds" in self._parser.parser.symbolTable:
+        if "all_rs_rounds" in self._parser.parser.symbolTable:
+            course_instructions = self.course_ids_to_operations[1]
+            for course_id in range(3, max_course + 1, 2):
+                if course_id not in self.course_ids_to_operations:
+                    self.course_ids_to_operations[course_id] = course_instructions
+                    self._parser.parser.symbolTable._symbol_table["round_courses"].add(course_id)
+                else:
+                    print(f"KnitSpeak Warning: course {course_id} overrides rs-instructions")
+        if "all_ws_rows" in self._parser.parser.symbolTable:
             course_instructions = self.course_ids_to_operations[2]
             for course_id in range(4, max_course + 1, 2):
                 if course_id not in self.course_ids_to_operations:
@@ -203,8 +211,14 @@ class Knitspeak_Compiler:
                     self._parser.parser.symbolTable._symbol_table["row_courses"].add(course_id)
                 else:
                     print(f"KnitSpeak Warning: course {course_id} overrides ws-instructions")
-
-        print(f'self.course_ids_to_operations is {self.course_ids_to_operations}')
+        if "all_ws_rounds" in self._parser.parser.symbolTable:
+            course_instructions = self.course_ids_to_operations[2]
+            for course_id in range(4, max_course + 1, 2):
+                if course_id not in self.course_ids_to_operations:
+                    self.course_ids_to_operations[course_id] = course_instructions
+                    self._parser.parser.symbolTable._symbol_table["round_courses"].add(course_id)
+                else:
+                    print(f"KnitSpeak Warning: course {course_id} overrides ws-instructions")
 
         for course_id in range(1, max_course + 1):
             if course_id not in self.course_ids_to_operations:
@@ -213,6 +227,8 @@ class Knitspeak_Compiler:
         if max_course % 2 == 1 and ("all_ws_rows" in self._parser.parser.symbolTable or "all_ws_rounds" in self._parser.parser.symbolTable):  # ends on rs row
             self.course_ids_to_operations[max_course + 1] = self.course_ids_to_operations[2]
 
+        print(f'self.course_ids_to_operations is {self.course_ids_to_operations}')
+        
     def _process_instruction(self, instruction: Tuple[Union[tuple, Stitch_Definition, Cable_Definition, Increase_Stitch_Definition, list],
                                                       Tuple[bool, int]]):
         """

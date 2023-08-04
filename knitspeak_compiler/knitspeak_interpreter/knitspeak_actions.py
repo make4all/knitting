@@ -26,13 +26,18 @@ def course_ids(context, nodes) -> List[Union[int, Num_Closure, Iterator_Closure]
     course_range = nodes[0]
     if len(nodes) == 3:
         row_node = 2
-        if "rs" == nodes[1]:
+        if "rs" == nodes[1] and 'rows' == nodes[2]:
             course_range = [1]
             context.parser.symbolTable["row_courses"].add(1)
-        else:
+        elif "ws" == nodes[1] and 'rows' == nodes[2]:
             course_range = [2]
             context.parser.symbolTable["row_courses"].add(2)
-        # context.parser.symbolTable[f"all_{nodes[1]}"] = course_range
+        elif "rs" == nodes[1] and 'rounds' == nodes[2]:
+            course_range = [1]
+            context.parser.symbolTable["round_courses"].add(1)
+        elif "ws" == nodes[1] and 'rounds' == nodes[2]:
+            course_range = [2]
+            context.parser.symbolTable["round_courses"].add(2)
         context.parser.symbolTable[f"all_{nodes[1]}_{nodes[2]}"] = course_range
         
     elif len(nodes) == 2:
