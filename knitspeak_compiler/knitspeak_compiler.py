@@ -78,8 +78,8 @@ class Knitspeak_Compiler:
             if starting_width % 2 != 0:
                 raise ErrorException(f'starting width is required to be an even number for tube')
         self.parse_results = self._parser.interpret(pattern, patternIsFile)
-        self.get_course_walking_direction()
         self._organize_courses()  # organize course instructions
+        self.get_course_walking_direction()
         self.populate_0th_course(starting_width)  # populate the 0th course; note that it doesn't increase the self.current_row
         print(f'self._parser.parser.symbolTable is {self._parser.parser.symbolTable._symbol_table}, key is {self._parser.parser.symbolTable._symbol_table.keys()}')
         

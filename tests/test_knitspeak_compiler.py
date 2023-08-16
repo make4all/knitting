@@ -9,7 +9,8 @@ from Modification_Generator.New_Pocket_Generator_on_Sheet_KS import Pocket_Gener
 from Modification_Generator.New_Pocket_Generator_on_Tube_KS import Pocket_Generator_on_Tube
 from Modification_Generator.Handle_Generator_on_Sheet_KS import Handle_Generator_on_Sheet
 from Modification_Generator.Handle_Generator_on_Tube_KS import Handle_Generator_on_Tube
-from Modification_Generator.Strap_Generator_on_Tube_KS import Strap_Generator_on_Tube
+from Modification_Generator.New_Strap_Generator_on_Tube_KS import Strap_Generator_on_Tube
+from Modification_Generator.New_Strap_Generator_on_Sheet_KS import Strap_Generator_on_Sheet
 from debugging_tools.exceptions import ErrorException
 
 
@@ -386,6 +387,91 @@ def test_stst():
     # generator = Knitout_Generator(knit_graph)
     # generator.write_instructions(f"stst_test.k")
 
+def test_strap():
+
+    def test_sheet():
+        sheet_pattern = "all rs rows k 10. all ws rows p 10."
+        sheet_yarn_carrier_id = 3
+        compiler = Knitspeak_Compiler(carrier_id = sheet_yarn_carrier_id)
+        knit_graph = compiler.compile(10, 10, object_type = 'sheet', pattern = sheet_pattern)
+
+        knit_graph.gauge = 1/4
+        loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
+        loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_wales() 
+        node_to_course_and_wale = knit_graph.get_node_course_and_wale()
+        node_on_front_or_back = knit_graph.get_node_bed()
+        course_and_wale_and_bed_to_node = knit_graph.get_course_and_wale_and_bed_to_node()
+        knit_graph.update_parent_offsets()
+
+        # above is needed calculations on the knitgraph
+        KnitGraph_Visualizer = knitGraph_visualizer(knit_graph = knit_graph)
+        KnitGraph_Visualizer.visualize()
+
+        ########->
+        # # horizontal strap
+        # strap_generator = Strap_Generator_on_Sheet(parent_knitgraph=knit_graph, sheet_yarn_carrier_id=3, 
+        #     strap_yarn_carrier_id=4, is_front_patch=True, keynode_child_fabric=[(4, 2), (7, 2)], strap_length=40)
+        # knitGraph = strap_generator.build_strap_graph() 
+        # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+        # KnitGraph_Visualizer.visualize()
+        ########<-
+
+        ########->
+        # # vertical strap
+        # strap_generator = Strap_Generator_on_Sheet(parent_knitgraph=knit_graph, sheet_yarn_carrier_id=3, 
+        #     strap_yarn_carrier_id=4, is_front_patch=True, keynode_child_fabric=[(4, 2), (4, 14)], strap_length=8)
+        # knitGraph = strap_generator.build_strap_graph() 
+        # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+        # KnitGraph_Visualizer.visualize()
+        ########<-
+
+        # this convertor is for the modified knitgraph
+        generator = Knitout_Generator(knitGraph)
+        generator.write_instructions(f"stst_test.k")
+
+    
+    def test_tube():
+        tube_pattern = "all rs rounds k 10. all ws rounds p 10."
+        tube_yarn_carrier_id = 3
+        compiler = Knitspeak_Compiler(carrier_id = tube_yarn_carrier_id)
+        knit_graph = compiler.compile(10, 10, object_type = 'tube', pattern = tube_pattern)
+
+        knit_graph.gauge = 1/4
+        loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
+        loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_wales() 
+        node_to_course_and_wale = knit_graph.get_node_course_and_wale()
+        node_on_front_or_back = knit_graph.get_node_bed()
+        course_and_wale_and_bed_to_node = knit_graph.get_course_and_wale_and_bed_to_node()
+        knit_graph.update_parent_offsets()
+
+        # above is needed calculations on the knitgraph
+        KnitGraph_Visualizer = knitGraph_visualizer(knit_graph = knit_graph)
+        KnitGraph_Visualizer.visualize()
+
+        ########->
+        # # horizontal strap
+        # strap_generator = Strap_Generator_on_Tube(parent_knitgraph=knit_graph, tube_yarn_carrier_id=3, 
+        #     strap_yarn_carrier_id=4, is_front_patch=True, keynode_child_fabric=[(4, 2), (7, 2)], strap_length=40)
+        # knitGraph = strap_generator.build_strap_graph() 
+        # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+        # KnitGraph_Visualizer.visualize()
+        ########<-
+
+        ########->
+        # vertical strap
+        strap_generator = Strap_Generator_on_Tube(parent_knitgraph=knit_graph, tube_yarn_carrier_id=3, 
+            strap_yarn_carrier_id=4, is_front_patch=False, keynode_child_fabric=[(4, 2), (4, 14)], strap_length=8)
+        knitGraph = strap_generator.build_strap_graph() 
+        KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+        KnitGraph_Visualizer.visualize()
+        ########<-
+
+        # this convertor is for the modified knitgraph
+        generator = Knitout_Generator(knitGraph)
+        generator.write_instructions(f"stst_test.k")
+    
+    # test_sheet()
+    test_tube()
 
 def test_rib():
     rib_width = 1
@@ -725,7 +811,8 @@ def test_write_short_rows():
     generator.write_instructions(f"short_rows.k")
 
 if __name__ == "__main__":
-    test_stst()
+    # test_stst()
+    test_strap()
     # test_rib()
     # test_write_slipped_rib()
     # test_write_slipped_rib_even()

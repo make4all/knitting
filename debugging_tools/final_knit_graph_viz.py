@@ -301,7 +301,7 @@ class knitGraph_visualizer:
         self.get_yarn_edges()
         self.get_stitch_edges()
         self.draw_graph() #comment out this line if focusing on UI testing.
-        return self.draw_graph_holoviews(), self.knit_graph #for bokeh knit_ui
+        # return self.draw_graph_holoviews(), self.knit_graph #for bokeh knit_ui
         # return self.deprecated_draw_graph_holoviews(), self.knit_graph #for panel knit_ui
 
     
