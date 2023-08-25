@@ -36,7 +36,7 @@ knit_speak = TextAreaInput(value = 'Enter knit speak, e.g.: all rs rounds k. all
 
 # knitting procedure - radio button
 tube_knitting_procedure_options = ["Handle", "Pocket", "Hole", "Strap"]
-sheet_knitting_procedure_options = ["Handle", "Pocket", "Hole"]
+sheet_knitting_procedure_options = ["Handle", "Pocket", "Hole", "Strap"]
 knitting_procedure = RadioButtonGroup(name='Knitting Procedure', labels=["Handle", "Pocket", "Hole", "Strap"], active=0)
 
 # gauge - drop down
@@ -92,28 +92,13 @@ handle_left_add_from_graph = Button(label='Add from graph', button_type='success
 right_keynodes_handle = TextInput(title='Vertex Coordinates on the Big Wale Side', placeholder='ex. (1,1), (2,2)')
 handle_right_add_from_graph = Button(label='Add from graph', button_type='success', width=120, margin=(24, 0, 0, 0))
 
-# strap modification (TUBE)
-strap_height = NumericInput(title='Strap Height', low=1, value=1)
-strap_front_1 = TextInput(title='Strap 1 Front', placeholder='ex. (1, 1)', width=160)
-strap_back_1 = TextInput(title='Strap 1 Back', placeholder='(1, 1)', width=160)
-strap_front_color_1 = Select(title='Yarn ID for Strap 1 Front', options=yarn_carrier_options_adjusted, width=160, value=yarn_carrier_options_adjusted[0])
-strap_back_color_1 = Select(title='Yarn ID for Strap 1 Back', options=yarn_carrier_options_adjusted, width=160, value=yarn_carrier_options_adjusted[1])
-
-strap_front_2 = TextInput(title='Strap 2 Front', placeholder='ex. (1, 1)', width=160)
-strap_back_2 = TextInput(title='Strap 2 Back', placeholder='(1, 1)', width=160)
-strap_front_color_2 = Select(title='Yarn ID for Strap 2 Front', options=yarn_carrier_options_adjusted, width=160, value=yarn_carrier_options_adjusted[0])
-strap_back_color_2 = Select(title='Yarn ID for Strap 2 Back', options=yarn_carrier_options_adjusted, width=160, value=yarn_carrier_options_adjusted[1])
-
-strap_front_3 = TextInput(title='Strap 3 Front', placeholder='ex. (1, 1)', width=160)
-strap_back_3 = TextInput(title='Strap 3 Back', placeholder='(1, 1)', width=160)
-strap_front_color_3 = Select(title='Yarn ID for Strap 3 Front', options=yarn_carrier_options_adjusted, width=160, value=yarn_carrier_options_adjusted[0])
-strap_back_color_3 = Select(title='Yarn ID for Strap 3 Back', options=yarn_carrier_options_adjusted, width=160, value=yarn_carrier_options_adjusted[1])
-
-strap_front_4 = TextInput(title='Strap 4 Front', placeholder='ex. (1, 1)', width=160)
-strap_back_4 = TextInput(title='Strap 4 Back', placeholder='(1, 1)', width=160)
-strap_front_color_4 = Select(title='Yarn ID for Strap 4 Front', options=yarn_carrier_options_adjusted, width=160, value=yarn_carrier_options_adjusted[0])
-strap_back_color_4 = Select(title='Yarn ID for Strap 4 Back', options=yarn_carrier_options_adjusted, width=160, value=yarn_carrier_options_adjusted[1])
-
+# Strap modification (SHEET and TUBE)
+strap_yarn_carrier_id = Select(title='Yarn ID for Strap', options=yarn_carrier_options_adjusted, value=yarn_carrier_options_adjusted[0])
+# is_front_patch_strap = Toggle(label='Make Front Patch', active=False)
+is_front_patch_strap = Select(title='Patch on front', options=['True', 'False'], value='True')
+keynodes_strap = TextInput(title='Select two nodes as the base for the strap', placeholder='ex. (1,1), (2,2)')
+strap_add_from_graph = Button(label='Add from graph', button_type='success', width=120, margin=(24, 0, 0, 0))
+length_input_strap = TextInput(title='The length of the strap', placeholder='ex. 12')
 # after the updated graph has been generated
 back_to_graph = Button(label='Back', button_type='danger')
 
@@ -146,15 +131,7 @@ def _update_yarn_carrier(attr, old, new):
     pocket_yarn_carrier_id.value=yarn_carrier_options_adjusted[0]
     handle_yarn_carrier_id.options = yarn_carrier_options_adjusted
     handle_yarn_carrier_id.value=yarn_carrier_options_adjusted[0]
-    strap_front_color_1.options = yarn_carrier_options_adjusted
-    strap_front_color_2.options = yarn_carrier_options_adjusted
-    strap_front_color_3.options = yarn_carrier_options_adjusted
-    strap_front_color_4.options = yarn_carrier_options_adjusted
-    strap_back_color_1.options = yarn_carrier_options_adjusted
-    strap_back_color_2.options = yarn_carrier_options_adjusted
-    strap_back_color_3.options = yarn_carrier_options_adjusted
-    strap_back_color_4.options = yarn_carrier_options_adjusted
-yarn_carrier.on_change("value", _update_yarn_carrier)
+    yarn_carrier.on_change("value", _update_yarn_carrier)
 
 
 def _update_gauge(attr, old, new):
@@ -457,69 +434,66 @@ def _create_knit_graph(event):
             handle_widget_box = column(row(left_keynodes_handle, handle_left_add_from_graph), row(right_keynodes_handle, handle_right_add_from_graph),
                                           handle_yarn_carrier_id, is_front_patch_handle)
             column_widgets = column(widget2, handle_widget_box)
+
         elif knitting_procedure.active == 3:
             ###########################################################################
             # call back events
-            def strap_button_clicked(event, i, textbox_front, textbox_back):
-                selected[0] = 30 + i
+            def strap_button_clicked(event):
+                selected[0] = 6
                 strap_selected_nodes = []
                 strap_code = '''
-                    if (selected[0] == s + 30)
-                    {
-                        if (node.selected.indices.length > 0 && ! selected_nodes.includes(node.selected.indices[0]))
-                            selected_nodes.push(node.selected.indices[0]);
-                        
-                        if (selected_nodes.length > 0)
-                        {
-                            let course = node.data['course'][selected_nodes[0]];
-                            let wale = node.data['wale'][selected_nodes[0]];
-                            textbox_front.value = '(' + wale + ',';
-                            if (selected_nodes.length > 1)
-                            {
-                                let course = node.data['course'][selected_nodes[1]];
-                                let wale = node.data['wale'][selected_nodes[1]];
-                                textbox_front.value += ' ' + wale + ')';
-                            }
-                        }
-                        if (selected_nodes.length > 2)
-                        {
-                            let course = node.data['course'][selected_nodes[2]];
-                            let wale = node.data['wale'][selected_nodes[2]];
-                            textbox_back.value = '(' + wale + ',';
-                            if (selected_nodes.length > 3)
-                            {
-                                let course = node.data['course'][selected_nodes[3]];
-                                let wale = node.data['wale'][selected_nodes[3]];
-                                textbox_back.value += ' ' + wale + ')';
-                            }
-                        }
-                    }
-                '''
+                           if (selected[0] == 6)
+                           {
+                                if (node.selected.indices.length > 0 && ! selected_nodes.includes(node.selected.indices[0]))
+                                    selected_nodes.push(node.selected.indices[0]);
+                                
+                                if (selected_nodes.length > 0)
+                                {
+                                    let course = node.data['course'][selected_nodes[0]];
+                                    let wale = node.data['wale'][selected_nodes[0]];
+                                    
+                                    //newly added to deal with gauging to avoid entangle
+                                    if (wale % parseInt(1/gauge) == 0)
+                                    {
+                                        textbox.value = '(' + course + ',' + (wale-2) + ')';
+                                        is_front_patch_strap.value = 'True';
+                                    }
+                                    else {
+                                        textbox.value = '(' + course + ',' + (wale-1) + ')';
+                                        is_front_patch_strap.value = 'False';
+                                    }
+                                    
+                                    //textbox.value = '(' + course + ',' + (wale-1) + ')';
+                                    for (let i = 1; i < selected_nodes.length; i++)
+                                    {
+                                        let course = node.data['course'][selected_nodes[i]];
+                                        let wale = node.data['wale'][selected_nodes[i]];
+                                        
+                                        //newly added to deal with gauging to avoid entangle
+                                        if (wale % parseInt(1/gauge) == 0)
+                                        {
+                                            textbox.value = textbox.value + ', ' + '(' + course + ',' + (wale-2) + ')';
+                                        }
+                                        else {
+                                            textbox.value = textbox.value + ', ' + '(' + course + ',' + (wale-1) + ')';
+                                        }
+                                        
+                                        //textbox.value = textbox.value + ', ' + '(' + course + ',' + (wale-1) + ')';
+                                    }
+                                }
+                           }
+                                                   '''
                 strap_callback = CustomJS(
-                    args={'node': plot.renderers[-1].node_renderer.data_source, 'textbox_front': textbox_front, 'textbox_back': textbox_back,
-                          'selected': selected, 'gauge': gauge_map[gauge.value],
-                          'selected_nodes': strap_selected_nodes, 's': i},
+                    args={'node': plot.renderers[-1].node_renderer.data_source, 'textbox': keynodes_strap,
+                          'selected': selected, 'gauge': gauge_map[gauge.value], 'is_front_patch_strap': is_front_patch_strap, 'selected_nodes': strap_selected_nodes},
                     code=strap_code)
                 plot.renderers[-1].node_renderer.data_source.selected.js_on_change('indices', strap_callback)
+            
+            strap_add_from_graph.on_event(bokeh.events.ButtonClick, strap_button_clicked)
             ###########################################################################
-            strap_button_1 = Button(label='Add from graph', button_type='success', width=120, margin=(24, 0, 0, 0))
-            strap_button_2 = Button(label='Add from graph', button_type='success', width=120, margin=(24, 0, 0, 0))
-            strap_button_3 = Button(label='Add from graph', button_type='success', width=120, margin=(24, 0, 0, 0))
-            strap_button_4 = Button(label='Add from graph', button_type='success', width=120, margin=(24, 0, 0, 0))
-            strap_button_1.on_event(bokeh.events.ButtonClick, partial(strap_button_clicked, bokeh.events.ButtonClick, 1, strap_front_1, strap_back_1))
-            strap_button_2.on_event(bokeh.events.ButtonClick, partial(strap_button_clicked, bokeh.events.ButtonClick, 2, strap_front_2, strap_back_2))
-            strap_button_3.on_event(bokeh.events.ButtonClick, partial(strap_button_clicked, bokeh.events.ButtonClick, 3, strap_front_3, strap_back_3))
-            strap_button_4.on_event(bokeh.events.ButtonClick, partial(strap_button_clicked, bokeh.events.ButtonClick, 4, strap_front_4, strap_back_4))
-
-            column_widgets = column(widget2, strap_height,
-                                    row(strap_front_1, strap_back_1, strap_button_1), row(strap_front_color_1, strap_back_color_1),
-                                    PreText(),
-                                    row(strap_front_2, strap_back_2, strap_button_2), row(strap_front_color_2, strap_back_color_2),
-                                    PreText(),
-                                    row(strap_front_3, strap_back_3, strap_button_3), row(strap_front_color_3, strap_back_color_3),
-                                    PreText(),
-                                    row(strap_front_4, strap_back_4, strap_button_4), row(strap_front_color_4, strap_back_color_4))
-
+            strap_widget_box = column(row(keynodes_strap, strap_add_from_graph), row(length_input_strap),
+                                          strap_yarn_carrier_id, is_front_patch_strap)
+            column_widgets = column(widget2, strap_widget_box)
         curdoc().add_root(row(column_widgets, plot))
 
         # HOW TO ACCESS ELEMENTS IN CURDOC()
@@ -658,40 +632,22 @@ def _update_graph(event):
             # ui.insert(0, error)
 
     elif knitting_procedure.active == 3:  # Strap
-        strap_coor_info = {}
-        pattern = re.compile("^\([0-9]+, [0-9]+\)$")
-
-        def strap_coor_info_helper(strap_front, strap_back, strap_front_color, strap_back_color, strap_dict, pos):
-            if pattern.match(strap_front.value) and pattern.match(strap_back.value):
-                tup_front = strap_front.value.replace('(', '')
-                tup_front = tup_front.replace(')', '')
-                tup_back = strap_back.value.replace('(', '')
-                tup_back = tup_back.replace(')', '')
-                print(f'haha is {strap_front_color.value}')
-                color_front = int(strap_front_color.value)
-                color_back = int(strap_back_color.value)
-                strap_dict.update({pos: {'front': [tuple(map(int, tup_front.split(', '))), color_front],
-                                         'back': [tuple(map(int, tup_back.split(', '))), color_back]}})
-
-        strap_coor_info_helper(strap_front_1, strap_back_1, strap_front_color_1, strap_back_color_1, strap_coor_info, 1)
-        strap_coor_info_helper(strap_front_2, strap_back_2, strap_front_color_2, strap_back_color_2, strap_coor_info, 2)
-        strap_coor_info_helper(strap_front_3, strap_back_3, strap_front_color_3, strap_back_color_3, strap_coor_info, 3)
-        strap_coor_info_helper(strap_front_4, strap_back_4, strap_front_color_4, strap_back_color_4, strap_coor_info, 4)
-        # else:
-        # Todo
-        # error = pn.pane.Alert(
-        #     '## Wrong Input Format\nExample Input Format for Front or Back Vertex Coordinate: (1, 2)')
-        # ui.insert(0, error)
-        # strap_coor_info = {}
-        # break
-
-        if len(strap_coor_info) != 0:
-            final_plot, final_knit_graph = generate_final_graph_strap("Tube",
-                                                                      "Strap",
-                                                                      int(yarn_carrier.value),
-                                                                      int(strap_height.value),
-                                                                      knit_graph,
-                                                                      strap_coor_info)
+        pattern = re.compile("^(\([0-9]+,[0-9]+\), )*\([0-9]+,[0-9]+\)$")
+        if pattern.match(keynodes_strap.value):
+            vertices, _ = parse_left_right_vertices(keynodes_strap.value, keynodes_strap.value)
+            final_plot, final_knit_graph = generate_final_graph_strap(
+                "Tube" if pattern_type.active == 0 else "Sheet",
+                "Strap",
+                int(yarn_carrier.value),
+                int(strap_yarn_carrier_id.value), knit_graph,
+                is_front_patch_strap.value == 'True', vertices,
+                int(length_input_strap.value)) #is_front_patch_handle.active
+        else:
+            # Todo
+            pass
+            # error = pn.pane.Alert(
+            #     '## Wrong Input Format\nExample Input Format for Vertex Coordinates: (1,2), (3,4), (5,6)')
+            # ui.insert(0, error)
 
     curdoc().clear()
     curdoc().add_root(row(widget3, final_plot))

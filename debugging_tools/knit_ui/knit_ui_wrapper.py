@@ -9,7 +9,8 @@ from Modification_Generator.New_Pocket_Generator_on_Sheet_KS import Pocket_Gener
 from Modification_Generator.New_Pocket_Generator_on_Tube_KS import Pocket_Generator_on_Tube
 from Modification_Generator.Handle_Generator_on_Sheet_KS import Handle_Generator_on_Sheet
 from Modification_Generator.Handle_Generator_on_Tube_KS import Handle_Generator_on_Tube
-from Modification_Generator.Strap_Generator_on_Tube_KS import Strap_Generator_on_Tube
+from Modification_Generator.New_Strap_Generator_on_Tube_KS import Strap_Generator_on_Tube
+from Modification_Generator.New_Strap_Generator_on_Sheet_KS import Strap_Generator_on_Sheet
 from debugging_tools.exceptions import ErrorException
 
 def generate_initial_graph(pattern_used, gauge, color, width, height, knit_speak_procedure):
@@ -96,14 +97,30 @@ def generate_final_graph_handle(pattern_english, modification, original_id, hand
         KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
         return KnitGraph_Visualizer.visualize()
 
-def generate_final_graph_strap(pattern_english, modification, original_id, height_strap, knit_graph, strap_coor):
-    if (pattern_english == "Tube" and modification == "Strap"):
-        strap_generator = Strap_Generator_on_Tube(parent_knitgraph=knit_graph, tube_yarn_carrier_id=original_id,
-                                                  straps_coor_info=strap_coor, strap_height=height_strap)
+def generate_final_graph_strap(pattern_english, modification, original_id, strap_id, knit_graph, front_patch,
+                                keys, strap_length):
+    if (pattern_english == "Sheet" and modification == "Strap"):
+        strap_generator = Strap_Generator_on_Sheet(parent_knitgraph=knit_graph,
+                                                  sheet_yarn_carrier_id=original_id,
+                                                  strap_yarn_carrier_id=strap_id,
+                                                  is_front_patch=front_patch, 
+                                                  keynode_child_fabric=keys, 
+                                                  strap_length=strap_length)
         knitGraph = strap_generator.build_strap_graph()
         KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
         return KnitGraph_Visualizer.visualize()
-
+    
+    if (pattern_english == "Tube" and modification == "Strap"):
+        strap_generator = Strap_Generator_on_Tube(parent_knitgraph=knit_graph,
+                                                  tube_yarn_carrier_id=original_id,
+                                                  strap_yarn_carrier_id=strap_id,
+                                                  is_front_patch=front_patch, 
+                                                  keynode_child_fabric=keys, 
+                                                  strap_length=strap_length)
+        knitGraph = strap_generator.build_strap_graph()
+        KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+        return KnitGraph_Visualizer.visualize()
+    
 def generate_file(knitGraph, file_name):
     generator = Knitout_Generator(knitGraph)
     return generator.write_instructions(file_name)
