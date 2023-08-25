@@ -36,6 +36,11 @@ class Knitspeak_Compiler:
         self.terminated: bool
         self.row_count: int
 
+        self.number_of_left_leaning_front_half: int
+        self.number_of_right_leaning_front_half: int
+        self.number_of_left_leaning_back_half: int
+        self.number_of_right_leaning_back_half: int
+
     def _increment_current_row(self):
         """
         Increments the current row by 1 and manages its state in the symbol table
@@ -51,6 +56,7 @@ class Knitspeak_Compiler:
         return self.current_row % 2 == 0
 
     def get_course_walking_direction(self):
+        print(f'self._parser.parser.symbolTable._symbol_table["round_courses"] is {self._parser.parser.symbolTable._symbol_table["round_courses"]}')
         for course_id in self._parser.parser.symbolTable._symbol_table["round_courses"]:
             self.knit_graph.course_id_to_walking_direction[course_id] = 'clockwise' 
         for course_id in self._parser.parser.symbolTable._symbol_table["row_courses"]:
@@ -61,7 +67,7 @@ class Knitspeak_Compiler:
             elif (course_id - 1) in self._parser.parser.symbolTable._symbol_table["row_courses"]:
                 direction_last_row = self.knit_graph.course_id_to_walking_direction[course_id-1]
                 self.knit_graph.course_id_to_walking_direction[course_id] = 'clockwise' if direction_last_row == 'counter-clockwise' else 'counter-clockwise'
-        print(f'self.knit_graph.course_id_to_walking_direction is {self.knit_graph.course_id_to_walking_direction}')
+        print(f'in compiler, self.knit_graph.course_id_to_walking_direction is {self.knit_graph.course_id_to_walking_direction}')
 
     def compile(self, starting_width: int, row_count: int, object_type: str, pattern: str, patternIsFile: bool = False) -> Knit_Graph:
         """
@@ -78,6 +84,7 @@ class Knitspeak_Compiler:
             if starting_width % 2 != 0:
                 raise ErrorException(f'starting width is required to be an even number for tube')
         self.parse_results = self._parser.interpret(pattern, patternIsFile)
+        # self.get_course_walking_direction()
         self._organize_courses()  # organize course instructions
         self.get_course_walking_direction()
         self.populate_0th_course(starting_width)  # populate the 0th course; note that it doesn't increase the self.current_row
@@ -96,7 +103,12 @@ class Knitspeak_Compiler:
         for course_id in sorted(self.course_ids_to_operations):
             self._increment_current_row()
             course_instructions = self.course_ids_to_operations[course_id]
-
+            #----initialized count every time a new course begins
+            self.number_of_left_leaning_front_half = 0
+            self.number_of_right_leaning_front_half = 0
+            self.number_of_left_leaning_back_half = 0
+            self.number_of_right_leaning_back_half = 0
+            #----
             self.is_cur_row = False
             self.is_cur_round = False
             if self.current_row in self._parser.parser.symbolTable._symbol_table["row_courses"]:
@@ -399,6 +411,33 @@ class Knitspeak_Compiler:
         if stitch_def.child_loops == 1:  # when it's not a slip and has a parent
             predecessors = [*self.knit_graph.graph.predecessors((loop_id))]
             if len(predecessors) > 0:
+                #----
+                if stitch_def.is_decrease:
+                    predecessors_all_on_front = True
+                    for predecessor in predecessors:
+                        if predecessor not in self.knit_graph.loops_on_front_part_of_the_tube:
+                            predecessors_all_on_front = False
+                    is_left_leaning = True
+                    for offset in stitch_def.offset_to_parent_loops:
+                        if offset > 0:
+                            is_left_leaning = False
+                    if predecessors_all_on_front and is_left_leaning:
+                        self.number_of_left_leaning_front_half += 1
+                        self.knit_graph.courses_to_number_of_left_leaning_front_half[self.current_row] = self.number_of_left_leaning_front_half
+                        self.knit_graph.courses_to_max_loop_id_left_leaning_front_half[self.current_row] = loop_id
+                    elif (not predecessors_all_on_front) and is_left_leaning:
+                        self.number_of_right_leaning_back_half += 1
+                        self.knit_graph.courses_to_number_of_right_leaning_back_half[self.current_row] = self.number_of_right_leaning_back_half #"right" when we view from the front side of the KnitGraph
+                        self.knit_graph.courses_to_max_loop_id_right_leaning_back_half[self.current_row] = loop_id
+                    elif predecessors_all_on_front and (not is_left_leaning):
+                        self.number_of_right_leaning_front_half += 1
+                        self.knit_graph.courses_to_number_of_right_leaning_front_half[self.current_row] = self.number_of_right_leaning_front_half
+                        self.knit_graph.courses_to_max_loop_id_right_leaning_front_half[self.current_row] = loop_id
+                    else:
+                        self.number_of_left_leaning_back_half += 1                        
+                        self.knit_graph.courses_to_number_of_left_leaning_back_half[self.current_row] = self.number_of_left_leaning_back_half #"left" when we view from the front side of the KnitGraph
+                        self.knit_graph.courses_to_max_loop_id_left_leaning_back_half[self.current_row] = loop_id
+                #----
                 if predecessors[0] in self.knit_graph.loops_on_front_part_of_the_tube:
                     self.knit_graph.add_loop_to_front_part(loop_id)
                 elif predecessors[0] in self.knit_graph.loops_on_back_part_of_the_tube:
