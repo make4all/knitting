@@ -102,6 +102,10 @@ class Knitspeak_Compiler:
         self.terminated: bool = False
         for course_id in sorted(self.course_ids_to_operations):
             self._increment_current_row()
+<<<<<<< Updated upstream
+=======
+            self.terminated = False
+>>>>>>> Stashed changes
             course_instructions = self.course_ids_to_operations[course_id]
             #----initialized count every time a new course begins
             self.number_of_left_leaning_front_half = 0
@@ -129,9 +133,15 @@ class Knitspeak_Compiler:
             for instruction in course_instructions:
                 print(f'in compile, course id is {course_id}, instruction is {instruction}')
                 self._process_instruction(instruction)
+<<<<<<< Updated upstream
                 if self.terminated:
                     print(f'in compile, terminated at course id is {course_id}, instruction is {instruction}')
                     break
+=======
+                # if self.terminated:
+                #     print(f'in compile, terminated at course id is {course_id}, instruction is {instruction}')
+                #     break
+>>>>>>> Stashed changes
             #----
             # while not self.terminated:
             #     for instruction in course_instructions:
@@ -143,6 +153,7 @@ class Knitspeak_Compiler:
             self.cur_course_loop_ids = []
             self.loop_ids_consumed_by_current_course = set()
             
+<<<<<<< Updated upstream
             if self.terminated and self.current_row != row_count:
                 raise ErrorException("\nPop from an empty list before the whole instructions are processed." + 
                     "\nTrailing redundant knit instructions in the last course are automatically trimmed" +
@@ -150,6 +161,15 @@ class Knitspeak_Compiler:
 
             elif self.terminated:
                 break
+=======
+            # if self.terminated and self.current_row != row_count:
+            #     raise ErrorException("\nPop from an empty list before the whole instructions are processed." + 
+            #         "\nTrailing redundant knit instructions in the last course are automatically trimmed" +
+            #         "\nCheck if there are too many knit instructions in your knitspeak before the last course!")
+
+            # elif self.terminated:
+            #     break
+>>>>>>> Stashed changes
 
             #----
             # self.terminated: bool = False
@@ -250,7 +270,11 @@ class Knitspeak_Compiler:
          If the boolean is true, then the integer represents the number of times to repeat the instructions
          If the boolean is false, then the integer represents the number of loops left after executing the instructions
         :return:
+<<<<<<< Updated upstream
         """
+=======
+        """ 
+>>>>>>> Stashed changes
         # [([(1-BtF-c0->1, (True, 2)), (2-BtF-c0->1, (True, 1)), (1-BtF-c0->1, (True, 1))], (False, 0))]
         print(f'in _process_instruction, instruction is {instruction}, action is {instruction[0]}, static_repeats is {instruction[1][0]}')
         action = instruction[0]
@@ -267,23 +291,27 @@ class Knitspeak_Compiler:
         if not static_repeats:
             remaining_loops = instruction[1][1]
             if isinstance(remaining_loops, Num_Closure):
-                remaining_loops = remaining_loops.to_int()
+                remaining_loops = remaining_loops.to_int() #(1-BtF-c0->1, (True, 2)) However, the to_int in Num_Closure has not been implemented from the very begining, I think this is bc it usually not used in the knitspeak grammer. so the remaining_loops is always 0.
 
         def execute_instructions():
             """
             Executes the action according to its type
             """
             if is_stitch:
+                print('is stitch')
                 self._process_stitch(action)
             elif is_cable:
+                print('is cable')
                 self._process_cable(action)
             elif is_list:
+                print('is list')
                 self._process_list(action)
             else:
                 self._process_instruction(action)
 
         if not static_repeats:  # need to iterate until remaining loops is left
             print(f'not static_repeats, self.terminated is {self.terminated}')
+<<<<<<< Updated upstream
             while (len(self.last_course_loop_ids) - len(self.cur_course_loop_ids)) > remaining_loops and not self.terminated: #here we add not self.terminated because ks like
                 # this --- tube_pattern = r''' 1st round [k 2, skpo, k] to end. ''' will fall into a non-stoppable execution since the len(cur course loop) is smaller than len(last course loops) but the last_course_loop_ids_temp has already been consumed up.
                 print(f'in not static_repeats statement, self.terminated is {self.terminated}')
@@ -294,6 +322,28 @@ class Knitspeak_Compiler:
                 print(f'in this else statement, repeats is {repeats}')
                 for _ in range(0, repeats):
                     execute_instructions()
+=======
+            if remaining_loops != 0:
+                while (len(self.last_course_loop_ids) - len(self.cur_course_loop_ids)) > remaining_loops and not self.terminated: #here we add not self.terminated because ks like
+                    # this --- tube_pattern = r''' 1st round [k 2, skpo, k] to end. ''' will fall into a non-stoppable execution since the len(cur course loop) is smaller than len(last course loops) but the last_course_loop_ids_temp has already been consumed up.
+                    # later, I found this is not enough, bc when there is ks like "1st round k, yo, [k 2, p 2] to end.", the first condition (i.e. len_last - len_cur > 0) will break before consuming up the last node on the last course. so consider relax the first condition.
+                # while not self.terminated:
+                    print(f'in not static_repeats statement, self.terminated is {self.terminated}, remain_loop is {remaining_loops}')
+                    execute_instructions()
+                    print('exit not static_repeats')
+                # assert remaining_loops == (len(self.last_course_loop_ids) - len(self.cur_course_loop_ids)) #not always hold true for the same reason as above
+            else:
+                while not self.terminated:
+                    print(f'in not static_repeats statement, self.terminated is {self.terminated}, remain_loop is {remaining_loops}')
+                    execute_instructions()
+                    print('exit not static_repeats')
+        else:
+            if not self.terminated:
+                print(f'is static_repeats, repeats is {repeats}, remain_loop is {remaining_loops}')
+                for _ in range(0, repeats):
+                    execute_instructions()
+                print('exit static_repeats')
+>>>>>>> Stashed changes
 
     def _process_stitch(self, stitch_def: Stitch_Definition, flipped_by_cable=False):
         """
@@ -322,6 +372,7 @@ class Knitspeak_Compiler:
             stitch_def = stitch_def.copy_and_flip()
 
         if stitch_def.child_loops == 1:
+<<<<<<< Updated upstream
             parent_loops = []
             number_of_parents = len(stitch_def.offset_to_parent_loops)
             print(f'number_of_parents is {number_of_parents}')
@@ -400,12 +451,198 @@ class Knitspeak_Compiler:
                 print(f"self.last_course_loops_temp is: {self.last_course_loop_ids_temp}")            
 
         else:  # slip statement
+=======
+            if flipped_by_cable == True:
+                print('in flipped_by_cable')
+                parent_loops = []
+                number_of_parents = len(stitch_def.offset_to_parent_loops)
+                print(f'number_of_parents is {number_of_parents}')
+                for i in range(number_of_parents):
+                    print(f'i is {i}, len(self.last_course_loop_ids_temp) is {len(self.last_course_loop_ids_temp)}')
+                    if len(self.last_course_loop_ids_temp) < 1:
+                        self.terminated = True
+                        print(f'self.terminated is {self.terminated}')
+                        return
+                    if self.is_cur_row:
+                        for stack_position, parent_offset in enumerate(stitch_def.offset_to_parent_loops):
+                            print(f'the parent offset of cable stitch is {parent_offset}')
+                            
+                            if parent_offset < 0:
+                                parent_loops.append(self.last_course_loop_ids_temp.pop(-1+parent_offset))
+                            else:
+                                parent_loops.append(self.last_course_loop_ids_temp.pop())
+                
+                            # if parent_offset > 0:
+                            #     parent_loops.append(self.last_course_loop_ids_temp.pop(parent_offset))
+                            # else:
+                            #     parent_loops.append(self.last_course_loop_ids_temp.pop())
+                    elif self.is_cur_round:
+                        for stack_position, parent_offset in enumerate(stitch_def.offset_to_parent_loops):
+                            if parent_offset < 0:
+                                parent_offset = len(self.cur_course_loop_ids) - len(self.loop_ids_consumed_by_current_course) - stitch_def.offset_to_parent_loops[0]
+                                parent_loops.append(self.last_course_loop_ids_temp.pop(parent_offset))
+                            else:
+                                parent_loops.append(self.last_course_loop_ids_temp.pop(0))
+                            print(f'the parent offset of cable stitch is {parent_offset}, stitch_def.offset_to_parent_loops[0] is {stitch_def.offset_to_parent_loops[0]}')
+                loop_id, loop = self.yarn.add_loop_to_end()
+                print(f'in _process_stitch, loop id added on the yarn is {loop_id}, len(self.last_course_loop_ids_temp) is {len(self.last_course_loop_ids_temp)}, \
+                    self.terminated is {self.terminated}')
+                print(f'in _process_stitch, parent_loops is {parent_loops}')
+
+                self.knit_graph.add_loop(loop)
+                self.cur_course_loop_ids.append(loop_id)
+        
+                for stack_position, parent_loop in enumerate(parent_loops):
+                    self.loop_ids_consumed_by_current_course.add(parent_loop)
+                    if self.is_cur_row:
+                        reversed_list = self.last_course_loop_ids[::-1]
+                        parent_offset = len(self.cur_course_loop_ids) - (reversed_list.index(parent_loop)+1)
+                    else:
+                        #not reversed
+                        parent_offset = (len(self.cur_course_loop_ids) - (self.last_course_loop_ids.index(parent_loop)+1))
+                    if self.knit_graph.object_type == "sheet":
+                        if self.current_row % 2 == 0:
+                            parent_offset = -parent_offset
+                    elif self.knit_graph.object_type == "tube":
+                        if self.is_cur_row:
+                            if self.current_row % 2 == 0:
+                                parent_offset = -parent_offset
+
+                        if len(self.loop_ids_consumed_by_current_course) < 1 or is_on_front_bed_for_tube(self.knit_graph, parent_loop):
+                            parent_offset = -parent_offset  # negate when in front bed
+                        
+                        # if we are switching from front bed to back bed
+                        if len(self.loop_ids_consumed_by_current_course) > 0 and self.is_cur_on_front_bed and \
+                                not is_on_front_bed_for_tube(self.knit_graph, parent_loop):
+                            self.is_cur_on_front_bed = False
+                            self.tube_front_to_back_offset = -parent_offset
+
+                        # if we are switching from back bed to front bed
+                        if len(self.loop_ids_consumed_by_current_course) > 0 and not self.is_cur_on_front_bed and \
+                                is_on_front_bed_for_tube(self.knit_graph, parent_loop):
+                            self.is_cur_on_front_bed = True
+                            self.tube_front_to_back_offset = -parent_offset
+
+                    parent_offset += self.tube_front_to_back_offset
+                    
+                    self.knit_graph.connect_loops(parent_loop, loop_id, stitch_def.pull_direction,
+                                                stack_position, stitch_def.cabling_depth, parent_offset)
+                    print(f"loop_id is: {loop_id}")
+                    print(f"parent_loop_id is: {parent_loop}")
+                    print(f"parent_offset is: {parent_offset}")
+                    print(f"self.cur_course_loops is: {self.cur_course_loop_ids}")
+                    print(f"self.loop_ids_comsumed_by_current_course is: {self.loop_ids_consumed_by_current_course}")
+                    print(f"self.last_course_loops is: {self.last_course_loop_ids}")
+                    print(f"self.last_course_loops_temp is: {self.last_course_loop_ids_temp}") 
+            else:
+                parent_loops = []
+                number_of_parents = len(stitch_def.offset_to_parent_loops)
+                print(f'number_of_parents is {number_of_parents}')
+                for i in range(number_of_parents):
+                    print(f'i is {i}, len(self.last_course_loop_ids_temp) is {len(self.last_course_loop_ids_temp)}')
+                    if len(self.last_course_loop_ids_temp) < 1:
+                        self.terminated = True
+                        print(f'self.terminated is {self.terminated}')
+                        return
+                    if self.is_cur_row:
+                        parent_loops.append(self.last_course_loop_ids_temp.pop())
+                    elif self.is_cur_round:
+                        parent_loops.append(self.last_course_loop_ids_temp.pop(0))
+                loop_id, loop = self.yarn.add_loop_to_end()
+                print(f'in _process_stitch, loop id added on the yarn is {loop_id}, len(self.last_course_loop_ids_temp) is {len(self.last_course_loop_ids_temp)}, \
+                    self.terminated is {self.terminated}')
+                print(f'in _process_stitch, parent_loops is {parent_loops}')
+
+                self.knit_graph.add_loop(loop)
+                self.cur_course_loop_ids.append(loop_id)
+                if number_of_parents == 0: # a yarn over
+                    # if we want to position the yo node that bridges the front and back part on the back part (coupled with a code block below)
+                    #-----
+                    # if we are switching from front bed to back bed
+                    # if len(self.loop_ids_consumed_by_current_course) > 0 and self.is_cur_on_front_bed and \
+                    # not self.last_course_loop_ids_temp[0] in self.knit_graph.loops_on_front_part_of_the_tube:
+                    #     self.is_cur_on_front_bed = False
+                    #     self.cur_course_loop_ids = [loop_id]
+                    #     self.loop_ids_consumed_by_current_course = set()
+                    #-----
+                
+                    # print(f'self.last_course_loop_ids_temp[0] is {self.last_course_loop_ids_temp[0]}')
+                    print(f"loop_id is: {loop_id}")
+                    print(f"self.cur_course_loops is: {self.cur_course_loop_ids}")
+                    print(f"self.loop_ids_comsumed_by_current_course is: {self.loop_ids_consumed_by_current_course}")
+                    print(f"self.last_course_loops is: {self.last_course_loop_ids}")
+                    print(f"self.last_course_loops_temp is: {self.last_course_loop_ids_temp}")     
+
+                for stack_position, parent_loop in enumerate(parent_loops):
+                    self.loop_ids_consumed_by_current_course.add(parent_loop)
+
+                    parent_offset = len(self.cur_course_loop_ids) - len(self.loop_ids_consumed_by_current_course)
+
+                    if self.knit_graph.object_type == "sheet":
+                        if self.current_row % 2 == 0:
+                            parent_offset = -parent_offset
+                    elif self.knit_graph.object_type == "tube":
+                        if self.is_cur_row:
+                            if self.current_row % 2 == 0:
+                                parent_offset = -parent_offset
+
+                        if len(self.loop_ids_consumed_by_current_course) < 1 or is_on_front_bed_for_tube(self.knit_graph, parent_loop):
+                            parent_offset = -parent_offset  # negate when in front bed
+                        
+                        # if we are switching from front bed to back bed
+                        if len(self.loop_ids_consumed_by_current_course) > 0 and self.is_cur_on_front_bed and \
+                                not is_on_front_bed_for_tube(self.knit_graph, parent_loop):
+                            self.is_cur_on_front_bed = False
+                            self.tube_front_to_back_offset = -parent_offset
+
+                        # if we are switching from back bed to front bed
+                        if len(self.loop_ids_consumed_by_current_course) > 0 and not self.is_cur_on_front_bed and \
+                                is_on_front_bed_for_tube(self.knit_graph, parent_loop):
+                            self.is_cur_on_front_bed = True
+                            self.tube_front_to_back_offset = -parent_offset
+
+                    parent_offset += self.tube_front_to_back_offset
+                    
+                    if len([*self.knit_graph.graph.successors(parent_loop)]) == 0:
+                        self.knit_graph.connect_loops(parent_loop, loop_id, stitch_def.pull_direction,
+                                                    stack_position, stitch_def.cabling_depth, parent_offset)
+                    print(f"loop_id is: {loop_id}")
+                    print(f"parent_loop_id is: {parent_loop}")
+                    print(f"parent_offset is: {parent_offset}")
+                    print(f"self.cur_course_loops is: {self.cur_course_loop_ids}")
+                    print(f"self.loop_ids_comsumed_by_current_course is: {self.loop_ids_consumed_by_current_course}")
+                    print(f"self.last_course_loops is: {self.last_course_loop_ids}")
+                    print(f"self.last_course_loops_temp is: {self.last_course_loop_ids_temp}") 
+                    print(f'stitch_def.offset_to_parent_loops[0] is {stitch_def.offset_to_parent_loops[0]}')  
+            #---
+            if len(stitch_def.offset_to_parent_loops) != 0 and abs(stitch_def.offset_to_parent_loops[0]) == 0.01:
+                print('this is a cast-off stitch')
+                previous_loop_on_this_course = self.cur_course_loop_ids[-2]
+                self.knit_graph.connect_loops(previous_loop_on_this_course, loop_id, stitch_def.pull_direction,
+                                                stack_position, stitch_def.cabling_depth, 1) #parent offset = -1
+            #----          
+
+        else:  # slip statement
+            print(f'is a slip stitch')
+>>>>>>> Stashed changes
             if self.is_cur_row:
                 parent_loop = self.last_course_loop_ids_temp.pop()
             elif self.is_cur_round:
                 parent_loop = self.last_course_loop_ids_temp.pop(0)
             self.cur_course_loop_ids.append(parent_loop)
             self.loop_ids_consumed_by_current_course.add(parent_loop)
+<<<<<<< Updated upstream
+=======
+            print(f"loop_id is: {parent_loop}")
+            print(f"self.cur_course_loops is: {self.cur_course_loop_ids}")
+            print(f"self.loop_ids_comsumed_by_current_course is: {self.loop_ids_consumed_by_current_course}")
+            print(f"self.last_course_loops is: {self.last_course_loop_ids}")
+            print(f"self.last_course_loops_temp is: {self.last_course_loop_ids_temp}")      
+            # if len(self.last_course_loop_ids_temp) < 1:
+            #     self.terminated = True
+            #     print(f'self.terminated is {self.terminated}')
+            #     return
+>>>>>>> Stashed changes
         
         # check which bed to put the current loop to
         if stitch_def.child_loops == 1:  # when it's not a slip and has a parent
@@ -419,7 +656,11 @@ class Knitspeak_Compiler:
                             predecessors_all_on_front = False
                     is_left_leaning = True
                     for offset in stitch_def.offset_to_parent_loops:
+<<<<<<< Updated upstream
                         if offset > 0:
+=======
+                        if offset > 0: 
+>>>>>>> Stashed changes
                             is_left_leaning = False
                     if predecessors_all_on_front and is_left_leaning:
                         self.number_of_left_leaning_front_half += 1
@@ -446,6 +687,10 @@ class Knitspeak_Compiler:
                     raise ErrorException(f"Predecessor of loop{loop_id} can not be found on either bed")
             else:  # its parent is a yarn over loop
                 if self.is_cur_row:
+<<<<<<< Updated upstream
+=======
+                    print('yo on row')
+>>>>>>> Stashed changes
                     if self.last_course_loop_ids_temp[-1] in self.knit_graph.loops_on_front_part_of_the_tube:
                         self.knit_graph.add_loop_to_front_part(loop_id)
                         #here we write down the loop_index for yarn over loop; If it is on a round, then the loop index needs to return to zero for both the front and back part
@@ -471,8 +716,17 @@ class Knitspeak_Compiler:
                     else:
                         self.knit_graph.add_loop_to_back_part(loop_id)
                         self.knit_graph.add_index_for_yarn_over_loop(loop_id, index = len(self.cur_course_loop_ids)-count_num_of_cur_course_loops_on_front(self.knit_graph)-1)
+<<<<<<< Updated upstream
             
 
+=======
+        #----
+        if len(self.last_course_loop_ids_temp) < 1:
+            self.terminated = True
+            print(f'at last, self.terminated is {self.terminated}')
+            return   
+        #----
+>>>>>>> Stashed changes
 
     def _process_cable(self, cable_def: Cable_Definition):
         """
@@ -480,6 +734,7 @@ class Knitspeak_Compiler:
         :param cable_def: the cable definition used to connect the cable into the knitgraph
         """
         original_cable_def = cable_def
+<<<<<<< Updated upstream
         if self._working_ws and ('round' not in self._parser.parser.symbolTable) and ("all_rs_rounds" not in self._parser.parser.symbolTable) and ("all_ws_rounds" not in self._parser.parser.symbolTable):  # flips cable by hand-knitting convention
             cable_def = cable_def.copy_and_flip()
         # if 'round' in self._parser.parser.symbolTable:
@@ -491,6 +746,28 @@ class Knitspeak_Compiler:
         print(f'reversed(stitch_definitions) is {[*reversed(stitch_definitions)]}, stitch_definitions is {stitch_definitions}')
         for stitch_definition in stitch_definitions:
             self._process_stitch(stitch_definition, flipped_by_cable=True)
+=======
+        stitch_definitions = cable_def.stitch_definitions()
+        if self._working_ws and ('round' not in self._parser.parser.symbolTable) and ("all_rs_rounds" not in self._parser.parser.symbolTable) and ("all_ws_rounds" not in self._parser.parser.symbolTable):  # flips cable by hand-knitting convention
+            cable_def = cable_def.copy_and_flip()
+            print(f'cable on ws, original cable def is {original_cable_def}, flipped cable def is {cable_def}')
+            # for stitch_definition in stitch_definitions:
+            #     stitch_definition.cabling_depth = stitch_definition.cabling_depth*(-1)  
+        if 'round' not in self._parser.parser.symbolTable:
+            for stitch_definition in stitch_definitions:
+                print(f'in process_cable, stitch_def is {stitch_definition}, stitch_offset is {stitch_definition.offset_to_parent_loops[0]}, stitch_depth is {stitch_definition.cabling_depth}')
+                self._process_stitch(stitch_definition, flipped_by_cable=True)
+        if 'round' in self._parser.parser.symbolTable:
+            cable_def = cable_def.copy_and_flip()
+            stitch_definitions = cable_def.stitch_definitions()
+            # stitch_definitions = [*reversed(stitch_definitions)]
+            # print(f'reversed(stitch_definitions) is {[*reversed(stitch_definitions)]}, stitch_definitions is {stitch_definitions}')
+            for stitch_definition in stitch_definitions:
+                print(f'in process_cable, stitch_def is {stitch_definition}, stitch_offset is {stitch_definition.offset_to_parent_loops[0]}')
+                self._process_stitch(stitch_definition, flipped_by_cable=True)
+
+
+>>>>>>> Stashed changes
 
 
     def _process_list(self, action: List[tuple]):

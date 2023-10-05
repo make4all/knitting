@@ -29,7 +29,11 @@ class Knitout_Generator:
         self.old_courses_to_loop_id = knit_graph.course_to_loop_ids
         self.old_loop_id_to_courses = knit_graph.loop_ids_to_course
         self._loop_id_to_courses, self._courses_to_loop_ids = knit_graph.get_courses()
+<<<<<<< Updated upstream
         # print(f'self._courses_to_loop_ids in knitout interpreter is {self._courses_to_loop_ids}')
+=======
+        print(f'self._courses_to_loop_ids in knitout interpreter is {self._courses_to_loop_ids}')
+>>>>>>> Stashed changes
         # because we have used bind-off to secure the bottom loops that has no child, so we actually updated the course_to_loop_ids by bind-off,
         # thus we need to get new one by invoke .get_courses().
         self.node_to_course_and_wale: Dict[int, Tuple[int, int]] = knit_graph.node_to_course_and_wale
@@ -66,6 +70,11 @@ class Knitout_Generator:
         self._carriage_passes: List[Carriage_Pass] = []
         self._instructions: List[str] = []
         self.nodes_on_patch_side: List[int] = []
+<<<<<<< Updated upstream
+=======
+        self.loop_ids_on_final_course_parent_knitgraph: Dict[int, List[int]] = {}
+        self.final_course_parent_knitgraph: int = 0
+>>>>>>> Stashed changes
 
 
     #get node carrier_id
@@ -87,6 +96,10 @@ class Knitout_Generator:
         for yarn in self.yarns:
             yarn_nodes = yarn.yarn_graph.nodes
             first_yarn_node = min(yarn_nodes)
+<<<<<<< Updated upstream
+=======
+            print(f'in interpreter, yarn is {yarn}, first_yarn_node is {first_yarn_node}')
+>>>>>>> Stashed changes
             course_id = self._loop_id_to_courses[first_yarn_node]
             carrier = yarn.carrier
             if course_id not in self.first_course_in_to_carrier:
@@ -133,6 +146,10 @@ class Knitout_Generator:
             for yarn in self.yarns:
                 if len(yarn.yarn_graph.nodes) > 1: # that means this yarn will have at least one yarn edge.
                     for edges in yarn.yarn_graph.edges:
+<<<<<<< Updated upstream
+=======
+                        # print(f'yay edges is {edges}') #(0, 1), (1, 2), ...
+>>>>>>> Stashed changes
                         prior_loop = edges[0]
                         next_loop = edges[1]
                         current_bed = self.node_on_front_or_back[prior_loop]
@@ -204,6 +221,10 @@ class Knitout_Generator:
             for yarn in self.yarns:
                 if len(yarn.yarn_graph.nodes) > 1: # that means this yarn will have at least one yarn edge.
                     for edges in yarn.yarn_graph.edges:
+<<<<<<< Updated upstream
+=======
+                        # print(f'yay edges is {edges}') #(0, 1), (1, 2), ...
+>>>>>>> Stashed changes
                         prior_loop = edges[0]
                         next_loop = edges[1]
                         current_wale_id = self.node_to_course_and_wale[prior_loop][1]
@@ -506,10 +527,22 @@ class Knitout_Generator:
                 passes = self.courses_to_passes[course]
                 self._knit_and_split_row(passes, course)
                 # pass_direction = pass_direction.opposite() #move inside _knit_and_split_row()
+<<<<<<< Updated upstream
+=======
+                #----
+                if course == self.final_course_parent_knitgraph and self.final_course_parent_knitgraph != 0:
+                    print(f'final course on parent knitgraph is {course}')
+                    self.drop_loops_on_final_course_on_parentKnitgraph(course)
+                #----
+>>>>>>> Stashed changes
         for carrier in self._carrier_set:
             self._instructions.append(outhook(self._machine_state, carrier))
         self._drop_loops()
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
     def _knit_and_split_row(self, passes: List[List[Union[str, List[int]]]], course_number: int):
         """
         Adds the knit instructions for the given loop ids.
@@ -539,27 +572,49 @@ class Knitout_Generator:
             # we move it above. however, this unknittable knitgraph actually does not fall into the scope of what our pipeline considers as a tube object ---
             # the front layer and the back layer of a tube is connected (i.e. stitch edge that connect parent node and child node from two differnt beds
             # exists.), so our pass "navigation" algorithm still works well.
+<<<<<<< Updated upstream
             loop_id_to_target_needle, split_offsets = self._do_xfers_for_row(loop_ids, course_number)
             # 
             print(f'-----start knit & split------')
             # loop_id_to_target_needle = all_loop_id_to_target_needle[i] #this is related to trial block
             knit_and_split_data: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = {}
+=======
+            loop_id_to_target_needle, yarn_over_loop_ids, split_offsets = self._do_xfers_for_row(loop_ids, course_number)
+            # 
+            print(f'-----start knit & split------')
+            # loop_id_to_target_needle = all_loop_id_to_target_needle[i] #this is related to trial block
+            knit_and_tuck_and_split_data: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = {}
+>>>>>>> Stashed changes
             for loop_id, target_needle in loop_id_to_target_needle.items():          
                 carrier = self.loop_id_to_carrier[loop_id]
                 if loop_id in split_offsets:
                     offset = split_offsets[loop_id]
                     split_needle = target_needle.offset(offset).opposite()
+<<<<<<< Updated upstream
                     knit_and_split_data[target_needle] = (Instruction_Parameters(target_needle, involved_loop=loop_id, needle_2 = split_needle, carrier=carrier), Instruction_Type.Split)
                 else:
                     knit_and_split_data[target_needle] = (Instruction_Parameters(target_needle, involved_loop=loop_id, carrier=carrier), Instruction_Type.Knit)
+=======
+                    knit_and_tuck_and_split_data[target_needle] = (Instruction_Parameters(target_needle, involved_loop=loop_id, needle_2 = split_needle, carrier=carrier), Instruction_Type.Split)
+                elif loop_id in yarn_over_loop_ids:
+                    knit_and_tuck_and_split_data[target_needle] = (Instruction_Parameters(target_needle, involved_loop=loop_id, carrier=carrier), Instruction_Type.Tuck)
+                else:
+                    knit_and_tuck_and_split_data[target_needle] = (Instruction_Parameters(target_needle, involved_loop=loop_id, carrier=carrier), Instruction_Type.Knit)
+>>>>>>> Stashed changes
             # print(f'course number is {course_number}, loop_id_to_target_needle is {loop_id_to_target_needle}, pass direction for this knit is {current_direction}')
             if knit_dir == '-':
                 pass_direction = Pass_Direction.Right_to_Left
             elif knit_dir == '+':
                 pass_direction = Pass_Direction.Left_to_Right
+<<<<<<< Updated upstream
             carriage_pass = Carriage_Pass(pass_direction, knit_and_split_data, self._machine_state)
             # print('knit_and_split_data', knit_and_split_data)
             self._add_carriage_pass(carriage_pass, f"Knit & Split course {course_number}")
+=======
+            carriage_pass = Carriage_Pass(pass_direction, knit_and_tuck_and_split_data, self._machine_state)
+            # print('knit_and_tuck_and_split_data', knit_and_tuck_and_split_data)
+            self._add_carriage_pass(carriage_pass, f"Knit & Tuck & Split course {course_number}")
+>>>>>>> Stashed changes
             no_conflict = True
             # if each_pass in conflicted_passes:
             #     conflicted_passes.remove(each_pass)
@@ -577,6 +632,10 @@ class Knitout_Generator:
             if len(loops_not_home_yet) > 0:      
                 min_wale1, max_wale1 = self.get_range_of_bed_for_the_pass(loops_not_home_yet)
                 if each_pass == passes[-1]:
+<<<<<<< Updated upstream
+=======
+                    print('error occurs here')
+>>>>>>> Stashed changes
                     self.xfer_strayed_loops_back_home(loops_not_home_yet)
                     loops_not_home_yet = [] 
                 else:
@@ -597,7 +656,12 @@ class Knitout_Generator:
                                         conflicted_passes.append(the_pass) 
                                         print(f'the pass put in conflicted_passes is {the_pass}')
                                         no_conflict = False
+<<<<<<< Updated upstream
                         if no_conflict == True:
+=======
+                        # if no_conflict == True: #update below
+                        if no_conflict == True and len(conflicted_passes)==0:
+>>>>>>> Stashed changes
                             self.xfer_strayed_loops_back_home(loops_not_home_yet)
                             loops_not_home_yet = [] 
                     # if len(conflicted_passes)==0:
@@ -614,7 +678,11 @@ class Knitout_Generator:
             print(f'----End Knit & Split-------')
         assert len(conflicted_passes) == 0, f'conflicted_passes do not get to empty'
 
+<<<<<<< Updated upstream
     def _cast_on(self, carrier:Yarn_Carrier, is_interlock: bool = False):
+=======
+    def _cast_on(self, carrier: Yarn_Carrier, is_interlock: bool = False):
+>>>>>>> Stashed changes
         """
         Does a standard alternating tuck cast on then 2 stabilizing knit rows.
         for sheet, when self._knit_graph.yarn_start_direction == 'right to left", the first tuck direction should be from left to right,
@@ -887,6 +955,20 @@ class Knitout_Generator:
         carriage_pass = Carriage_Pass(None, second_drops, self._machine_state)
         self._add_carriage_pass(carriage_pass)
 
+<<<<<<< Updated upstream
+=======
+    def drop_loops_on_final_course_on_parentKnitgraph(self, course):
+        drops_for_final_course_parent_knitgraph: Dict[Needle, Tuple[Instruction_Parameters, Instruction_Type]] = {}
+        print(f'self.loop_ids_on_final_course_parent_knitgraph is {self.loop_ids_on_final_course_parent_knitgraph}')
+        for loop_id in self.loop_ids_on_final_course_parent_knitgraph[course]:
+            needle = self._machine_state.get_needle_of_loop(loop_id)
+            drops_for_final_course_parent_knitgraph[needle] = (Instruction_Parameters(needle), Instruction_Type.Drop)
+        carriage_pass = Carriage_Pass(None, drops_for_final_course_parent_knitgraph, self._machine_state)
+        print(f'drops_for_final_course_parent_knitgraph is {drops_for_final_course_parent_knitgraph}')
+        self._add_carriage_pass(carriage_pass, "Drop final course on parent KnitGraph")
+
+
+>>>>>>> Stashed changes
     def xfer_strayed_loops_back_home(self, strayed_loop_ids: List[int]):
         if len(strayed_loop_ids) > 0:
             print('---doing xfer_strayed_loops_back_home---')
@@ -905,7 +987,11 @@ class Knitout_Generator:
         :param direction: the direction that the loops will be knit in
         :return:
         """
+<<<<<<< Updated upstream
         loop_id_to_target_needle, parent_loops_to_needles, lace_offsets, front_cable_offsets, back_cable_offsets, split_offsets, bind_off_loops, \
+=======
+        loop_id_to_target_needle, yarn_over_loop_ids, parent_loops_to_needles, lace_offsets, front_cable_offsets, back_cable_offsets, split_offsets, bind_off_loops, \
+>>>>>>> Stashed changes
             split_nodes, parents_on_child_fabric_for_closetop_decrease = self._find_target_needles(loop_ids, course_number)
         self._do_decrease_transfers(parents_on_child_fabric_for_closetop_decrease, parent_loops_to_needles, lace_offsets)
         self._do_cable_transfers(parent_loops_to_needles, front_cable_offsets, back_cable_offsets)
@@ -915,7 +1001,11 @@ class Knitout_Generator:
         if self._machine_state.racking != 0:
             carriage_pass = Carriage_Pass(None, {}, self._machine_state, only_racking = True)
             self._add_carriage_pass(carriage_pass, "Rack to return back bed home")
+<<<<<<< Updated upstream
         return loop_id_to_target_needle, split_offsets
+=======
+        return loop_id_to_target_needle, yarn_over_loop_ids, split_offsets
+>>>>>>> Stashed changes
 
     def _find_target_needles(self, loop_ids: List[int], course_number: int) -> \
             Tuple[Dict[int, Needle], Dict[int, Needle], Dict[int, int], Dict[int, int], Dict[int, int], Dict[int, int], List[int], List[int]]:
@@ -931,6 +1021,10 @@ class Knitout_Generator:
         """
         parent_loops_to_needles: Dict[int, Needle] = {}  # key loop_ids to the needle they are currently on
         loop_id_to_target_needle: Dict[int, Needle] = {}  # key loop_ids to the needle they need to be on to knit
+<<<<<<< Updated upstream
+=======
+        yarn_over_loop_ids: List[int] = [] #for yarn over loops, we need to do tuck rather than knit to avoid collapsed stitch. 
+>>>>>>> Stashed changes
         # .... i.e., self._knit_graph.graph[parent_id][loop_id]["parent_offset"]
         parents_to_offsets: Dict[int, int] = {}  # key parent loop_ids to their offset from their child
         # .... only include loops that cross in front. i.e., self._knit_graph.graph[parent_id][loop_id]["depth"] > 0
@@ -953,6 +1047,17 @@ class Knitout_Generator:
         parents_on_child_fabric_for_closetop_decrease = []
         for loop_id in loop_ids:  # find target needle locations of each loop in the course
             parent_ids = [*self._knit_graph.graph.predecessors(loop_id)]
+<<<<<<< Updated upstream
+=======
+            #get the loop on the final course on the parent knitgraph, so that we can drop them before knitting remaining straps for example (which might be 
+            # the reason that cause incomlete strap).
+            successors = [*self._knit_graph.graph.successors(loop_id)]
+            if len(successors) == 0 and self._knit_graph.loops[loop_id].yarn_id == 'parent_yarn':
+                if course_number not in self.loop_ids_on_final_course_parent_knitgraph:
+                    self.loop_ids_on_final_course_parent_knitgraph[course_number] = []
+                self.loop_ids_on_final_course_parent_knitgraph[course_number].append(loop_id)
+                self.final_course_parent_knitgraph = course_number
+>>>>>>> Stashed changes
             if len(parent_ids) > 0:
                 for parent_id in parent_ids:  # find current needle of all parent loops
                     parent_needle = self._machine_state.get_needle_of_loop(parent_id)
@@ -1070,6 +1175,10 @@ class Knitout_Generator:
                 bed = self.node_on_front_or_back[loop_id]
                 target_needle = Needle(is_front = (bed == 'f'), position=position)
                 loop_id_to_target_needle[loop_id] = target_needle
+<<<<<<< Updated upstream
+=======
+                yarn_over_loop_ids.append(loop_id)
+>>>>>>> Stashed changes
                 print(f'yarn over detected! loop id is {loop_id}, target_needle is {target_needle}, position is {position}, max_wale is {max_wale}')
             # detect cable
             # if len(parent_ids) == 1 and is_split == False:  # knit, purl, may be in cable. This if condition is deprecated a stitch can be both a cable and part of a split.
@@ -1118,11 +1227,22 @@ class Knitout_Generator:
                     if cable_depth == 1:
                         print(f'front cable detected! loop id is {loop_id}, parent_offset is {parent_offset}, parent_id is {parent_id}, target_needle is {target_needle}')
                         front_cable_offsets[parent_id] = parent_offset #here not *self.wale_dist is because has done so above.
+<<<<<<< Updated upstream
                     else:
                         print(f'back cable detected! loop id is {loop_id}, parent_offset is {parent_offset}, parent_id is {parent_id}, target_needle is {target_needle}')
                         back_cable_offsets[parent_id] = parent_offset
                 else:
                     print(f'k/p stitch detected! loop id is {loop_id}, parent_id is {parent_id}, parent_offset is {parent_offset}, target_needle is {target_needle}')
+=======
+                    elif cable_depth == -1:
+                        print(f'back cable detected! loop id is {loop_id}, parent_offset is {parent_offset}, parent_id is {parent_id}, target_needle is {target_needle}')
+                        back_cable_offsets[parent_id] = parent_offset
+                    else: #this is actually a k/p stitch with non-zero parent offset.
+                        print(f'non-zero-po k/p stitch detected detected! loop id is {loop_id}, parent_offset is {parent_offset}, parent_id is {parent_id}, target_needle is {target_needle}')
+                        decrease_offsets[parent_id] = parent_offset #they are not decrease by definition, but to avoid wrong yarn over occurs, we need to arrange their xfer to happen at the same time as decrease stitches.
+                else:
+                    print(f'zero-po k/p stitch detected! loop id is {loop_id}, parent_id is {parent_id}, parent_offset is {parent_offset}, target_needle is {target_needle}')
+>>>>>>> Stashed changes
             # detect decrease
             is_bindoff: bool = False
             if len(parent_ids) > 1: # decrease, the bottom parent loop in the stack will be on the target needle
@@ -1130,7 +1250,11 @@ class Knitout_Generator:
                 if self._knit_graph.loops[loop_id].yarn_id == 'pocket_yarn' or self._knit_graph.loops[loop_id].yarn_id == 'handle_yarn' or ('strap_yarn' in self._knit_graph.loops[loop_id].yarn_id):
                     actual_parents = []
                     for parent_id in parent_ids:
+<<<<<<< Updated upstream
                         if self._knit_graph.loops[parent_id].yarn_id == 'pocket_yarn' or self._knit_graph.loops[parent_id].yarn_id == 'handle_yarn' or ('strap_yarn' in self._knit_graph.loops[loop_id].yarn_id):
+=======
+                        if self._knit_graph.loops[parent_id].yarn_id == 'pocket_yarn' or self._knit_graph.loops[parent_id].yarn_id == 'handle_yarn' or ('strap_yarn' in self._knit_graph.loops[parent_id].yarn_id):
+>>>>>>> Stashed changes
                             actual_parents.append(parent_id)
                     parent_ids = actual_parents
                 if len(parent_ids) > 1:
@@ -1202,7 +1326,11 @@ class Knitout_Generator:
         print('back_cable_offsets', back_cable_offsets)
         print('split_offsets: Dict[mirror_node: offset]', split_offsets)
         print('bind_off_loops', bind_off_loops)
+<<<<<<< Updated upstream
         return loop_id_to_target_needle, parent_loops_to_needles, decrease_offsets, \
+=======
+        return loop_id_to_target_needle, yarn_over_loop_ids, parent_loops_to_needles, decrease_offsets, \
+>>>>>>> Stashed changes
                front_cable_offsets, back_cable_offsets, split_offsets, bind_off_loops, split_nodes, parents_on_child_fabric_for_closetop_decrease
                
     def _do_decrease_transfers(self, parents_on_child_fabric_for_closetop_decrease, parent_loops_to_needles: Dict[int, Needle], decrease_offsets: Dict[int, int]):
@@ -1233,7 +1361,11 @@ class Knitout_Generator:
                     #no need to xfer to opposite without racking, which would be a waste of carriage
                     if offset not in offset_to_xfers_to_target_for_child_fabric_to_closetop:
                         offset_to_xfers_to_target_for_child_fabric_to_closetop[offset] = {}
+<<<<<<< Updated upstream
                     offset_to_xfers_to_target_for_child_fabric_to_closetop[offset][parent_needle] = (Instruction_Parameters(parent_needle, involved_loop=self._machine_state.held_loops[parent_needle.position], needle_2=offset_needle.opposite()), Instruction_Type.Xfer)
+=======
+                    offset_to_xfers_to_target_for_child_fabric_to_closetop[offset][parent_needle] = (Instruction_Parameters(parent_needle, involved_loop=self._machine_state.front_bed.held_loops[parent_needle.position] if parent_needle.is_front==True else self._machine_state.back_bed.held_loops[parent_needle.position], needle_2=offset_needle.opposite()), Instruction_Type.Xfer)
+>>>>>>> Stashed changes
                 else:
                     holding_needle = parent_needle.opposite()
                     xfers_to_holding_bed[parent_needle] = (Instruction_Parameters(parent_needle, involved_loop=self._machine_state.front_bed.held_loops[parent_needle.position] if parent_needle.is_front==True else self._machine_state.back_bed.held_loops[parent_needle.position], needle_2=holding_needle), Instruction_Type.Xfer)

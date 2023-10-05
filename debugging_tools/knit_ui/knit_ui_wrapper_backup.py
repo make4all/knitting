@@ -11,13 +11,6 @@ from Modification_Generator.Handle_Generator_on_Sheet_KS import Handle_Generator
 from Modification_Generator.Handle_Generator_on_Tube_KS import Handle_Generator_on_Tube
 from Modification_Generator.New_Strap_Generator_on_Tube_KS import Strap_Generator_on_Tube
 from Modification_Generator.New_Strap_Generator_on_Sheet_KS import Strap_Generator_on_Sheet
-<<<<<<< Updated upstream
-=======
-from Modification_Generator.New_Strap_Without_Hole_Generator_on_Sheet_KS import Strap_Without_Hole_Generator_on_Sheet
-from Modification_Generator.New_Strap_With_Hole_Generator_on_Sheet_KS import Strap_With_Hole_Generator_on_Sheet
-from Modification_Generator.New_Strap_Without_Hole_Generator_on_Tube_KS import Strap_Without_Hole_Generator_on_Tube
-from Modification_Generator.New_Strap_With_Hole_Generator_on_Tube_KS import Strap_With_Hole_Generator_on_Tube
->>>>>>> Stashed changes
 from debugging_tools.exceptions import ErrorException
 
 def generate_initial_graph(pattern_used, gauge, color, width, height, knit_speak_procedure):
@@ -38,14 +31,11 @@ def generate_initial_graph(pattern_used, gauge, color, width, height, knit_speak
     node_to_course_and_wale = knit_graph.get_node_course_and_wale()
     node_on_front_or_back = knit_graph.get_node_bed()
     course_and_wale_and_bed_to_node = knit_graph.get_course_and_wale_and_bed_to_node()
-<<<<<<< Updated upstream
-=======
     #----
     max_wale_id_front_and_back = knit_graph.get_min_and_max_wale_id_on_course_on_bed()
     knit_graph.update_wales_to_reduce_float()
     knit_graph.adjust_overall_slanting()
     #----
->>>>>>> Stashed changes
     knit_graph.update_parent_offsets()
     KnitGraph_Visualizer = knitGraph_visualizer(knit_graph=knit_graph)
     return KnitGraph_Visualizer.visualize()
@@ -115,64 +105,25 @@ def generate_final_graph_handle(pattern_english, modification, original_id, hand
 def generate_final_graph_strap(pattern_english, modification, original_id, strap_id, knit_graph, front_patch,
                                 keys, strap_length):
     if (pattern_english == "Sheet" and modification == "Strap"):
-<<<<<<< Updated upstream
         strap_generator = Strap_Generator_on_Sheet(parent_knitgraph=knit_graph,
-=======
-        strap_generator = Strap_Without_Hole_Generator_on_Sheet(parent_knitgraph=knit_graph,
->>>>>>> Stashed changes
                                                   sheet_yarn_carrier_id=original_id,
                                                   strap_yarn_carrier_id=strap_id,
                                                   is_front_patch=front_patch, 
                                                   keynode_child_fabric=keys, 
                                                   strap_length=strap_length)
-<<<<<<< Updated upstream
         knitGraph = strap_generator.build_strap_graph()
         KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
         return KnitGraph_Visualizer.visualize()
     
     if (pattern_english == "Tube" and modification == "Strap"):
         strap_generator = Strap_Generator_on_Tube(parent_knitgraph=knit_graph,
-=======
-        strap_graph, updated_child_graph, parent_knitgraph = strap_generator.build_strap_without_hole_graph()
-        KnitGraph_Visualizer = knitGraph_visualizer(strap_graph)
-        return KnitGraph_Visualizer.visualize(), updated_child_graph, parent_knitgraph
-    
-    if (pattern_english == "Tube" and modification == "Strap"):
-        strap_generator = Strap_Without_Hole_Generator_on_Tube(parent_knitgraph=knit_graph,
->>>>>>> Stashed changes
                                                   tube_yarn_carrier_id=original_id,
                                                   strap_yarn_carrier_id=strap_id,
                                                   is_front_patch=front_patch, 
                                                   keynode_child_fabric=keys, 
                                                   strap_length=strap_length)
-<<<<<<< Updated upstream
         knitGraph = strap_generator.build_strap_graph()
         KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
-=======
-        strap_graph, updated_child_graph, parent_knitgraph = strap_generator.build_strap_without_hole_graph()
-        KnitGraph_Visualizer = knitGraph_visualizer(strap_graph)
-        return KnitGraph_Visualizer.visualize(), updated_child_graph, parent_knitgraph
-
-def general_final_strap_graph_with_hole(pattern_english, modification, strap_without_hole_knitgraph, parent_knitgraph, child_knitgraph, yarns_and_holes_to_add):
-    if (pattern_english == "Sheet" and modification == "Strap"):
-        #     def __init__(self, strap_without_hole_knitgraph: Knit_Graph, parent_knitgraph: Knit_Graph, child_knitgraph: Knit_Graph, yarns_and_holes_to_add):
-        strap_generator = Strap_With_Hole_Generator_on_Sheet(strap_without_hole_knitgraph,
-                                                  parent_knitgraph,
-                                                  child_knitgraph,
-                                                  yarns_and_holes_to_add)
-        strap_graph = strap_generator.build_strap_with_hole_graph()
-        KnitGraph_Visualizer = knitGraph_visualizer(strap_graph)
-        return KnitGraph_Visualizer.visualize()
-    
-    if (pattern_english == "Tube" and modification == "Strap"):
-        #     def __init__(self, strap_without_hole_knitgraph: Knit_Graph, parent_knitgraph: Knit_Graph, child_knitgraph: Knit_Graph, yarns_and_holes_to_add):
-        strap_generator = Strap_With_Hole_Generator_on_Tube(strap_without_hole_knitgraph,
-                                                  parent_knitgraph,
-                                                  child_knitgraph,
-                                                  yarns_and_holes_to_add)
-        strap_graph = strap_generator.build_strap_with_hole_graph()
-        KnitGraph_Visualizer = knitGraph_visualizer(strap_graph)
->>>>>>> Stashed changes
         return KnitGraph_Visualizer.visualize()
     
 def generate_file(knitGraph, file_name):

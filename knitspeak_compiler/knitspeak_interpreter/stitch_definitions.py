@@ -67,7 +67,7 @@ class Stitch_Definition:
         self.offset_to_parent_loops: List[int] = offset_to_parent_loops
         self.pull_direction: Pull_Direction = pull_direction
         self.cabling_depth = cabling_depth
-
+    
     @property
     def is_decrease(self) -> bool:
         """
