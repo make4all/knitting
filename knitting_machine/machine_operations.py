@@ -17,12 +17,8 @@ def rack(machine_state: Machine_State, racking: float, comment: str = "") -> str
     machine_state.racking = racking
     if racking != .25 and racking != -.75:  # racking for all needle knitting
         racking = math.floor(racking)
-<<<<<<< Updated upstream
-    return f"rack {racking} ;{comment}\n"
-=======
     # return f"rack {racking} ;{comment}\n"
     return f"rack {racking} \n"
->>>>>>> Stashed changes
 
 
 def make_carrier_set(carrier: Yarn_Carrier, needle: Optional[Needle] = None) -> str:
@@ -67,11 +63,7 @@ def knit(machine_state: Machine_State, direction: Pass_Direction, needle: Needle
     machine_state.add_loop(loop_id, needle.position, needle.is_front, carrier_set)
     carriers = make_carrier_set(carrier_set, needle)
     # return f"knit {direction} {needle}{carriers} ; knit loop {loop_id}, {comment}\n"
-<<<<<<< Updated upstream
-    return f"knit {direction} {needle}{carriers} ;\n"
-=======
     return f"knit {direction} {needle}{carriers} \n"
->>>>>>> Stashed changes
 
 
 def tuck(machine_state: Machine_State, direction: Pass_Direction, needle: Needle, carrier_set: Yarn_Carrier,
@@ -90,11 +82,7 @@ def tuck(machine_state: Machine_State, direction: Pass_Direction, needle: Needle
     machine_state.add_loop(loop_id, needle.position, needle.is_front, carrier_set, drop_prior_loops=False)
     carriers = make_carrier_set(carrier_set, needle)
     # return f"tuck {direction} {needle}{carriers} ; tuck loop {loop_id}, {comment}\n"
-<<<<<<< Updated upstream
-    return f"tuck {direction} {needle}{carriers} ;\n"
-=======
     return f"tuck {direction} {needle}{carriers} \n"
->>>>>>> Stashed changes
 
 
 def split(machine_state: Machine_State, direction: Pass_Direction, needle_1: Needle, needle_2,
@@ -116,11 +104,7 @@ def split(machine_state: Machine_State, direction: Pass_Direction, needle_1: Nee
     machine_state.add_loop(loop_id, needle_1.position, on_front=front_to_back, carrier_set=carrier_set)
     carriers = make_carrier_set(carrier_set, needle_1)
     # return f"{racking}split {direction} {needle_1} {needle_2}{carriers} ; split loop {loop_id}, {comment}\n"
-<<<<<<< Updated upstream
-    return f"{racking}split {direction} {needle_1} {needle_2}{carriers} ;\n"
-=======
     return f"{racking}split {direction} {needle_1} {needle_2}{carriers} \n"
->>>>>>> Stashed changes
 
 
 def _prepare_xfer(machine_state, needle_1, needle_2) -> Tuple[bool, str]:
@@ -143,13 +127,8 @@ def _prepare_xfer(machine_state, needle_1, needle_2) -> Tuple[bool, str]:
     if original_racking:
         racking = ""
     else:
-<<<<<<< Updated upstream
-        racking = rack(machine_state, updated_racking, comment=f"rack to xfer {needle_1} to {needle_2}")
-        # racking = rack(machine_state, updated_racking, comment="")
-=======
         # racking = rack(machine_state, updated_racking, comment=f"rack to xfer {needle_1} to {needle_2}")
         racking = rack(machine_state, updated_racking, comment="")
->>>>>>> Stashed changes
     machine_state.xfer_loops(needle_1.position, needle_2.position, front_to_back)
     return front_to_back, racking
 
@@ -165,12 +144,8 @@ def drop(machine_state: Machine_State, needle: Needle, comment: str = "") -> str
     """
     machine_state.drop_loop(needle.position, needle.is_front)
     # print(f'needle.position is {needle.position}, needle.is_front is {needle.is_front}')
-<<<<<<< Updated upstream
-    return f"drop {needle} ;{comment}\n"
-=======
     # return f"drop {needle} ;{comment}\n"
     return f"drop {needle} \n"
->>>>>>> Stashed changes
 
 
 def xfer(machine_state: Machine_State, needle_1: Needle, needle_2: Needle, comment: str = "") -> str:

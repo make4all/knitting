@@ -6,10 +6,7 @@ from debugging_tools.simple_knitgraph_generator import Simple_Knitgraph_Generato
 from debugging_tools.polygon_generator import Polygon_Generator
 from knitspeak_compiler.knitspeak_compiler import Knitspeak_Compiler
 from debugging_tools.exceptions import ErrorException
-<<<<<<< Updated upstream
-=======
 from Modification_Generator import New_Mul_Hole_Generator_on_Sheet_KS
->>>>>>> Stashed changes
 
 class Strap_Generator_on_Sheet:
     def __init__(self, parent_knitgraph: Knit_Graph, sheet_yarn_carrier_id: int, strap_yarn_carrier_id: int, is_front_patch: bool, keynode_child_fabric, strap_length: int):
@@ -312,11 +309,7 @@ class Strap_Generator_on_Sheet:
                 self.strap_graph.node_on_front_or_back[loop_id] = 'f' if self.is_front_patch == False else 'b'
     
     def grow_one_row(self, course_id, on_parent_graph: bool):
-<<<<<<< Updated upstream
-        if on_parent_graph == True:
-=======
         if on_parent_graph == True: 
->>>>>>> Stashed changes
             # update course and wale info of each node for parent graph 
             self.parent_knitgraph.course_to_loop_ids[course_id] = []
             if course_id not in self.parent_knitgraph_course_id_to_wale_ids:

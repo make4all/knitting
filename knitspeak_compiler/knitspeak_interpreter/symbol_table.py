@@ -15,10 +15,7 @@ class Symbol_Table:
     def __init__(self):
         self._symbol_table: Dict[str, Union[Cable_Definition, Stitch_Definition, int]] = {"k": self._knit(), "p": self._purl(),
                                                                                          "yo": self._yo(), "slip": self._slip(),
-<<<<<<< Updated upstream
-=======
                                                                                          'cast_off': self._castoff(),
->>>>>>> Stashed changes
                                                                                          "row_courses": set(), "round_courses": set()}
         self._decreases()
         self._cables()
@@ -75,23 +72,10 @@ class Symbol_Table:
             k = ""
             if n >= 2: 
                 k = str(n)
-<<<<<<< Updated upstream
-            self[f"s{k}kpo"] = Stitch_Definition(offset_to_parent_loops=offsets)
-            self[f"s{k}ppo"] = Stitch_Definition(Pull_Direction.FtB, offset_to_parent_loops=offsets)
-        self["sk2po"] = Stitch_Definition(offset_to_parent_loops=[-1, 0, 1])
-        self["sp2po"] = Stitch_Definition(Pull_Direction.FtB, offset_to_parent_loops=[-1, 0, 1])
-
-    def _Loop_Cast_On(self): #_single_leading_underscore: This convention is used to indicate that a name is intended for internal use within a module.
-        self[f"RCO"] = Increase_Stitch_Definition(inc_lean = Stitch_Lean.Right, lean_stitch_pull_direction = Pull_Direction.BtF)
-        self[f"LCO"] = Increase_Stitch_Definition(inc_lean = Stitch_Lean.Left, lean_stitch_pull_direction = Pull_Direction.BtF)
-        self[f"RCO|P"] = Increase_Stitch_Definition(inc_lean = Stitch_Lean.Right, lean_stitch_pull_direction = Pull_Direction.FtB)
-        self[f"LCO|P"] = Increase_Stitch_Definition(inc_lean = Stitch_Lean.Left, lean_stitch_pull_direction = Pull_Direction.FtB)
-=======
             self[f"sk{k}po"] = Stitch_Definition(offset_to_parent_loops=offsets)
             self[f"sp{k}po"] = Stitch_Definition(Pull_Direction.FtB, offset_to_parent_loops=offsets)
         self["s2kpo"] = Stitch_Definition(offset_to_parent_loops=[-1, 0, 1])
         self["s2ppo"] = Stitch_Definition(Pull_Direction.FtB, offset_to_parent_loops=[-1, 0, 1])
->>>>>>> Stashed changes
 
     def _Loop_Cast_On(self): #_single_leading_underscore: This convention is used to indicate that a name is intended for internal use within a module.
         self[f"RCO"] = Increase_Stitch_Definition(inc_lean = Stitch_Lean.Right, lean_stitch_pull_direction = Pull_Direction.BtF)
@@ -118,9 +102,6 @@ class Symbol_Table:
     def _knit() -> Stitch_Definition:
         # Todo: Return (in one line) a Stitch Definition that will knit the next available loop
         return Stitch_Definition()
-<<<<<<< Updated upstream
-
-=======
     
     #newly added: not tested 
     @staticmethod
@@ -128,7 +109,6 @@ class Symbol_Table:
         return Stitch_Definition(Pull_Direction.BtF,
                  offset_to_parent_loops = [0.01])
     
->>>>>>> Stashed changes
     def __contains__(self, item: str):
         return item.lower() in self._symbol_table
 

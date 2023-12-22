@@ -115,17 +115,11 @@ class Machine_Bed:
         """
         self._is_front: bool = is_front
         self._needle_count: int = needle_count
-<<<<<<< Updated upstream
-        # self.held_loops: Dict[int, List[int]] = {i: [] for i in range(0, self.needle_count)}  # increasing indices indicate needles moving from left to right
-        # print(f'self.needle_count/2 is {self.needle_count/2}')
-        self.held_loops: Dict[int, List[int]] = {i: [] for i in range(int(-self.needle_count/2), int(self.needle_count/2))}
-=======
         #changed from
         # self.held_loops: Dict[int, List[int]] = {i: [] for i in range(0, self.needle_count)}  # increasing indices indicate needles moving from left to right
         self.held_loops: Dict[int, List[int]] = {i: [] for i in range(-150, self.needle_count+50)}
         # print(f'self.needle_count/2 is {self.needle_count/2}')
         # self.held_loops: Dict[int, List[int]] = {i: [] for i in range(int(-self.needle_count/2), int(self.needle_count/2))}
->>>>>>> Stashed changes
         # i.e., LEFT -> 0 1 2....N <- RIGHT of Machine
         self.loops_to_needle: Dict[int, Optional[int]] = {}
 
@@ -150,15 +144,10 @@ class Machine_Bed:
         :param loop_id: the loop_id to be held on the needle
         :param needle_position: the position of the needle
         """
-<<<<<<< Updated upstream
-        # change from: assert 0 <= needle_position < self.needle_count, f"Cannot place a loop at position {needle_position}" 
-        assert int(-self.needle_count/2) <= needle_position < int(self.needle_count/2), f"Cannot place a loop at position {needle_position}"
-=======
         # change from: 
         # assert 0 <= needle_position < self.needle_count, f"Cannot place a loop at position {needle_position}" 
         assert -150 <= needle_position < self.needle_count+50, f"Cannot place a loop at position {needle_position}" 
         # assert int(-self.needle_count/2) <= needle_position < int(self.needle_count/2), f"Cannot place a loop at position {needle_position}"
->>>>>>> Stashed changes
         if drop_prior_loops:
             self.drop_loop(needle_position)
         self.held_loops[needle_position].append(loop_id)
@@ -169,15 +158,10 @@ class Machine_Bed:
         Clears the loops held at this position as though a drop operation has been done
         :param needle_position:
         """
-<<<<<<< Updated upstream
-        # assert 0 <= needle_position < self.needle_count, f"Cannot drop a loop at position {needle_position}"
-        assert int(-self.needle_count/2) <= needle_position < int(self.needle_count/2), f"Cannot drop a loop at position {needle_position}"
-=======
         #changed from
         # assert 0 <= needle_position < self.needle_count, f"Cannot drop a loop at position {needle_position}"
         assert -150 <= needle_position < self.needle_count+50, f"Cannot drop a loop at position {needle_position}"
         # assert int(-self.needle_count/2) <= needle_position < int(self.needle_count/2), f"Cannot drop a loop at position {needle_position}"
->>>>>>> Stashed changes
         current_loops = self.held_loops[needle_position]
         self.held_loops[needle_position] = []
         for loop in current_loops:
@@ -427,11 +411,7 @@ class Machine_State:
         """
         original = self.racking
         self.racking = front_pos - back_pos
-<<<<<<< Updated upstream
-        assert self.racking <= self.racking_bound, f'racking {self.racking} can not exceed racking bound: {self.racking_bound} of the machine'
-=======
         assert abs(self.racking) <= self.racking_bound, f'racking {self.racking} can not exceed racking bound: {self.racking_bound} of the machine'
->>>>>>> Stashed changes
         return self.racking, original == self.racking
 
     def valid_rack(self, front_pos: int, back_pos: int) -> bool:

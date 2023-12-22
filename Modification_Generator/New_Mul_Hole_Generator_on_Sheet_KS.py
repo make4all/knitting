@@ -32,13 +32,9 @@ class Hole_Generator_on_Sheet:
         self._knit_graph: Knit_Graph = knitgraph
         self._knit_graph.node_to_course_and_wale = knitgraph.node_to_course_and_wale
         self._knit_graph.course_and_wale_to_node: Dict[Tuple[int, int], int]
-<<<<<<< Updated upstream
-        self._knit_graph.node_on_front_or_back = knitgraph.node_on_front_or_back
-=======
         print(f'in hole sheet 0, knitgraph.node_on_front_or_back is {knitgraph.node_on_front_or_back}')
         self._knit_graph.node_on_front_or_back = knitgraph.node_on_front_or_back
         print(f'in hole sheet 1, self._knit_graph.node_on_front_or_back is {self._knit_graph.node_on_front_or_back}')
->>>>>>> Stashed changes
         self._knit_graph.loop_id_to_course: Dict[int, float] = self._knit_graph.loop_ids_to_course
         self._knit_graph.course_to_loop_ids: Dict[int, List[int]] = self._knit_graph.course_to_loop_ids
         self._knit_graph.gauge = knitgraph.gauge
@@ -47,10 +43,7 @@ class Hole_Generator_on_Sheet:
         self._knit_graph.object_type = 'sheet'
         assert self._knit_graph.course_to_loop_ids is not None
         assert self._knit_graph.node_to_course_and_wale is not None
-<<<<<<< Updated upstream
-=======
         assert self._knit_graph.node_on_front_or_back is not None
->>>>>>> Stashed changes
         # assert self._knit_graph.course_and_wale_to_node is not None
         self.float_length = int(1/self._knit_graph.gauge) - 1
         self.wale_dist = int(1/self._knit_graph.gauge)
@@ -77,17 +70,12 @@ class Hole_Generator_on_Sheet:
         self.course_id_to_start_wale_id: Optional[Dict[int, int]]
         self.course_id_to_end_wale_id: Optional[Dict[int, int]]
         #pattern_height is the total number of courses 
-<<<<<<< Updated upstream
-        self._pattern_height: int = len(self._knit_graph.course_to_loop_ids)
-    
-=======
         # self._pattern_height: int = len(self._knit_graph.course_to_loop_ids) #update to below
         print(f'self._knit_graph.course_to_loop_ids.keys() is {self._knit_graph.course_to_loop_ids.keys()}')
         self._pattern_height: int = max([*self._knit_graph.course_to_loop_ids.keys()]) + 1
         print(f'self._pattern_height is {self._pattern_height}')
         self.min_course_id = min([*self._knit_graph.course_to_loop_ids.keys()])
 
->>>>>>> Stashed changes
         self._hole_course_to_wale_ids: Dict[int, Dict[int, List[int]]] = {}
         self.course_id_to_smallest_hole_wale: Dict[int, int] = {}
         self.hole_index_to_course_id_to_new_yarn_wales: Dict[int, Dict[int, List[int]]] = {}
@@ -247,12 +235,8 @@ class Hole_Generator_on_Sheet:
             for node in self._old_yarn.yarn_graph.nodes:
                 yarn_parent_ids = [*self._old_yarn.yarn_graph.predecessors(node)]
                 yarn_child_ids = [*self._old_yarn.yarn_graph.successors(node)]
-<<<<<<< Updated upstream
-                if node not in [0, len(self._old_yarn.yarn_graph.nodes)-1]:
-=======
                 # if node not in [0, len(self._old_yarn.yarn_graph.nodes)-1]: #update to below
                 if  min(self._knit_graph.course_to_loop_ids[max([*self._knit_graph.course_to_loop_ids.keys()])]) > node > max(self._knit_graph.course_to_loop_ids[min([*self._knit_graph.course_to_loop_ids.keys()])]):
->>>>>>> Stashed changes
                     if len(yarn_parent_ids) != 1 or len(yarn_child_ids) != 1:
                         print(f'Error: node {node} is suspicious for having no parent node or child node on yarn')
                         exit()
@@ -261,10 +245,7 @@ class Hole_Generator_on_Sheet:
         """
         remove the nodes for hole from both knit graph and yarn
         """
-<<<<<<< Updated upstream
-=======
         print(f'in hole sheet 2, self._knit_graph.node_on_front_or_back in hole_on_sheet is {self._knit_graph.node_on_front_or_back}')
->>>>>>> Stashed changes
         for hole in self.yarns_and_holes_to_add.values():
             self._knit_graph.graph.remove_nodes_from(hole)
             self._old_yarn.yarn_graph.remove_nodes_from(hole)
@@ -305,11 +286,8 @@ class Hole_Generator_on_Sheet:
         """
         # wale_dist = self.float_length+1
         #for hole_index in [*self.holes_size.keys()]:
-<<<<<<< Updated upstream
-=======
         real_odd_flag = 1 if self.min_course_id%2==0 else 0
         real_even_flag = 0 if self.min_course_id%2==0 else 1
->>>>>>> Stashed changes
         for hole_index in self.sorted_hole_index:
             new_yarn_course_to_loop_ids: Dict[float, List[int]]= {}
             old_yarn_course_to_margin_loop_ids: Dict[float, List[int]]= {}
@@ -540,16 +518,6 @@ class Hole_Generator_on_Sheet:
                                     if len([*self._knit_graph.graph.predecessors(potential_node_to_connect)]) != 0:
                                         predecessors = [*self._knit_graph.graph.predecessors(potential_node_to_connect)] 
                                         pull_direction = self._knit_graph.graph[predecessors[0]][potential_node_to_connect]['pull_direction']
-<<<<<<< Updated upstream
-                                        for predecessor in predecessors:
-                                            # this only applies to case where yarn starting direction is from right to left
-                                            if course_id % 2 == 0:
-                                                if self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] > 0:
-                                                    raise ErrorException(f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {potential_node_to_connect}')
-                                            else:
-                                                if self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] < 0:
-                                                    raise ErrorException(f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {potential_node_to_connect}')
-=======
                                         #----
                                         # for predecessor in predecessors:
                                         #     # this only applies to case where yarn starting direction is from right to left
@@ -560,7 +528,6 @@ class Hole_Generator_on_Sheet:
                                         #         if self._knit_graph.graph[predecessor][potential_node_to_connect]['parent_offset'] < 0:
                                         #             raise ErrorException(f'bind-off safety check failed because loop {predecessor} has been dropped so can not be connected to loop {potential_node_to_connect}')
                                         #----
->>>>>>> Stashed changes
                                         self._knit_graph.connect_loops(node, potential_node_to_connect, parent_offset = int((parent_wale_id - child_wale_id)/self.wale_dist), pull_direction = pull_direction)
                                     else:
                                         # then it is actually a single cable stitch (special, because no crossing between two or more stitches here), thus we need to set the depth as 1.
@@ -571,22 +538,15 @@ class Hole_Generator_on_Sheet:
         #first determine the validity of the input hole
         # self.hole_shape_and_number_constraints()
         #return info including hole_start_wale, hole_end_wale, hole_start_course, hole_end_course, hole_height and hole_width.
-<<<<<<< Updated upstream
-        self.get_hole_size()
-=======
         print(f'cp3, is {self._knit_graph.node_on_front_or_back}')
         self.get_hole_size()
         print(f'cp2, is {self._knit_graph.node_on_front_or_back}')
->>>>>>> Stashed changes
         #send out warning to user if special stitch might be broken or if hole node is set at places like top course.
         self.hole_location_errors()
         self.hole_location_warnings()
         # get course_to_wale_ids for hole area
         self.get_hole_course_to_wale_ids()
-<<<<<<< Updated upstream
-=======
         print(f'cp1, is {self._knit_graph.node_on_front_or_back}')
->>>>>>> Stashed changes
         #remove nodes for hole from both knit graph and yarn graph.
         self.remove_hole_nodes_from_graph()
         #get the start wale id and end wale id for each course, which can be used in get_new_yarn_loop_ids() to get new yarn loop ids.

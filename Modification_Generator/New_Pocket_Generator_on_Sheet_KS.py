@@ -383,11 +383,6 @@ class Pocket_Generator_on_Sheet:
                                 raise ErrorException(f'wale_id of child fabric can not be the same as parent fabric, otherwise child fabric will not be able to achieve texturized pattern')
                             self.wale_id_offset = wale_id_offset
                             break
-<<<<<<< Updated upstream
-                if (course_id, wale_id+wale_id_offset) not in self.parent_knitgraph_course_and_wale_to_node:
-                    raise ErrorException(f'cannot find mirror node at {(course_id, wale_id+wale_id_offset)}')
-                mirror_nodes_bigger_wale_side_parent[edge_index].append(self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id+wale_id_offset)])
-=======
                 #----comment out to account for line stitch
                 # if (course_id, wale_id+wale_id_offset) not in self.parent_knitgraph_course_and_wale_to_node:
                 #     raise ErrorException(f'cannot find mirror node at {(course_id, wale_id+wale_id_offset)}')
@@ -396,18 +391,12 @@ class Pocket_Generator_on_Sheet:
                     mirror_nodes_bigger_wale_side_parent[edge_index].append(self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id+wale_id_offset)])
                 else:
                     mirror_nodes_bigger_wale_side_parent[edge_index].append(None)
->>>>>>> Stashed changes
         for edge_index in edge_nodes_smaller_wale_side_child.keys():
             mirror_nodes_smaller_wale_side_parent[edge_index] = []
             edge_nodes = edge_nodes_smaller_wale_side_child[edge_index]
             for edge_node in edge_nodes:
                 course_id = self.child_knitgraph.node_to_course_and_wale[edge_node][0]
                 wale_id = self.child_knitgraph.node_to_course_and_wale[edge_node][1]
-<<<<<<< Updated upstream
-                if (course_id, wale_id+wale_id_offset) not in self.parent_knitgraph_course_and_wale_to_node:
-                    raise ErrorException(f'cannot find mirror node at {(course_id, wale_id+wale_id_offset)}')
-                mirror_nodes_smaller_wale_side_parent[edge_index].append(self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id+wale_id_offset)])
-=======
                 #----comment out to account for line stitch
                 # if (course_id, wale_id+wale_id_offset) not in self.parent_knitgraph_course_and_wale_to_node:
                     # raise ErrorException(f'cannot find mirror node at {(course_id, wale_id+wale_id_offset)}')
@@ -416,17 +405,13 @@ class Pocket_Generator_on_Sheet:
                     mirror_nodes_smaller_wale_side_parent[edge_index].append(self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id+wale_id_offset)])
                 else:
                     mirror_nodes_smaller_wale_side_parent[edge_index].append(None)
->>>>>>> Stashed changes
         print(f'mirror nodes on parent knitgraph that correspond to edge nodes of each edge on smaller wale side on child knitgraph is {mirror_nodes_smaller_wale_side_parent}, \
             mirror nodes on parent knitgraph that correspond to edge nodes of each edge on bigger wale side on child knitgraph is {mirror_nodes_bigger_wale_side_parent}')
         return mirror_nodes_smaller_wale_side_parent, mirror_nodes_bigger_wale_side_parent
 
     def find_parent_coors(self, child_coor: Tuple[int, int], knitgraph_connectivity: List[Tuple]):
         parent_coors = []
-<<<<<<< Updated upstream
-=======
         print(f'child_coor is {child_coor}, knitgraph_connectivity is {knitgraph_connectivity}')
->>>>>>> Stashed changes
         for connectivity in knitgraph_connectivity:
             if child_coor == connectivity[1]:
                 parent_coors.append(connectivity[0])
@@ -445,16 +430,6 @@ class Pocket_Generator_on_Sheet:
             split_nodes = edge_nodes_bigger_wale_side_child[edge_index]
             for mirror_node, split_node in zip(mirror_nodes, split_nodes):
                 parent_nodes = []
-<<<<<<< Updated upstream
-                mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
-                parent_coors = self.find_parent_coors(child_coor = mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
-                if len(parent_coors) <= 0:
-                    raise ErrorException(f'this mirror node {mirror_node} can not form a branch structure because it has no parent')
-                for parent_coor in parent_coors:
-                    parent_nodes.append(self.parent_knitgraph_course_and_wale_to_node[parent_coor])
-                # we can also use predecessors to find parent nodes if connect_stitches_on_knitgraph() is called before this function.
-                root_nodes_bigger_wale_side_parent[edge_index][(mirror_node, split_node)] = parent_nodes
-=======
                 #-----updated to account for line stitch
                 if mirror_node != None:
                     mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
@@ -468,22 +443,12 @@ class Pocket_Generator_on_Sheet:
                         # we can also use predecessors to find parent nodes if connect_stitches_on_knitgraph() is called before this function.
                         root_nodes_bigger_wale_side_parent[edge_index][(mirror_node, split_node)] = parent_nodes
                 #-----
->>>>>>> Stashed changes
         for edge_index in mirror_nodes_smaller_wale_side_parent.keys():
             root_nodes_smaller_wale_side_parent[edge_index] = {}
             mirror_nodes = mirror_nodes_smaller_wale_side_parent[edge_index]
             split_nodes = edge_nodes_smaller_wale_side_child[edge_index]
             for mirror_node, split_node in zip(mirror_nodes, split_nodes):
                 parent_nodes = []
-<<<<<<< Updated upstream
-                mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
-                parent_coors = self.find_parent_coors(child_coor = mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
-                if len(parent_coors) <= 0:
-                    raise ErrorException(f'this mirror node {mirror_node} can not form a branch structure because it has no parent')
-                for parent_coor in parent_coors:
-                    parent_nodes.append(self.parent_knitgraph_course_and_wale_to_node[parent_coor])
-                root_nodes_smaller_wale_side_parent[edge_index][(mirror_node, split_node)] = parent_nodes
-=======
                 #-----updated to account for line stitch
                 if mirror_node != None:
                     mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
@@ -496,7 +461,6 @@ class Pocket_Generator_on_Sheet:
                             parent_nodes.append(self.parent_knitgraph_course_and_wale_to_node[parent_coor])
                         root_nodes_smaller_wale_side_parent[edge_index][(mirror_node, split_node)] = parent_nodes
                 #-----
->>>>>>> Stashed changes
         print(f'root nodes on parent knitgraph that correspond to edge nodes of each edge on smaller wale side on child knitgraph is {root_nodes_smaller_wale_side_parent}, root nodes on parent knitgraph that correspond to edge nodes of each edge on bigger wale side on child knitgraph is {root_nodes_bigger_wale_side_parent}')
         return root_nodes_smaller_wale_side_parent, root_nodes_bigger_wale_side_parent
     
@@ -557,20 +521,6 @@ class Pocket_Generator_on_Sheet:
         course_id = self.left_keynodes_child_fabric[0][0]
         for wale_id in range(self.left_keynodes_child_fabric[0][1], self.right_keynodes_child_fabric[0][1]+self.wale_dist, self.wale_dist):
             split_node = self.child_knitgraph_course_and_wale_to_node[(course_id, wale_id)]
-<<<<<<< Updated upstream
-            mirror_node = self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id+self.wale_id_offset)]
-            bottom_root_nodes[(mirror_node, split_node)] = []
-            mirror_node_coor = self.parent_knitgraph.node_to_course_and_wale[mirror_node]
-            parent_coors = self.find_parent_coors(child_coor = mirror_node_coor, knitgraph_connectivity = self.parent_knitgraph_coors_connectivity)
-            if len(parent_coors) <= 0:
-                raise ErrorException(f'this mirror node {mirror_node} can not form a branch structure because it has no parent')
-            for parent_coor in parent_coors:
-                root_node = self.parent_knitgraph_course_and_wale_to_node[parent_coor]
-                bottom_root_nodes[(mirror_node, split_node)].append(root_node)
-                # self.pocket_graph.connect_loops(root_node, mirror_node, pull_direction = Pull_Direction.BtF)
-                self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = self.wale_id_offset)
-        print(f'bottom_root_nodes is {bottom_root_nodes}')
-=======
             #---updated to account for line stitch
             if (course_id, wale_id+self.wale_id_offset) in self.parent_knitgraph_course_and_wale_to_node:
                 mirror_node = self.parent_knitgraph_course_and_wale_to_node[(course_id, wale_id+self.wale_id_offset)]
@@ -588,7 +538,6 @@ class Pocket_Generator_on_Sheet:
                         self.pocket_graph.connect_loops(root_node, split_node, pull_direction = Pull_Direction.BtF, parent_offset = self.wale_id_offset)
             #---
             print(f'bottom_root_nodes is {bottom_root_nodes}')
->>>>>>> Stashed changes
 
     def close_top_edge(self):
         last_course_id_child_fabric = [*self.child_knitgraph.course_to_loop_ids.keys()][-1]

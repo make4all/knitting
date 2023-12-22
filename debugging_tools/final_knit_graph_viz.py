@@ -39,27 +39,16 @@ class knitGraph_visualizer:
         self.carrier_id_to_color = {1:'black', 2:'skyblue', 3:'orange', 4:'green', 5: 'yellow', 6:'blue', 7: 'pink', 8: 'purple', 9:'cyan', 10:'red'}
         self.cable_depth_to_color = {1:'grey', -1:'magenta'}
         self.alpha_front = 1
-<<<<<<< Updated upstream
-        self.alpha_back = 0.6
-=======
         self.alpha_back = 0.4 #previously 0.7
->>>>>>> Stashed changes
         self.node_color_property = {}
         self.edge_color_property = {}
         self.stitch_labels = {}
         self.yarns = [*knit_graph.yarns.values()]
         #distance related param for tube
-<<<<<<< Updated upstream
-        self.h_back2front, self.w_back2front, self.w_between_node, self.h_course = 0.4, 0.1, 1, 1
-    #below are skeletal functions to complete visualization
-    #set node postion
-    def get_nodes_position(self):
-=======
         self.h_back2front, self.w_back2front, self.w_between_node, self.h_course = 0.15, 0.1, 1, 1
     #below are skeletal functions to complete visualization
     #set node postion
     def get_nodes_position(self): 
->>>>>>> Stashed changes
         x0 = 0
         y0 = 0
         for node in self.knit_graph.graph.nodes:
@@ -159,18 +148,6 @@ class knitGraph_visualizer:
         #draw nodes
         for node in G.nodes():
             # node_size = 300 
-<<<<<<< Updated upstream
-            # small version: node_size = 250 
-            nx.draw_networkx_nodes(G, pos, nodelist=[node], node_size = 300, node_color = self.node_color_property[node]['color'], alpha = self.node_color_property[node]['alpha'])
-        #draw edges
-        for edge in [*self.edge_color_property.keys()]:
-            # width = 3.0
-            # small version: width = 1
-            nx.draw_networkx_edges(G, pos, edgelist=[edge], width = 3.0, edge_color = self.edge_color_property[edge]['color'], style = 'solid', alpha = self.edge_color_property[edge]['alpha'])
-        #draw node labels
-        node_labels = {x: x for x in G.nodes}
-        nx.draw_networkx_labels(G, pos, labels=node_labels, font_size=9, font_color='w')
-=======
             #bigger node size: 1000
             nx.draw_networkx_nodes(G, pos, nodelist=[node], node_size = 1000, node_color = self.node_color_property[node]['color'], alpha = self.node_color_property[node]['alpha'])
         #draw edges
@@ -181,7 +158,6 @@ class knitGraph_visualizer:
         #draw node labels: font_size = 9 bigger font: 20
         node_labels = {x: x for x in G.nodes}
         nx.draw_networkx_labels(G, pos, labels=node_labels, font_size=20, font_color='w')
->>>>>>> Stashed changes
         #draw edge labels
         # label_pos = 0.5, font_size = 5
         # small version: label_pos = 0.5, font_size = 0.0005

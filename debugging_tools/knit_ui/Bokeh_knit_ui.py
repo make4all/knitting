@@ -31,13 +31,8 @@ pattern_type_options = ["Tube", "Sheet"]
 pattern_type = RadioButtonGroup(name='Pattern Type', labels=pattern_type_options, active=0)
 
 # knit speak - text input
-<<<<<<< Updated upstream
-# knit_speak = TextInput(title='Knit Speak', placeholder='Enter knit speak, e.g.: all rs rounds k. all ws rounds p.', height=300)
-knit_speak = TextAreaInput(value = 'Enter knit speak, e.g.: all rs rounds k. all ws rounds p.', rows=15, cols=30, title='Knit Speak')
-=======
 knit_speak = TextInput(title='Knit Speak', placeholder='Enter knit speak, e.g.: all rs rounds k. all ws rounds p.', height=450)
 # knit_speak = TextAreaInput(value = 'Enter knit speak, e.g.: all rs rounds k. all ws rounds p.', rows=15, cols=50, title='Knit Speak')
->>>>>>> Stashed changes
 
 # knitting procedure - radio button
 tube_knitting_procedure_options = ["Handle", "Pocket", "Hole", "Strap"]
@@ -104,11 +99,8 @@ is_front_patch_strap = Select(title='Patch on front', options=['True', 'False'],
 keynodes_strap = TextInput(title='Select two nodes as the base for the strap', placeholder='ex. (1,1), (2,2)')
 strap_add_from_graph = Button(label='Add from graph', button_type='success', width=120, margin=(24, 0, 0, 0))
 length_input_strap = TextInput(title='The length of the strap', placeholder='ex. 12')
-<<<<<<< Updated upstream
-=======
 update_strap_hole_button = Button(label='Update Knit Graph', button_type='primary')  # dedicated for strap with button hole generation
 
->>>>>>> Stashed changes
 # after the updated graph has been generated
 back_to_graph = Button(label='Back', button_type='danger')
 
@@ -148,11 +140,7 @@ def _update_gauge(attr, old, new):
     gauge.options = ["1/4", "1/3", "1/2"]
     gauge.value = gauge_options[0]
     if (
-<<<<<<< Updated upstream
-            new == 0 or new == 1) and pattern_type.active == 0:  # if (new == "Handle" or new == "Pocket") and pattern_type.active == "Tube":
-=======
             new == 0 or new == 1 or new == 3) and pattern_type.active == 0:  # if (new == "Handle" or new == "Pocket") and pattern_type.active == "Tube":
->>>>>>> Stashed changes
         gauge.options = ["1/4", "1/3"]
     elif new == 2 and pattern_type.active == 1:  # elif new == "Hole" and new == "Sheet":
         gauge.options = ["1/4", "1/3", "1/2", "1"]
@@ -216,11 +204,7 @@ def _create_knit_graph(event):
                 for i in range(0, 10):
                     hole_index = TextInput(title='Hole Nodes', placeholder='Node IDs to delete', width=320)
                     hole_nodes_add_from_graph = Button(label='Add from graph', button_type='success', width=120, margin=(24, 0, 0, 0))
-<<<<<<< Updated upstream
-                    hole_nodes_add_from_graph.on_event(bokeh.events.ButtonClick, partial(hole_nodes_button_clicked,bokeh.events.ButtonClick, i, hole_index))
-=======
                     hole_nodes_add_from_graph.on_event(bokeh.events.ButtonClick, partial(hole_nodes_button_clicked, bokeh.events.ButtonClick, i, hole_index))
->>>>>>> Stashed changes
                     hole_children.append(row(hole_index, hole_nodes_add_from_graph))
 
                 column_widgets = column(children=hole_children)
@@ -231,29 +215,16 @@ def _create_knit_graph(event):
                     hole_carrier = Select(title='Yarn ID', options=yarn_carrier_options_adjusted, value=yarn_carrier_options_adjusted[0], width=160)
                     hole_nodes_add_from_graph = Button(label='Add from graph', button_type='success', width=120,
                                                        margin=(24, 0, 0, 0))
-<<<<<<< Updated upstream
-                    hole_nodes_add_from_graph.on_event(bokeh.events.ButtonClick, partial(hole_nodes_button_clicked,bokeh.events.ButtonClick, i + 10, hole_index))
-                    hole_children.append(row(hole_carrier, hole_index, hole_nodes_add_from_graph))
-
-                column_widgets = column(children=hole_children)
-=======
                     hole_nodes_add_from_graph.on_event(bokeh.events.ButtonClick, partial(hole_nodes_button_clicked, bokeh.events.ButtonClick, i + 10, hole_index))
                     hole_children.append(row(hole_carrier, hole_index, hole_nodes_add_from_graph))
 
                 column_widgets = column(children=hole_children)
         # 0 is Handle, 1 is Pocket, 2 is Hole, 3 is Strap
->>>>>>> Stashed changes
         elif knitting_procedure.active == 1:
             ###########################################################################
             # call back events
             def pocket_left_button_clicked(event):
                 selected[0] = 2
-<<<<<<< Updated upstream
-                pocket_left_selected_nodes = []
-                pocket_left_code = '''
-                           if (selected[0] == 2)
-                           {
-=======
                 if pattern_type.active == 0:
                     selected[0] = 2.1
                 else:
@@ -262,24 +233,16 @@ def _create_knit_graph(event):
                 pocket_left_code = '''
                            if (selected[0] == 2.1)
                             {
->>>>>>> Stashed changes
                                 if (node.selected.indices.length > 0 && ! selected_nodes.includes(node.selected.indices[0]))
                                     selected_nodes.push(node.selected.indices[0]);
                                 
                                 if (selected_nodes.length > 0)
                                 {
-<<<<<<< Updated upstream
-                                    let course = node.data['course'][selected_nodes[0]];
-                                    let wale = node.data['wale'][selected_nodes[0]];
-
-                                    //newly added to deal with gauging to avoid entangle        
-=======
                                     //newly added to deal with gauging to avoid entangle  
                     
                                     //console.log('lalala');
                                     let course = node.data['course'][selected_nodes[0]];
                                     let wale = node.data['wale'][selected_nodes[0]];
->>>>>>> Stashed changes
                                     if (wale % parseInt(1/gauge) == 0)
                                     {
                                         textbox.value = '(' + course + ',' + (wale-2) + ')';
@@ -303,14 +266,6 @@ def _create_knit_graph(event):
                                         else {
                                             textbox.value = textbox.value + ', ' + '(' + course + ',' + (wale-1) + ')';
                                         }
-<<<<<<< Updated upstream
-
-                                        //textbox.value = textbox.value + ', ' + '(' + course + ',' + (wale-1) + ')';
-                                    }
-                                }
-                           }
-                                                              '''
-=======
                                     }   
                                 }
                             }
@@ -332,7 +287,6 @@ def _create_knit_graph(event):
                                     }                                    
                             }                               
                                                         '''
->>>>>>> Stashed changes
                 pocket_left_callback = CustomJS(
                     args={'node': plot.renderers[-1].node_renderer.data_source, 'textbox': left_keynodes_pocket,
                           'selected': selected, 'gauge': gauge_map[gauge.value], 'is_front_patch_pocket': is_front_patch_pocket, 'selected_nodes': pocket_left_selected_nodes},
@@ -340,13 +294,6 @@ def _create_knit_graph(event):
                 plot.renderers[-1].node_renderer.data_source.selected.js_on_change('indices', pocket_left_callback)
 
             def pocket_right_button_clicked(event):
-<<<<<<< Updated upstream
-                selected[0] = 3
-                pocket_right_selected_nodes = []
-                pocket_right_code = '''
-                           if (selected[0] == 3)
-                           {
-=======
                 # selected[0] = 3
                 if pattern_type.active == 0:
                     selected[0] = 3.1
@@ -356,24 +303,11 @@ def _create_knit_graph(event):
                 pocket_right_code = '''
                            if (selected[0] == 3.1)
                             {
->>>>>>> Stashed changes
                                 if (node.selected.indices.length > 0 && ! selected_nodes.includes(node.selected.indices[0]))
                                     selected_nodes.push(node.selected.indices[0]);
                                 
                                 if (selected_nodes.length > 0)
                                 {
-<<<<<<< Updated upstream
-                                    let course = node.data['course'][selected_nodes[0]];
-                                    let wale = node.data['wale'][selected_nodes[0]];
-                                    
-                                    //newly added to deal with gauging to avoid entangle        
-                                    if (wale % parseInt(1/gauge) == 0)
-                                    {
-                                        textbox.value = '(' + course + ',' + (wale-2) + ')';
-                                    }
-                                    else {
-                                        textbox.value = '(' + course + ',' + (wale-1) + ')';
-=======
                                     //newly added to deal with gauging to avoid entangle  
                     
                                     //console.log('lalala');
@@ -387,7 +321,6 @@ def _create_knit_graph(event):
                                     else {
                                         textbox.value = '(' + course + ',' + (wale-1) + ')';
                                         is_front_patch_pocket.value = 'False';
->>>>>>> Stashed changes
                                     }
                                     //textbox.value = '(' + course + ',' + (wale-1) + ')';
                                     for (let i = 1; i < selected_nodes.length; i++)
@@ -403,14 +336,6 @@ def _create_knit_graph(event):
                                         else {
                                             textbox.value = textbox.value + ', ' + '(' + course + ',' + (wale-1) + ')';
                                         }
-<<<<<<< Updated upstream
-                                        
-                                        //textbox.value = textbox.value + ', ' + '(' + course + ',' + (wale-1) + ')';
-                                    }
-                                }
-                           }
-                                                              '''
-=======
                                     }   
                                 }
                             }
@@ -433,7 +358,6 @@ def _create_knit_graph(event):
                                     }                                    
                             }                               
                                                         '''
->>>>>>> Stashed changes
                 pocket_right_callback = CustomJS(
                     args={'node': plot.renderers[-1].node_renderer.data_source, 'textbox': right_keynodes_pocket,
                           'selected': selected, 'gauge': gauge_map[gauge.value], 'is_front_patch_pocket': is_front_patch_pocket, 'selected_nodes': pocket_right_selected_nodes},
@@ -452,12 +376,6 @@ def _create_knit_graph(event):
             # call back events
             def handle_left_button_clicked(event):
                 selected[0] = 4
-<<<<<<< Updated upstream
-                handle_left_selected_nodes = []
-                handle_left_code = '''
-                           if (selected[0] == 4)
-                           {
-=======
                 if pattern_type.active == 0:
                     selected[0] = 4.1
                 else:
@@ -466,24 +384,16 @@ def _create_knit_graph(event):
                 handle_left_code = '''
                            if (selected[0] == 4.1)
                             {
->>>>>>> Stashed changes
                                 if (node.selected.indices.length > 0 && ! selected_nodes.includes(node.selected.indices[0]))
                                     selected_nodes.push(node.selected.indices[0]);
                                 
                                 if (selected_nodes.length > 0)
                                 {
-<<<<<<< Updated upstream
-                                    let course = node.data['course'][selected_nodes[0]];
-                                    let wale = node.data['wale'][selected_nodes[0]];
-                                    
-                                    //newly added to deal with gauging to avoid entangle
-=======
                                     //newly added to deal with gauging to avoid entangle  
                     
                                     //console.log('lalala');
                                     let course = node.data['course'][selected_nodes[0]];
                                     let wale = node.data['wale'][selected_nodes[0]];
->>>>>>> Stashed changes
                                     if (wale % parseInt(1/gauge) == 0)
                                     {
                                         textbox.value = '(' + course + ',' + (wale-2) + ')';
@@ -493,20 +403,12 @@ def _create_knit_graph(event):
                                         textbox.value = '(' + course + ',' + (wale-1) + ')';
                                         is_front_patch_handle.value = 'False';
                                     }
-<<<<<<< Updated upstream
-                                    
-=======
->>>>>>> Stashed changes
                                     //textbox.value = '(' + course + ',' + (wale-1) + ')';
                                     for (let i = 1; i < selected_nodes.length; i++)
                                     {
                                         let course = node.data['course'][selected_nodes[i]];
                                         let wale = node.data['wale'][selected_nodes[i]];
-<<<<<<< Updated upstream
-                                        
-=======
 
->>>>>>> Stashed changes
                                         //newly added to deal with gauging to avoid entangle
                                         if (wale % parseInt(1/gauge) == 0)
                                         {
@@ -515,14 +417,6 @@ def _create_knit_graph(event):
                                         else {
                                             textbox.value = textbox.value + ', ' + '(' + course + ',' + (wale-1) + ')';
                                         }
-<<<<<<< Updated upstream
-                                        
-                                        //textbox.value = textbox.value + ', ' + '(' + course + ',' + (wale-1) + ')';
-                                    }
-                                }
-                           }
-                                                   '''
-=======
                                     }   
                                 }
                             }
@@ -545,7 +439,6 @@ def _create_knit_graph(event):
                             }                               
                                                         '''
                 
->>>>>>> Stashed changes
                 handle_left_callback = CustomJS(
                     args={'node': plot.renderers[-1].node_renderer.data_source, 'textbox': left_keynodes_handle,
                           'selected': selected, 'gauge': gauge_map[gauge.value], 'is_front_patch_handle': is_front_patch_handle, 'selected_nodes': handle_left_selected_nodes},
@@ -554,12 +447,6 @@ def _create_knit_graph(event):
 
             def handle_right_button_clicked(event):
                 selected[0] = 5
-<<<<<<< Updated upstream
-                handle_right_selected_nodes = []
-                handle_right_code = '''
-                           if (selected[0] == 5)
-                           {
-=======
                 if pattern_type.active == 0:
                     selected[0] = 5.1
                 else:
@@ -568,26 +455,11 @@ def _create_knit_graph(event):
                 handle_right_code = '''
                            if (selected[0] == 5.1)
                             {
->>>>>>> Stashed changes
                                 if (node.selected.indices.length > 0 && ! selected_nodes.includes(node.selected.indices[0]))
                                     selected_nodes.push(node.selected.indices[0]);
                                 
                                 if (selected_nodes.length > 0)
                                 {
-<<<<<<< Updated upstream
-                                    let course = node.data['course'][selected_nodes[0]];
-                                    let wale = node.data['wale'][selected_nodes[0]];
-
-                                    //newly added to deal with gauging to avoid entangle        
-                                    if (wale % parseInt(1/gauge) == 0)
-                                    {
-                                        textbox.value = '(' + course + ',' + (wale-2) + ')';
-                                    }
-                                    else {
-                                        textbox.value = '(' + course + ',' + (wale-1) + ')';
-                                    }
-
-=======
                                     //newly added to deal with gauging to avoid entangle  
                     
                                     //console.log('lalala');
@@ -602,17 +474,12 @@ def _create_knit_graph(event):
                                         textbox.value = '(' + course + ',' + (wale-1) + ')';
                                         is_front_patch_handle.value = 'False';
                                     }
->>>>>>> Stashed changes
                                     //textbox.value = '(' + course + ',' + (wale-1) + ')';
                                     for (let i = 1; i < selected_nodes.length; i++)
                                     {
                                         let course = node.data['course'][selected_nodes[i]];
                                         let wale = node.data['wale'][selected_nodes[i]];
-<<<<<<< Updated upstream
-                                        
-=======
 
->>>>>>> Stashed changes
                                         //newly added to deal with gauging to avoid entangle
                                         if (wale % parseInt(1/gauge) == 0)
                                         {
@@ -621,14 +488,6 @@ def _create_knit_graph(event):
                                         else {
                                             textbox.value = textbox.value + ', ' + '(' + course + ',' + (wale-1) + ')';
                                         }
-<<<<<<< Updated upstream
-                                        
-                                        //textbox.value = textbox.value + ', ' + '(' + course + ',' + (wale-1) + ')';
-                                    }
-                                }
-                           }
-                                                   '''
-=======
                                     }   
                                 }
                             }
@@ -650,7 +509,6 @@ def _create_knit_graph(event):
                                     }                                    
                             }                               
                                                         '''
->>>>>>> Stashed changes
                 handle_right_callback = CustomJS(
                     args={'node': plot.renderers[-1].node_renderer.data_source, 'textbox': right_keynodes_handle,
                           'selected': selected, 'gauge': gauge_map[gauge.value], 'is_front_patch_handle': is_front_patch_handle, 'selected_nodes': handle_right_selected_nodes},
@@ -669,12 +527,6 @@ def _create_knit_graph(event):
             # call back events
             def strap_button_clicked(event):
                 selected[0] = 6
-<<<<<<< Updated upstream
-                strap_selected_nodes = []
-                strap_code = '''
-                           if (selected[0] == 6)
-                           {
-=======
                 if pattern_type.active == 0:
                     selected[0] = 6.1
                 else:
@@ -683,24 +535,16 @@ def _create_knit_graph(event):
                 strap_code = '''
                            if (selected[0] == 6.1)
                             {
->>>>>>> Stashed changes
                                 if (node.selected.indices.length > 0 && ! selected_nodes.includes(node.selected.indices[0]))
                                     selected_nodes.push(node.selected.indices[0]);
                                 
                                 if (selected_nodes.length > 0)
                                 {
-<<<<<<< Updated upstream
-                                    let course = node.data['course'][selected_nodes[0]];
-                                    let wale = node.data['wale'][selected_nodes[0]];
-                                    
-                                    //newly added to deal with gauging to avoid entangle
-=======
                                     //newly added to deal with gauging to avoid entangle  
                     
                                     //console.log('lalala');
                                     let course = node.data['course'][selected_nodes[0]];
                                     let wale = node.data['wale'][selected_nodes[0]];
->>>>>>> Stashed changes
                                     if (wale % parseInt(1/gauge) == 0)
                                     {
                                         textbox.value = '(' + course + ',' + (wale-2) + ')';
@@ -710,20 +554,12 @@ def _create_knit_graph(event):
                                         textbox.value = '(' + course + ',' + (wale-1) + ')';
                                         is_front_patch_strap.value = 'False';
                                     }
-<<<<<<< Updated upstream
-                                    
-=======
->>>>>>> Stashed changes
                                     //textbox.value = '(' + course + ',' + (wale-1) + ')';
                                     for (let i = 1; i < selected_nodes.length; i++)
                                     {
                                         let course = node.data['course'][selected_nodes[i]];
                                         let wale = node.data['wale'][selected_nodes[i]];
-<<<<<<< Updated upstream
-                                        
-=======
 
->>>>>>> Stashed changes
                                         //newly added to deal with gauging to avoid entangle
                                         if (wale % parseInt(1/gauge) == 0)
                                         {
@@ -732,13 +568,6 @@ def _create_knit_graph(event):
                                         else {
                                             textbox.value = textbox.value + ', ' + '(' + course + ',' + (wale-1) + ')';
                                         }
-<<<<<<< Updated upstream
-                                        
-                                        //textbox.value = textbox.value + ', ' + '(' + course + ',' + (wale-1) + ')';
-                                    }
-                                }
-                           }
-=======
                                     }   
                                 }
                             }
@@ -759,7 +588,6 @@ def _create_knit_graph(event):
                                         }    
                                     }                                    
                             }             
->>>>>>> Stashed changes
                                                    '''
                 strap_callback = CustomJS(
                     args={'node': plot.renderers[-1].node_renderer.data_source, 'textbox': keynodes_strap,
@@ -913,24 +741,17 @@ def _update_graph(event):
         pattern = re.compile("^(\([0-9]+,[0-9]+\), )*\([0-9]+,[0-9]+\)$")
         if pattern.match(keynodes_strap.value):
             vertices, _ = parse_left_right_vertices(keynodes_strap.value, keynodes_strap.value)
-<<<<<<< Updated upstream
-            final_plot, final_knit_graph = generate_final_graph_strap(
-=======
             (final_plot, final_knit_graph), updated_child_graph, updated_parent_knitgraph = generate_final_graph_strap(
->>>>>>> Stashed changes
                 "Tube" if pattern_type.active == 0 else "Sheet",
                 "Strap",
                 int(yarn_carrier.value),
                 int(strap_yarn_carrier_id.value), knit_graph,
                 is_front_patch_strap.value == 'True', vertices,
                 int(length_input_strap.value)) #is_front_patch_handle.active
-<<<<<<< Updated upstream
-=======
             global parent_knitgraph
             global child_knitgraph
             parent_knitgraph = updated_parent_knitgraph
             child_knitgraph = updated_child_graph
->>>>>>> Stashed changes
         else:
             # Todo
             pass
@@ -938,8 +759,6 @@ def _update_graph(event):
             #     '## Wrong Input Format\nExample Input Format for Vertex Coordinates: (1,2), (3,4), (5,6)')
             # ui.insert(0, error)
 
-<<<<<<< Updated upstream
-=======
         # strap has one more dedicated page to generate a button hole:
         ###########################################################################
         # call back events
@@ -987,7 +806,6 @@ def _update_graph(event):
         knit_graph = final_knit_graph
         return
     
->>>>>>> Stashed changes
     curdoc().clear()
     curdoc().add_root(row(widget3, final_plot))
     knit_graph = final_knit_graph
@@ -1003,8 +821,6 @@ def _update_graph(event):
     #     error = pn.pane.Alert('Internal errors occurred.' + '\nPlease contact developers for more information')
     #     ui.insert(0, error)
 
-<<<<<<< Updated upstream
-=======
 def _update_strap_with_button_hole(event):
     holes = curdoc().roots[0].children[0].children
     complete_nodes_dict = {}
@@ -1036,7 +852,6 @@ def _update_strap_with_button_hole(event):
     curdoc().add_root(row(widget3, final_plot))
     knit_graph = final_knit_graph
     
->>>>>>> Stashed changes
 
 def _confirm_graph(event):
     curdoc().clear()
@@ -1102,10 +917,7 @@ back_to_graph.on_click(_back_to_graph)
 confirm_filename.on_click(_confirm_file_name)
 confirm_tuples_pocket.on_click(_confirm_tuples)
 
-<<<<<<< Updated upstream
-=======
 
 update_strap_hole_button.on_click(_update_strap_with_button_hole)  # dedicated for strap with button hole generation
 
->>>>>>> Stashed changes
 curdoc().add_root(widget1)

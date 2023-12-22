@@ -326,22 +326,6 @@ class Knit_Graph:
                     self.has_parent_of_0_offset = False
                     parent_ids = [*self.graph.predecessors(loop_id)]
                     if len(parent_ids) > 0:
-<<<<<<< Updated upstream
-                        for parent_id in self.graph.predecessors(loop_id):
-                            parent_offset = self.graph[parent_id][loop_id]['parent_offset']
-                            if parent_offset == 0:
-                                wale = self.node_to_course_and_wale[parent_id][1]
-                                self.node_to_course_and_wale[loop_id] = (course_id, wale)
-                                # print(f'in tube wale recomputation, loop id is {loop_id}, parent id is {parent_id}, wale is {wale}')
-                                self.has_parent_of_0_offset = True
-                                break
-                        if self.has_parent_of_0_offset == False:
-                            for parent_id in self.graph.predecessors(loop_id):
-                                parent_offset = self.graph[parent_id][loop_id]['parent_offset']
-                                wale = self.node_to_course_and_wale[parent_id][1] - parent_offset*self.wale_dist
-                                self.node_to_course_and_wale[loop_id] = (course_id, wale)
-                                break
-=======
                         #--------
                         # for parent_id in self.graph.predecessors(loop_id):
                         #     parent_offset = self.graph[parent_id][loop_id]['parent_offset']
@@ -365,7 +349,6 @@ class Knit_Graph:
                             self.node_to_course_and_wale[loop_id] = (course_id, wale)
                             break
                         #-------
->>>>>>> Stashed changes
                     else:
                         #If its predecessor node on yarn has wale, then combined with corresponding course_id, its wale can be inferred
                         #Since a node on yarn always has one predecessor, except that starting node has 0 predecessor.
@@ -385,95 +368,6 @@ class Knit_Graph:
                         else:
                             wale = mid_node_wale -1 - self.yarn_over_loop_to_loop_index[loop_id]*self.wale_dist
                         #----#
-<<<<<<< Updated upstream
-                #---adjust wale again if there are any leaning stitches that has mismatched parent offset for the first screening
-                if course_id in self.courses_to_number_of_left_leaning_front_half:
-                    number_of_left_leaning_front_half = self.courses_to_number_of_left_leaning_front_half[course_id]
-                    if number_of_left_leaning_front_half > 0:
-                        max_loop_id_left_leaning_front_half = self.courses_to_max_loop_id_left_leaning_front_half[course_id]
-                        parent_ids = [*self.graph.predecessors(max_loop_id_left_leaning_front_half)]
-                        max_parent_offset = 0
-                        for parent_id in parent_ids:
-                            if max_parent_offset < self.graph[parent_id][max_loop_id_left_leaning_front_half]['parent_offset']:
-                                max_parent_offset = self.graph[parent_id][max_loop_id_left_leaning_front_half]['parent_offset']
-                                print(f'in wale-redjust, max_parent_offset is {max_parent_offset}')
-                        for parent_id in parent_ids:
-                            parent_offset = self.graph[parent_id][max_loop_id_left_leaning_front_half]['parent_offset']
-                            if parent_offset not in [-1, 0]: #eg. if k2tog misrepresented as skpo in the first ver. of KnitGraph, then the p.o. would be [0, 1].
-                                #then all the preceding loop ids in this course would need to be adjusted by decreasing offset by 1.
-                                loop_ids_this_course = self.course_to_loop_ids[course_id]
-                                parent_offset_gap = max_parent_offset - 0
-                                for loop_id in loop_ids_this_course:
-                                    if loop_id in self.loops_on_front_part_of_the_tube:
-                                        wale = self.node_to_course_and_wale[loop_id][1] + parent_offset_gap*self.wale_dist
-                                        self.node_to_course_and_wale[loop_id] = (course_id, wale)
-                                    print(f'in wale-redjust, course id is {course_id}, max_loop_id_left_leaning_front_half is {max_loop_id_left_leaning_front_half}, \
-                                          max_parent_offset is {max_parent_offset}')
-                if course_id in self.courses_to_number_of_left_leaning_back_half:
-                    number_of_left_leaning_back_half = self.courses_to_number_of_left_leaning_back_half[course_id]
-                    if number_of_left_leaning_back_half > 0:
-                        max_loop_id_left_leaning_back_half = self.courses_to_max_loop_id_left_leaning_back_half[course_id]
-                        parent_ids = [*self.graph.predecessors(max_loop_id_left_leaning_back_half)]
-                        max_parent_offset = 0
-                        for parent_id in parent_ids:
-                            if max_parent_offset < self.graph[parent_id][max_loop_id_left_leaning_back_half]['parent_offset']:
-                                max_parent_offset = self.graph[parent_id][max_loop_id_left_leaning_back_half]['parent_offset']
-                        for parent_id in parent_ids:
-                            # parent_offset = self.graph[parent_id][max_loop_id_left_leaning_back_half]['parent_offset'] #deprecate this bc parent offset might have been updated caused by the wale update above.
-                            parent_offset = (self.node_to_course_and_wale[parent_id][1] - self.node_to_course_and_wale[max_loop_id_left_leaning_back_half][1])/self.wale_dist
-                            if parent_offset not in [-1, 0]: #eg. if k2tog misrepresented as skpo in the first ver. of KnitGraph, then the p.o. would be [0, 1].
-                                #then all the preceding loop ids in this course would need to be adjusted by increasing offset by 1 (bc on the back half).
-                                loop_ids_this_course = self.course_to_loop_ids[course_id]
-                                parent_offset_gap = max_parent_offset - 0
-                                for loop_id in loop_ids_this_course:
-                                    if loop_id in self.loops_on_back_part_of_the_tube:
-                                        wale = self.node_to_course_and_wale[loop_id][1] - parent_offset_gap*self.wale_dist
-                                        self.node_to_course_and_wale[loop_id] = (course_id, wale)   
-                if course_id in self.courses_to_number_of_right_leaning_back_half:
-                    number_of_right_leaning_back_half = self.courses_to_number_of_right_leaning_back_half[course_id]     
-                    if number_of_right_leaning_back_half > 0:
-                        max_loop_id_right_leaning_back_half = self.courses_to_max_loop_id_right_leaning_back_half[course_id]
-                        parent_ids = [*self.graph.predecessors(max_loop_id_right_leaning_back_half)]
-                        max_parent_offset = 0
-                        for parent_id in parent_ids:
-                            if max_parent_offset < self.graph[parent_id][max_loop_id_right_leaning_back_half]['parent_offset']:
-                                max_parent_offset = self.graph[parent_id][max_loop_id_right_leaning_back_half]['parent_offset']
-                        for parent_id in parent_ids:
-                            # parent_offset = self.graph[parent_id][max_loop_id_right_leaning_back_half]['parent_offset']
-                            parent_offset = (self.node_to_course_and_wale[parent_id][1] - self.node_to_course_and_wale[max_loop_id_right_leaning_back_half][1])/self.wale_dist
-                            if parent_offset not in [1, 0]: #eg. if k2tog misrepresented as skpo in the first ver. of KnitGraph, then the p.o. would be [0, 1].
-                                #then all the preceding loop ids in this course would need to be adjusted by increasing offset by 1 (bc on the back half).
-                                loop_ids_this_course = self.course_to_loop_ids[course_id]
-                                parent_offset_gap = max_parent_offset - 1
-                                for loop_id in loop_ids_this_course:
-                                    if loop_id in self.loops_on_back_part_of_the_tube:
-                                        wale = self.node_to_course_and_wale[loop_id][1] + parent_offset_gap*self.wale_dist
-                                        self.node_to_course_and_wale[loop_id] = (course_id, wale) 
-                if course_id in self.courses_to_number_of_right_leaning_front_half:
-                    number_of_right_leaning_front_half = self.courses_to_number_of_right_leaning_front_half[course_id]
-                    if number_of_right_leaning_front_half > 0:
-                        max_loop_id_right_leaning_front_half = self.courses_to_max_loop_id_right_leaning_front_half[course_id]
-                        parent_ids = [*self.graph.predecessors(max_loop_id_right_leaning_front_half)]
-                        max_parent_offset = 0
-                        for parent_id in parent_ids:
-                            if max_parent_offset < self.graph[parent_id][max_loop_id_right_leaning_front_half]['parent_offset']:
-                                max_parent_offset = self.graph[parent_id][max_loop_id_right_leaning_front_half]['parent_offset']
-                        for parent_id in parent_ids:
-                            # parent_offset = self.graph[parent_id][max_loop_id_right_leaning_front_half]['parent_offset']
-                            parent_offset = (self.node_to_course_and_wale[parent_id][1] - self.node_to_course_and_wale[max_loop_id_right_leaning_front_half][1])/self.wale_dist
-                            if parent_offset not in [1, 0]: #eg. if k2tog misrepresented as skpo in the first ver. of KnitGraph, then the p.o. would be [0, 1].
-                                #then all the preceding loop ids in this course would need to be adjusted by decreasing offset by 1.
-                                loop_ids_this_course = self.course_to_loop_ids[course_id]
-                                parent_offset_gap = max_parent_offset - 0
-                                for loop_id in loop_ids_this_course:
-                                    if loop_id in self.loops_on_front_part_of_the_tube:
-                                        wale = self.node_to_course_and_wale[loop_id][1] - parent_offset_gap*self.wale_dist
-                                        self.node_to_course_and_wale[loop_id] = (course_id, wale)
-                #---
-                
-        #-------
-        print(f'node_to_course_and_wale in KnitGraph is {self.node_to_course_and_wale}')
-=======
                 print(f'node_to_course_and_wale in KnitGraph before wale readjust is {self.node_to_course_and_wale}')
                 #---adjust wale again if there are any leaning stitches that has mismatched parent offset for the first screening
                 # if course_id in self.courses_to_number_of_left_leaning_front_half:
@@ -562,7 +456,6 @@ class Knit_Graph:
                 
         #-------
         print(f'node_to_course_and_wale in KnitGraph after wale redjust is {self.node_to_course_and_wale}')
->>>>>>> Stashed changes
         return self.node_to_course_and_wale
 
     def get_min_and_max_wale_id_on_course_on_bed(self):
@@ -590,14 +483,6 @@ class Knit_Graph:
             self.courses_to_max_wale_on_back[course_id] = max_wale_on_back
 
     def update_wales_to_reduce_float(self):
-<<<<<<< Updated upstream
-        for course_id in [*self.course_to_loop_ids.keys()][1:]:
-            if self.courses_to_max_wale_on_back[course_id] > self.courses_to_max_wale_on_front[course_id]:
-                for loop_id in self.course_to_loop_ids[course_id]:
-                    if loop_id in self.loops_on_back_part_of_the_tube:
-                        print(f'loop id {loop_id} has wale updated from {self.node_to_course_and_wale[loop_id][1]} to {self.node_to_course_and_wale[loop_id][1] - (self.courses_to_max_wale_on_back[course_id] - self.courses_to_max_wale_on_front[course_id]) - self.wale_dist} to reduce float')
-                        self.node_to_course_and_wale[loop_id] = (course_id, self.node_to_course_and_wale[loop_id][1]-(int((self.courses_to_max_wale_on_back[course_id] - self.courses_to_max_wale_on_front[course_id])/self.wale_dist)+1)*self.wale_dist)
-=======
         if self.object_type == 'tube':
             count_of_front_half_shift = 0
             for course_id in [*self.course_to_loop_ids.keys()][1:]:
@@ -757,7 +642,6 @@ class Knit_Graph:
     #                 self.courses_to_max_wale_on_back[course_id+1] = self.courses_to_max_wale_on_back[course_id+1] + int(wale_to_shift/self.wale_dist/2+1)*self.wale_dist
     #                 self.courses_to_min_wale_on_front[course_id+1] = self.courses_to_min_wale_on_front[course_id+1] + int(wale_to_shift/self.wale_dist/2+1)*self.wale_dist
     #                 self.courses_to_min_wale_on_back[course_id+1] = self.courses_to_min_wale_on_back[course_id+1] + int(wale_to_shift/self.wale_dist/2+1)*self.wale_dist
->>>>>>> Stashed changes
 
     def get_course_and_wale_and_bed_to_node(self):
         if self.object_type == 'tube':
@@ -766,10 +650,6 @@ class Knit_Graph:
                 front_or_back = self.node_on_front_or_back[node]
                 self.course_and_wale_and_bed_to_node[(course_and_wale, front_or_back)] = node
             return self.course_and_wale_and_bed_to_node
-<<<<<<< Updated upstream
-    
-=======
->>>>>>> Stashed changes
 
     def update_parent_offsets(self):  
         """

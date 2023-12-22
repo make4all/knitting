@@ -334,15 +334,9 @@ class Hole_Generator_on_Tube:
                     #         G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
                     #     #-------
                     #-------
-<<<<<<< Updated upstream
-                    #-----
-                    # print(f'node is {node}, target node is {self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_max_wale_on_back[course_id+1])]}')
-                    G1.add_edge(node, self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_max_wale_on_back[course_id+1])], weight = diagonal_weight)
-=======
                     #-----find bigger_wale_neighbor_node (on the opposite bed)
                     # print(f'node is {node}, target node is {self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_max_wale_on_back[course_id+1])]}')
                     # G1.add_edge(node, self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_max_wale_on_back[course_id+1])], weight = diagonal_weight)
->>>>>>> Stashed changes
                     #-----
                 
                 # 3.2 for node on left edge back
@@ -388,13 +382,8 @@ class Hole_Generator_on_Tube:
                     #         G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
                     #     #-------
                     # #---------
-<<<<<<< Updated upstream
-                    #-----
-                    G1.add_edge(node, self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_max_wale_on_front[course_id+1])], weight = diagonal_weight)
-=======
                     #-----find bigger_wale_neighbor_node (on the opposite bed)
                     # G1.add_edge(node, self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_max_wale_on_front[course_id+1])], weight = diagonal_weight)
->>>>>>> Stashed changes
                     #-----
                 # 3.3 for node in between on each course 
                 elif min_wale_id_on_the_course_front < wale_id < max_wale_id_on_the_course_back:
@@ -463,13 +452,8 @@ class Hole_Generator_on_Tube:
                     #         G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
                     #     #-------
                     # #------
-<<<<<<< Updated upstream
-                    #-----
-                    G1.add_edge(node, self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_min_wale_on_back[course_id+1])], weight = diagonal_weight)
-=======
                     #-----find bigger_wale_neighbor_node (on the opposite bed)
                     # G1.add_edge(node, self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_min_wale_on_back[course_id+1])], weight = diagonal_weight)
->>>>>>> Stashed changes
                     #-----
                     # find the bigger wale node on the same bed
                     min_wale_difference = 10000
@@ -514,13 +498,8 @@ class Hole_Generator_on_Tube:
                     #         G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
                     #     #-------
                     # #-------
-<<<<<<< Updated upstream
-                    #-----
-                    G1.add_edge(node, self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_min_wale_on_front[course_id+1])], weight = diagonal_weight)
-=======
                     #----- find bigger_wale_neighbor_node (on the opposite bed)
                     # G1.add_edge(node, self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_min_wale_on_front[course_id+1])], weight = diagonal_weight)
->>>>>>> Stashed changes
                     #-----
                     # find the bigger wale node on the same bed
                     min_wale_difference = 10000
@@ -624,11 +603,7 @@ class Hole_Generator_on_Tube:
         self._old_yarn.yarn_graph.remove_nodes_from(self._knit_graph.graph.nodes)
         self._old_yarn.last_loop_id = None
         for loop_id in visited_nodes_old_yarn:
-<<<<<<< Updated upstream
-            child_id, loop = self._old_yarn.add_loop_to_end(loop_id = loop_id)
-=======
             child_id, loop = self._old_yarn.add_loop_to_end(loop_id = loop_id) #we use old yarn first on the modified KnitGraph
->>>>>>> Stashed changes
         new_yarns = []
         for i in range(len(remain_subgraphs)):
             G2 = G1.copy() #G1 is the above pre-processed graph but with hole nodes and nodes on the old yarn deleted; while G2 is used to represent each isolated subgraph

@@ -232,10 +232,7 @@ class Pocket_Generator_on_Tube:
         """
         parent_knitgraph_edge_data_list = self.parent_knitgraph.graph.edges(data=True)
         child_knitgraph_edge_data_list = self.child_knitgraph.graph.edges(data=True)
-<<<<<<< Updated upstream
-=======
         print(f'self.parent_knitgraph.node_to_course_and_wale in pocket on tube is {self.parent_knitgraph.node_to_course_and_wale}')        
->>>>>>> Stashed changes
         for edge_data in parent_knitgraph_edge_data_list:
             node = edge_data[1]
             node_coor = self.parent_knitgraph.node_to_course_and_wale[node]
