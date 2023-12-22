@@ -14,6 +14,7 @@ Some example KnitScripts to begin with:
 ```console
 All rs rounds k 10. All ws rounds k 10.
 ```
+```console
 All rs rows k 10. All ws rows k 10.
 ```
 
