@@ -1,6 +1,6 @@
 # KnitA11y
 
-## Launch the UI (Please first ensure the codebase has been set up properly following the 'Set up' instructions below.)
+## Launch the UI (Please first ensure the codebase has been set up properly following the 'Set Up' instructions below.)
 In the command line, type:
 ```console
 cd debugging_tools/knit_ui
