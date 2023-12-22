@@ -13,6 +13,7 @@ bokeh serve --show Bokeh_knit_ui.py
 Some example KnitScripts to begin with:
 ```console
 All rs rounds k 10. All ws rounds k 10.
+or
 All rs rows k 10. All ws rows k 10.
 ```
 
