@@ -253,7 +253,7 @@ class Hole_Generator_on_Tube:
             # # add an edge that is exactly of opposite direction again if they are on the same course
             # if self._knit_graph.node_to_course_and_wale[prior_node][0] == self._knit_graph.node_to_course_and_wale[next_node][0]:
             #     G1.add_edge(next_node, prior_node, weight = yarn_edge_weight)
-            
+
         # 2. add edge of two opposite direction between the start node and end node on each course
         # for course_id in self._knit_graph.course_to_loop_ids.keys():
         #     start_node = self._knit_graph.course_to_loop_ids[course_id][0]
@@ -769,7 +769,7 @@ class Hole_Generator_on_Tube:
             predecessor_bed = self._knit_graph.node_on_front_or_back[predecessor]
             attr_dict = edge_data[2]
             self.knitgraph_coors_connectivity.append([predecessor_coor, predecessor_bed, node_coor, node_bed, attr_dict])
-        # print(f'self.knitgraph_coors_connectivity is {self.knitgraph_coors_connectivity}')
+        print(f'self.knitgraph_coors_connectivity is {self.knitgraph_coors_connectivity}')
 
     def rebuild_yarn_graph(self):
         """
@@ -857,11 +857,11 @@ class Hole_Generator_on_Tube:
             exit()
         self.remove_old_and_add_new_yarn(path = path_result, remain_subgraphs = remain_subgraphs, G1 = G1)
         # 
-        self.read_connectivity_from_knitgraph()
+        # self.read_connectivity_from_knitgraph()
         # 
         # self.rebuild_yarn_graph()
         # 
-        self.connect_stitches_on_knitgraph()
+        # self.connect_stitches_on_knitgraph()
         #connect unstable (have no child loops) nodes on the edge of the hole to the nearest top neighbor to prevent them from falling off the parent loops,
         #leading the hole bigger and bigger.
         # self.connect_hole_edge_nodes()
