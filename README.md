@@ -10,6 +10,14 @@ Next, type:
 bokeh serve --show Bokeh_knit_ui.py
 ```
 
+Some example KnitScripts to begin with:
+```console
+All rs rounds k 10. All ws rounds k 10.
+```
+```console
+All rs rows k 10. All ws rows k 10.
+```
+
 ## Set Up
 
 This project may work on older versions of Python, but it was developed with Python 3.9
