@@ -250,9 +250,10 @@ class Hole_Generator_on_Tube:
             # different from sheet, for a tube, the yarn edge/yarn path needs to be walkable in both left and right direction, otherwise the problem tend to
             # have no solution
             G1.add_edge(prior_node, next_node, weight = yarn_edge_weight)
-            # add an edge that is exactly of opposite direction again if they are on the same course
-            if self._knit_graph.node_to_course_and_wale[prior_node][0] == self._knit_graph.node_to_course_and_wale[next_node][0]:
-                G1.add_edge(next_node, prior_node, weight = yarn_edge_weight)
+            # # add an edge that is exactly of opposite direction again if they are on the same course
+            # if self._knit_graph.node_to_course_and_wale[prior_node][0] == self._knit_graph.node_to_course_and_wale[next_node][0]:
+            #     G1.add_edge(next_node, prior_node, weight = yarn_edge_weight)
+            
         # 2. add edge of two opposite direction between the start node and end node on each course
         # for course_id in self._knit_graph.course_to_loop_ids.keys():
         #     start_node = self._knit_graph.course_to_loop_ids[course_id][0]
@@ -265,6 +266,7 @@ class Hole_Generator_on_Tube:
         #     #-----
         #     G1.add_edge(start_node, end_node, weight = yarn_edge_weight)
         #     G1.add_edge(end_node, start_node, weight = yarn_edge_weight)
+            
         # 3. add stitch paths, for each node, it should have three stitch edges, one is connected with node right above it, one is one wale left above it, and one
         # is one wale right above it. first node and last node on each course is special node, thus need separate discussion as below.
         # ***note***: just realized there is a much easier approach to identify these nodes on the above course, just use the right above node and find its neighbor nodes!
