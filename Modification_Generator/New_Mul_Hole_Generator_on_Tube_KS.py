@@ -8,6 +8,7 @@ from debugging_tools.polygon_generator import Polygon_Generator
 from debugging_tools.simple_knitgraph_generator import Simple_Knitgraph_Generator
 from debugging_tools.exceptions import ErrorException
 import warnings
+from itertools import cycle
 
 class Hole_Generator_on_Tube:
     """
@@ -46,6 +47,7 @@ class Hole_Generator_on_Tube:
         self.wale_dist = int(1/self._knit_graph.gauge)
         self.graph_nodes: set[int] = set(self._knit_graph.graph.nodes)
         if len(self._knit_graph.yarns) != 1:
+            print(f'exceeding len(self._knit_graph.yarns) is {self._knit_graph.yarns}')
             raise ErrorException(f"This only supports modifying graphs that has only one yarn as input")
         #since given knit graph has only one yarn before being modified
         self._old_yarn: Yarn = [*self._knit_graph.yarns.values()][0]
@@ -252,272 +254,274 @@ class Hole_Generator_on_Tube:
             if self._knit_graph.node_to_course_and_wale[prior_node][0] == self._knit_graph.node_to_course_and_wale[next_node][0]:
                 G1.add_edge(next_node, prior_node, weight = yarn_edge_weight)
         # 2. add edge of two opposite direction between the start node and end node on each course
-        for course_id in self._knit_graph.course_to_loop_ids.keys():
-            start_node = self._knit_graph.course_to_loop_ids[course_id][0]
-            end_node = self._knit_graph.course_to_loop_ids[course_id][-1]
-            #------
-            # we add this if condition based on the shirt case, refer to pp.237 in the slide deck.
-            if abs(self._knit_graph.node_to_course_and_wale[start_node][1] - self._knit_graph.node_to_course_and_wale[end_node][1]) <= self.wale_dist:
-                G1.add_edge(start_node, end_node, weight = yarn_edge_weight)
-                G1.add_edge(end_node, start_node, weight = yarn_edge_weight)
-            #-----
-            G1.add_edge(start_node, end_node, weight = yarn_edge_weight)
-            G1.add_edge(end_node, start_node, weight = yarn_edge_weight)
+        # for course_id in self._knit_graph.course_to_loop_ids.keys():
+        #     start_node = self._knit_graph.course_to_loop_ids[course_id][0]
+        #     end_node = self._knit_graph.course_to_loop_ids[course_id][-1]
+        #     #------
+        #     # we add this if condition based on the shirt case, refer to pp.237 in the slide deck.
+        #     if abs(self._knit_graph.node_to_course_and_wale[start_node][1] - self._knit_graph.node_to_course_and_wale[end_node][1]) <= self.wale_dist:
+        #         G1.add_edge(start_node, end_node, weight = yarn_edge_weight)
+        #         G1.add_edge(end_node, start_node, weight = yarn_edge_weight)
+        #     #-----
+        #     G1.add_edge(start_node, end_node, weight = yarn_edge_weight)
+        #     G1.add_edge(end_node, start_node, weight = yarn_edge_weight)
         # 3. add stitch paths, for each node, it should have three stitch edges, one is connected with node right above it, one is one wale left above it, and one
         # is one wale right above it. first node and last node on each course is special node, thus need separate discussion as below.
         # ***note***: just realized there is a much easier approach to identify these nodes on the above course, just use the right above node and find its neighbor nodes!
         # thus, need to rewrite and verify.
-        for node in G1.nodes:
-            wale_id = self._knit_graph.node_to_course_and_wale[node][1]
-            course_id = self._knit_graph.node_to_course_and_wale[node][0]
-            # max_wale_id_on_the_course_front = max(self.course_id_to_wale_ids[course_id]) #this is actually the edge node on the front bed with the biggest wale id
-            # min_wale_id_on_the_course_back = min(self.course_id_to_wale_ids[course_id]) #this is actually the edge node on the back bed with the smallest wale id
-            # min_wale_id_on_the_course_front = min(self.course_id_to_wale_ids[course_id]) + 1
-            # max_wale_id_on_the_course_back = max(self.course_id_to_wale_ids[course_id]) - 1
-            #-------
-            max_wale_id_on_the_course_front = self.courses_to_max_wale_on_front[course_id] #this is actually the edge node on the front bed with the biggest wale id
-            min_wale_id_on_the_course_back = self.courses_to_min_wale_on_back[course_id] #this is actually the edge node on the back bed with the smallest wale id
-            min_wale_id_on_the_course_front = self.courses_to_min_wale_on_front[course_id]
-            max_wale_id_on_the_course_back = self.courses_to_max_wale_on_back[course_id]
-            #-------
-            wale_of_bigger_nearest_neighbor = 0 #random initialization
-            wale_of_smaller_nearest_neighbor = 0 #random initialization
-            # min_wale_difference_for_smaller_wale = min_wale_difference_for_bigger_wale = 10000
-            min_wale_difference = 10000
-            bed = self._knit_graph.node_on_front_or_back[node]
-            opposite_bed = 'f' if bed == 'b' else 'b'
-            # wale_dist = self.float_length+1
-            # connect until the second highest course
-            if course_id < max([*self._knit_graph.course_to_loop_ids.keys()]):
-                wale_ids_on_above_course = self.course_id_to_wale_ids[course_id+1]
-                # 3.1 for node on left edge front (i.e. with max wale on the front)
-                if wale_id == max_wale_id_on_the_course_front:
-                    #find node right above it
-                    if ((course_id+1, wale_id), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
-                        above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_id), bed)]
-                        if self._knit_graph.graph.has_edge(node, above_node): #newly_added if statement to avoid one parent two child case.
-                            G1.add_edge(node, above_node, weight = vertical_weight)   
-                    min_wale_difference = 10000
-                    # find smaller_wale_neighbor_node on the same bed
-                    for wale_id_above_course in wale_ids_on_above_course:
-                        if ((course_id, wale_id_above_course), bed) in self._knit_graph.course_and_wale_and_bed_to_node:
-                            wale_difference = -(wale_id_above_course - wale_id) 
-                        else: 
-                            continue
-                        if wale_difference > 0 and wale_difference < min_wale_difference:
-                            min_wale_difference = wale_difference
-                            wale_of_smaller_nearest_neighbor = wale_id_above_course
-                    if ((course_id+1, wale_of_smaller_nearest_neighbor), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
-                        big_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_smaller_nearest_neighbor), bed)]
-                        # G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
-                        #-------
-                        if self._knit_graph.graph.has_edge(node, above_node): #newly_added if statement to avoid one parent two child case.
-                            G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
-                        #-------
+
+        # for node in G1.nodes:
+        #     wale_id = self._knit_graph.node_to_course_and_wale[node][1]
+        #     course_id = self._knit_graph.node_to_course_and_wale[node][0]
+        #     # max_wale_id_on_the_course_front = max(self.course_id_to_wale_ids[course_id]) #this is actually the edge node on the front bed with the biggest wale id
+        #     # min_wale_id_on_the_course_back = min(self.course_id_to_wale_ids[course_id]) #this is actually the edge node on the back bed with the smallest wale id
+        #     # min_wale_id_on_the_course_front = min(self.course_id_to_wale_ids[course_id]) + 1
+        #     # max_wale_id_on_the_course_back = max(self.course_id_to_wale_ids[course_id]) - 1
+        #     #-------
+        #     max_wale_id_on_the_course_front = self.courses_to_max_wale_on_front[course_id] #this is actually the edge node on the front bed with the biggest wale id
+        #     min_wale_id_on_the_course_back = self.courses_to_min_wale_on_back[course_id] #this is actually the edge node on the back bed with the smallest wale id
+        #     min_wale_id_on_the_course_front = self.courses_to_min_wale_on_front[course_id]
+        #     max_wale_id_on_the_course_back = self.courses_to_max_wale_on_back[course_id]
+        #     #-------
+        #     wale_of_bigger_nearest_neighbor = 0 #random initialization
+        #     wale_of_smaller_nearest_neighbor = 0 #random initialization
+        #     # min_wale_difference_for_smaller_wale = min_wale_difference_for_bigger_wale = 10000
+        #     min_wale_difference = 10000
+        #     bed = self._knit_graph.node_on_front_or_back[node]
+        #     opposite_bed = 'f' if bed == 'b' else 'b'
+        #     # wale_dist = self.float_length+1
+        #     # connect until the second highest course
+        #     if course_id < max([*self._knit_graph.course_to_loop_ids.keys()]):
+        #         wale_ids_on_above_course = self.course_id_to_wale_ids[course_id+1]
+        #         # 3.1 for node on left edge front (i.e. with max wale on the front)
+        #         if wale_id == max_wale_id_on_the_course_front:
+        #             #find node right above it
+        #             if ((course_id+1, wale_id), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
+        #                 above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_id), bed)]
+        #                 if self._knit_graph.graph.has_edge(node, above_node): #newly_added if statement to avoid one parent two child case.
+        #                     G1.add_edge(node, above_node, weight = vertical_weight)   
+        #             min_wale_difference = 10000
+        #             # find smaller_wale_neighbor_node on the same bed
+        #             for wale_id_above_course in wale_ids_on_above_course:
+        #                 if ((course_id, wale_id_above_course), bed) in self._knit_graph.course_and_wale_and_bed_to_node:
+        #                     wale_difference = -(wale_id_above_course - wale_id) 
+        #                 else: 
+        #                     continue
+        #                 if wale_difference > 0 and wale_difference < min_wale_difference:
+        #                     min_wale_difference = wale_difference
+        #                     wale_of_smaller_nearest_neighbor = wale_id_above_course
+        #             if ((course_id+1, wale_of_smaller_nearest_neighbor), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
+        #                 big_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_smaller_nearest_neighbor), bed)]
+        #                 # G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
+        #                 #-------
+        #                 if self._knit_graph.graph.has_edge(node, above_node): #newly_added if statement to avoid one parent two child case.
+        #                     G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
+        #                 #-------
                     
-                    #-------
-                    # # find the other neighbor node that must be on the "opposite" bed with wale id that is closest to but smaller the node.
-                    # min_wale_difference = 10000
-                    # for wale_id_above_course in wale_ids_on_above_course:
-                    #     if ((course_id, wale_id_above_course), opposite_bed) in self._knit_graph.course_and_wale_and_bed_to_node:
-                    #         wale_difference = -(wale_id_above_course - wale_id)
-                    #     else: 
-                    #         continue
-                    #     if wale_difference > 0 and wale_difference < min_wale_difference: 
-                    #         min_wale_difference = wale_difference
-                    #         wale_of_smaller_nearest_neighbor = wale_id_above_course
-                    # if ((course_id+1, wale_of_smaller_nearest_neighbor), opposite_bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
-                    #     big_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_smaller_nearest_neighbor), opposite_bed)]
-                    #     # G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
-                    #     #-------
-                    #     if self._knit_graph.graph.has_edge(node, big_wale_above_node): #newly_added if statement to avoid one parent two child case.
-                    #         G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
-                    #     #-------
-                    #-------
-                    #-----find bigger_wale_neighbor_node (on the opposite bed)
-                    # print(f'node is {node}, target node is {self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_max_wale_on_back[course_id+1])]}')
-                    # G1.add_edge(node, self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_max_wale_on_back[course_id+1])], weight = diagonal_weight)
-                    #-----
+        #             #-------
+        #             # # find the other neighbor node that must be on the "opposite" bed with wale id that is closest to but smaller the node.
+        #             # min_wale_difference = 10000
+        #             # for wale_id_above_course in wale_ids_on_above_course:
+        #             #     if ((course_id, wale_id_above_course), opposite_bed) in self._knit_graph.course_and_wale_and_bed_to_node:
+        #             #         wale_difference = -(wale_id_above_course - wale_id)
+        #             #     else: 
+        #             #         continue
+        #             #     if wale_difference > 0 and wale_difference < min_wale_difference: 
+        #             #         min_wale_difference = wale_difference
+        #             #         wale_of_smaller_nearest_neighbor = wale_id_above_course
+        #             # if ((course_id+1, wale_of_smaller_nearest_neighbor), opposite_bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
+        #             #     big_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_smaller_nearest_neighbor), opposite_bed)]
+        #             #     # G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
+        #             #     #-------
+        #             #     if self._knit_graph.graph.has_edge(node, big_wale_above_node): #newly_added if statement to avoid one parent two child case.
+        #             #         G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
+        #             #     #-------
+        #             #-------
+        #             #-----find bigger_wale_neighbor_node (on the opposite bed)
+        #             # print(f'node is {node}, target node is {self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_max_wale_on_back[course_id+1])]}')
+        #             # G1.add_edge(node, self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_max_wale_on_back[course_id+1])], weight = diagonal_weight)
+        #             #-----
                 
-                # 3.2 for node on left edge back
-                if wale_id == max_wale_id_on_the_course_back:
-                    #find node right above it
-                    if ((course_id+1, wale_id), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
-                        above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_id), bed)]
-                        if self._knit_graph.graph.has_edge(node, above_node): #newly_added if statement to avoid one parent two child case.
-                            G1.add_edge(node, above_node, weight = vertical_weight)   
-                    min_wale_difference = 10000
-                    # find smaller_wale_neighbor_node (on the same bed)
-                    for wale_id_above_course in wale_ids_on_above_course:
-                        if ((course_id, wale_id_above_course), bed) in self._knit_graph.course_and_wale_and_bed_to_node:
-                            wale_difference = -(wale_id_above_course - wale_id)
-                        else: 
-                            continue
-                        if wale_difference > 0 and wale_difference < min_wale_difference:
-                            min_wale_difference = wale_difference
-                            wale_of_smaller_nearest_neighbor = wale_id_above_course
-                    if ((course_id+1, wale_of_smaller_nearest_neighbor), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
-                        big_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_smaller_nearest_neighbor), bed)]
-                        # G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
-                        #-------
-                        if self._knit_graph.graph.has_edge(node, big_wale_above_node): #newly_added if statement to avoid one parent two child case.
-                            G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
-                        #-------
-                    #---------
-                    # # find the other neighbor node that must be on the "opposite" bed with bigger wale id.
-                    # min_wale_difference = 10000
-                    # for wale_id_above_course in wale_ids_on_above_course:
-                    #     if ((course_id, wale_id_above_course), opposite_bed) in self._knit_graph.course_and_wale_and_bed_to_node: #***
-                    #         wale_difference = wale_id_above_course - wale_id
-                    #     else: 
-                    #         continue
-                    #     if wale_difference > 0 and wale_difference < min_wale_difference: #>= instead of > is because for consistent tube it is the same wale
-                    #         min_wale_difference = wale_difference
-                    #         wale_of_bigger_nearest_neighbor = wale_id_above_course
-                    # if ((course_id+1, wale_of_bigger_nearest_neighbor), opposite_bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
-                    #     big_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_bigger_nearest_neighbor), opposite_bed)]
-                    #     # G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
-                    #     #-------
-                    #     if self._knit_graph.graph.has_edge(node, big_wale_above_node): #newly_added if statement to avoid one parent two child case.
-                    #         G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
-                    #     #-------
-                    # #---------
-                    #-----find bigger_wale_neighbor_node (on the opposite bed)
-                    # G1.add_edge(node, self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_max_wale_on_front[course_id+1])], weight = diagonal_weight)
-                    #-----
-                # 3.3 for node in between on each course 
-                elif min_wale_id_on_the_course_front < wale_id < max_wale_id_on_the_course_back:
-                    # first see if this node has a stitch with parent_offset not equal to 0, if so, just add this edge. Otherwise, add all three edges as below
-                    if len([*self._knit_graph.graph.successors(node)])>0:
-                        child_node = [*self._knit_graph.graph.successors(node)][0]
-                        if self._knit_graph.graph[node][child_node]['parent_offset'] != 0:
-                            G1.add_edge(node, child_node, weight = vertical_weight)
-                            continue
-                    # find node right above it
-                    if ((course_id+1, wale_id), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
-                        above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_id), bed)]
-                        if self._knit_graph.graph.has_edge(node, above_node): #newly_added if statement to avoid one parent two child case.
-                            G1.add_edge(node, above_node, weight = vertical_weight)
-                    # find small_wale_neighbor_node (the nearest neighbor with smaller wale) on the same bed
-                    min_wale_difference = 10000
-                    for wale_id_above_course in wale_ids_on_above_course:
-                        wale_difference = wale_id -  wale_id_above_course
-                        if wale_difference % self.wale_dist == 0 and wale_difference > 0 and wale_difference < min_wale_difference:
-                            min_wale_difference = wale_difference
-                            wale_of_smaller_nearest_neighbor = wale_id_above_course
-                    if min_wale_difference == self.wale_dist and ((course_id+1, wale_of_smaller_nearest_neighbor), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
-                        small_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_smaller_nearest_neighbor), bed)]
-                        # G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
-                        #-------
-                        if self._knit_graph.graph.has_edge(node, big_wale_above_node): #newly_added if statement to avoid one parent two child case.
-                            G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
-                        #-------
-                    # find bigger_wale_neighbor_node (the nearest neighbor with smaller wale but on the same bed).
-                    min_wale_difference = 10000
-                    for wale_id_above_course in wale_ids_on_above_course:
-                        wale_difference = wale_id_above_course - wale_id 
-                        if wale_difference % self.wale_dist == 0 and wale_difference > 0 and wale_difference < min_wale_difference: 
-                            min_wale_difference = wale_difference
-                            wale_of_bigger_nearest_neighbor = wale_id_above_course
-                    if ((course_id+1, wale_of_bigger_nearest_neighbor), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
-                        big_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_bigger_nearest_neighbor), bed)]
-                        # G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
-                        #-------
-                        if self._knit_graph.graph.has_edge(node, big_wale_above_node): #newly_added if statement to avoid one parent two child case.
-                            G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
-                        #-------
-                # 3.4 for node on right edge front (i.e. with min wale on the front)
-                elif wale_id == min_wale_id_on_the_course_front:
-                    #find node right above it
-                    if ((course_id+1, wale_id), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
-                        above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_id), bed)]
-                        if self._knit_graph.graph.has_edge(node, above_node): #newly_added if statement to avoid one parent two child case.
-                            G1.add_edge(node, above_node, weight = vertical_weight)   
-                    min_wale_difference = 10000
-                    # #------
-                    # # find small_wale_neighbor_node (on the opposite bed)
-                    # for wale_id_above_course in wale_ids_on_above_course:
-                    #     if ((course_id, wale_id_above_course), opposite_bed) in self._knit_graph.course_and_wale_and_bed_to_node: #***
-                    #         wale_difference = -(wale_id_above_course - wale_id)
-                    #     else: 
-                    #         continue
-                    #     if wale_difference > 0 and wale_difference < min_wale_difference:
-                    #         min_wale_difference = wale_difference
-                    #         wale_of_smaller_nearest_neighbor = wale_id_above_course
-                    # if ((course_id+1, wale_of_smaller_nearest_neighbor), opposite_bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
-                    #     small_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_smaller_nearest_neighbor), opposite_bed)]
-                    #     # G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
-                    #     #-------
-                    #     if self._knit_graph.graph.has_edge(node, small_wale_above_node): #newly_added if statement to avoid one parent two child case.
-                    #         G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
-                    #     #-------
-                    # #------
-                    #-----find bigger_wale_neighbor_node (on the opposite bed)
-                    # G1.add_edge(node, self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_min_wale_on_back[course_id+1])], weight = diagonal_weight)
-                    #-----
-                    # find the bigger wale node on the same bed
-                    min_wale_difference = 10000
-                    for wale_id_above_course in wale_ids_on_above_course:
-                        if ((course_id, wale_id_above_course), bed) in self._knit_graph.course_and_wale_and_bed_to_node:
-                            wale_difference = wale_id_above_course - wale_id
-                        else: 
-                            continue
-                        if wale_difference > 0 and wale_difference < min_wale_difference: #>= instead of > is because for consistent tube it is the same wale
-                            min_wale_difference = wale_difference
-                            wale_of_bigger_nearest_neighbor = wale_id_above_course
-                    if ((course_id+1, wale_of_bigger_nearest_neighbor), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
-                        big_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_bigger_nearest_neighbor), bed)]
-                        # G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
-                        #-------
-                        if self._knit_graph.graph.has_edge(node, big_wale_above_node): #newly_added if statement to avoid one parent two child case.
-                            G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
-                        #-------
-                # 3.5 for node on right edge back (i.e. min wale on the back)
-                elif wale_id == min_wale_id_on_the_course_back:
-                    #find node right above it
-                    if ((course_id+1, wale_id), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
-                        above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_id), bed)]
-                        if self._knit_graph.graph.has_edge(node, above_node): #newly_added if statement to avoid one parent two child case.
-                            G1.add_edge(node, above_node, weight = vertical_weight)   
-                    min_wale_difference = 10000
-                    # #-------
-                    # # find bigger_wale_neighbor_node (on the opposite bed)
-                    # for wale_id_above_course in wale_ids_on_above_course:
-                    #     if ((course_id, wale_id_above_course), opposite_bed) in self._knit_graph.course_and_wale_and_bed_to_node: #***
-                    #         wale_difference = wale_id_above_course - wale_id
-                    #     else: 
-                    #         continue
-                    #     if wale_difference > 0 and wale_difference < min_wale_difference:
-                    #         min_wale_difference = wale_difference
-                    #         wale_of_smaller_nearest_neighbor = wale_id_above_course
-                    # if ((course_id+1, wale_of_smaller_nearest_neighbor), opposite_bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
-                    #     small_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_smaller_nearest_neighbor), opposite_bed)]
-                    #     # G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
-                    #     #-------
-                    #     if self._knit_graph.graph.has_edge(node, small_wale_above_node): #newly_added if statement to avoid one parent two child case.
-                    #         G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
-                    #     #-------
-                    # #-------
-                    #----- find bigger_wale_neighbor_node (on the opposite bed)
-                    # G1.add_edge(node, self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_min_wale_on_front[course_id+1])], weight = diagonal_weight)
-                    #-----
-                    # find the bigger wale node on the same bed
-                    min_wale_difference = 10000
-                    for wale_id_above_course in wale_ids_on_above_course:
-                        if ((course_id, wale_id_above_course), bed) in self._knit_graph.course_and_wale_and_bed_to_node: #***
-                            wale_difference = wale_id_above_course - wale_id
-                        else: 
-                            continue
-                        if wale_difference > 0 and wale_difference < min_wale_difference: #>= instead of > is because for consistent tube it is the same wale
-                            min_wale_difference = wale_difference
-                            wale_of_smaller_nearest_neighbor = wale_id_above_course
-                    if ((course_id+1, wale_of_smaller_nearest_neighbor), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
-                        small_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_smaller_nearest_neighbor), bed)]
-                        G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
-                        #-------
-                        if self._knit_graph.graph.has_edge(node, small_wale_above_node): #newly_added if statement to avoid one parent two child case.
-                            G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
-                        #-------
+        #         # 3.2 for node on left edge back
+        #         if wale_id == max_wale_id_on_the_course_back:
+        #             #find node right above it
+        #             if ((course_id+1, wale_id), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
+        #                 above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_id), bed)]
+        #                 if self._knit_graph.graph.has_edge(node, above_node): #newly_added if statement to avoid one parent two child case.
+        #                     G1.add_edge(node, above_node, weight = vertical_weight)   
+        #             min_wale_difference = 10000
+        #             # find smaller_wale_neighbor_node (on the same bed)
+        #             for wale_id_above_course in wale_ids_on_above_course:
+        #                 if ((course_id, wale_id_above_course), bed) in self._knit_graph.course_and_wale_and_bed_to_node:
+        #                     wale_difference = -(wale_id_above_course - wale_id)
+        #                 else: 
+        #                     continue
+        #                 if wale_difference > 0 and wale_difference < min_wale_difference:
+        #                     min_wale_difference = wale_difference
+        #                     wale_of_smaller_nearest_neighbor = wale_id_above_course
+        #             if ((course_id+1, wale_of_smaller_nearest_neighbor), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
+        #                 big_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_smaller_nearest_neighbor), bed)]
+        #                 # G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
+        #                 #-------
+        #                 if self._knit_graph.graph.has_edge(node, big_wale_above_node): #newly_added if statement to avoid one parent two child case.
+        #                     G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
+        #                 #-------
+        #             #---------
+        #             # # find the other neighbor node that must be on the "opposite" bed with bigger wale id.
+        #             # min_wale_difference = 10000
+        #             # for wale_id_above_course in wale_ids_on_above_course:
+        #             #     if ((course_id, wale_id_above_course), opposite_bed) in self._knit_graph.course_and_wale_and_bed_to_node: #***
+        #             #         wale_difference = wale_id_above_course - wale_id
+        #             #     else: 
+        #             #         continue
+        #             #     if wale_difference > 0 and wale_difference < min_wale_difference: #>= instead of > is because for consistent tube it is the same wale
+        #             #         min_wale_difference = wale_difference
+        #             #         wale_of_bigger_nearest_neighbor = wale_id_above_course
+        #             # if ((course_id+1, wale_of_bigger_nearest_neighbor), opposite_bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
+        #             #     big_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_bigger_nearest_neighbor), opposite_bed)]
+        #             #     # G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
+        #             #     #-------
+        #             #     if self._knit_graph.graph.has_edge(node, big_wale_above_node): #newly_added if statement to avoid one parent two child case.
+        #             #         G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
+        #             #     #-------
+        #             # #---------
+        #             #-----find bigger_wale_neighbor_node (on the opposite bed)
+        #             # G1.add_edge(node, self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_max_wale_on_front[course_id+1])], weight = diagonal_weight)
+        #             #-----
+        #         # 3.3 for node in between on each course 
+        #         elif min_wale_id_on_the_course_front < wale_id < max_wale_id_on_the_course_back:
+        #             # first see if this node has a stitch with parent_offset not equal to 0, if so, just add this edge. Otherwise, add all three edges as below
+        #             if len([*self._knit_graph.graph.successors(node)])>0:
+        #                 child_node = [*self._knit_graph.graph.successors(node)][0]
+        #                 if self._knit_graph.graph[node][child_node]['parent_offset'] != 0:
+        #                     G1.add_edge(node, child_node, weight = vertical_weight)
+        #                     continue
+        #             # find node right above it
+        #             if ((course_id+1, wale_id), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
+        #                 above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_id), bed)]
+        #                 if self._knit_graph.graph.has_edge(node, above_node): #newly_added if statement to avoid one parent two child case.
+        #                     G1.add_edge(node, above_node, weight = vertical_weight)
+        #             # find small_wale_neighbor_node (the nearest neighbor with smaller wale) on the same bed
+        #             min_wale_difference = 10000
+        #             for wale_id_above_course in wale_ids_on_above_course:
+        #                 wale_difference = wale_id -  wale_id_above_course
+        #                 if wale_difference % self.wale_dist == 0 and wale_difference > 0 and wale_difference < min_wale_difference:
+        #                     min_wale_difference = wale_difference
+        #                     wale_of_smaller_nearest_neighbor = wale_id_above_course
+        #             if min_wale_difference == self.wale_dist and ((course_id+1, wale_of_smaller_nearest_neighbor), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
+        #                 small_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_smaller_nearest_neighbor), bed)]
+        #                 # G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
+        #                 #-------
+        #                 if self._knit_graph.graph.has_edge(node, big_wale_above_node): #newly_added if statement to avoid one parent two child case.
+        #                     G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
+        #                 #-------
+        #             # find bigger_wale_neighbor_node (the nearest neighbor with smaller wale but on the same bed).
+        #             min_wale_difference = 10000
+        #             for wale_id_above_course in wale_ids_on_above_course:
+        #                 wale_difference = wale_id_above_course - wale_id 
+        #                 if wale_difference % self.wale_dist == 0 and wale_difference > 0 and wale_difference < min_wale_difference: 
+        #                     min_wale_difference = wale_difference
+        #                     wale_of_bigger_nearest_neighbor = wale_id_above_course
+        #             if ((course_id+1, wale_of_bigger_nearest_neighbor), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
+        #                 big_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_bigger_nearest_neighbor), bed)]
+        #                 # G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
+        #                 #-------
+        #                 if self._knit_graph.graph.has_edge(node, big_wale_above_node): #newly_added if statement to avoid one parent two child case.
+        #                     G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
+        #                 #-------
+        #         # 3.4 for node on right edge front (i.e. with min wale on the front)
+        #         elif wale_id == min_wale_id_on_the_course_front:
+        #             #find node right above it
+        #             if ((course_id+1, wale_id), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
+        #                 above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_id), bed)]
+        #                 if self._knit_graph.graph.has_edge(node, above_node): #newly_added if statement to avoid one parent two child case.
+        #                     G1.add_edge(node, above_node, weight = vertical_weight)   
+        #             min_wale_difference = 10000
+        #             # #------
+        #             # # find small_wale_neighbor_node (on the opposite bed)
+        #             # for wale_id_above_course in wale_ids_on_above_course:
+        #             #     if ((course_id, wale_id_above_course), opposite_bed) in self._knit_graph.course_and_wale_and_bed_to_node: #***
+        #             #         wale_difference = -(wale_id_above_course - wale_id)
+        #             #     else: 
+        #             #         continue
+        #             #     if wale_difference > 0 and wale_difference < min_wale_difference:
+        #             #         min_wale_difference = wale_difference
+        #             #         wale_of_smaller_nearest_neighbor = wale_id_above_course
+        #             # if ((course_id+1, wale_of_smaller_nearest_neighbor), opposite_bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
+        #             #     small_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_smaller_nearest_neighbor), opposite_bed)]
+        #             #     # G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
+        #             #     #-------
+        #             #     if self._knit_graph.graph.has_edge(node, small_wale_above_node): #newly_added if statement to avoid one parent two child case.
+        #             #         G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
+        #             #     #-------
+        #             # #------
+        #             #-----find bigger_wale_neighbor_node (on the opposite bed)
+        #             # G1.add_edge(node, self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_min_wale_on_back[course_id+1])], weight = diagonal_weight)
+        #             #-----
+        #             # find the bigger wale node on the same bed
+        #             min_wale_difference = 10000
+        #             for wale_id_above_course in wale_ids_on_above_course:
+        #                 if ((course_id, wale_id_above_course), bed) in self._knit_graph.course_and_wale_and_bed_to_node:
+        #                     wale_difference = wale_id_above_course - wale_id
+        #                 else: 
+        #                     continue
+        #                 if wale_difference > 0 and wale_difference < min_wale_difference: #>= instead of > is because for consistent tube it is the same wale
+        #                     min_wale_difference = wale_difference
+        #                     wale_of_bigger_nearest_neighbor = wale_id_above_course
+        #             if ((course_id+1, wale_of_bigger_nearest_neighbor), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
+        #                 big_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_bigger_nearest_neighbor), bed)]
+        #                 # G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
+        #                 #-------
+        #                 if self._knit_graph.graph.has_edge(node, big_wale_above_node): #newly_added if statement to avoid one parent two child case.
+        #                     G1.add_edge(node, big_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
+        #                 #-------
+        #         # 3.5 for node on right edge back (i.e. min wale on the back)
+        #         elif wale_id == min_wale_id_on_the_course_back:
+        #             #find node right above it
+        #             if ((course_id+1, wale_id), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
+        #                 above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_id), bed)]
+        #                 if self._knit_graph.graph.has_edge(node, above_node): #newly_added if statement to avoid one parent two child case.
+        #                     G1.add_edge(node, above_node, weight = vertical_weight)   
+        #             min_wale_difference = 10000
+        #             # #-------
+        #             # # find bigger_wale_neighbor_node (on the opposite bed)
+        #             # for wale_id_above_course in wale_ids_on_above_course:
+        #             #     if ((course_id, wale_id_above_course), opposite_bed) in self._knit_graph.course_and_wale_and_bed_to_node: #***
+        #             #         wale_difference = wale_id_above_course - wale_id
+        #             #     else: 
+        #             #         continue
+        #             #     if wale_difference > 0 and wale_difference < min_wale_difference:
+        #             #         min_wale_difference = wale_difference
+        #             #         wale_of_smaller_nearest_neighbor = wale_id_above_course
+        #             # if ((course_id+1, wale_of_smaller_nearest_neighbor), opposite_bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
+        #             #     small_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_smaller_nearest_neighbor), opposite_bed)]
+        #             #     # G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
+        #             #     #-------
+        #             #     if self._knit_graph.graph.has_edge(node, small_wale_above_node): #newly_added if statement to avoid one parent two child case.
+        #             #         G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
+        #             #     #-------
+        #             # #-------
+        #             #----- find bigger_wale_neighbor_node (on the opposite bed)
+        #             # G1.add_edge(node, self._knit_graph.course_and_wale_to_node[(course_id+1, self.courses_to_min_wale_on_front[course_id+1])], weight = diagonal_weight)
+        #             #-----
+        #             # find the bigger wale node on the same bed
+        #             min_wale_difference = 10000
+        #             for wale_id_above_course in wale_ids_on_above_course:
+        #                 if ((course_id, wale_id_above_course), bed) in self._knit_graph.course_and_wale_and_bed_to_node: #***
+        #                     wale_difference = wale_id_above_course - wale_id
+        #                 else: 
+        #                     continue
+        #                 if wale_difference > 0 and wale_difference < min_wale_difference: #>= instead of > is because for consistent tube it is the same wale
+        #                     min_wale_difference = wale_difference
+        #                     wale_of_smaller_nearest_neighbor = wale_id_above_course
+        #             if ((course_id+1, wale_of_smaller_nearest_neighbor), bed) in self._knit_graph.course_and_wale_and_bed_to_node.keys():
+        #                 small_wale_above_node = self._knit_graph.course_and_wale_and_bed_to_node[((course_id+1, wale_of_smaller_nearest_neighbor), bed)]
+        #                 G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10
+        #                 #-------
+        #                 if self._knit_graph.graph.has_edge(node, small_wale_above_node): #newly_added if statement to avoid one parent two child case.
+        #                     G1.add_edge(node, small_wale_above_node, weight = diagonal_weight) #changed from -1 to -10. Reason is explained in the paper draft.
+        #                 #-------
+        
         # remove hole nodes
         # the reason we preprocess the Graph G1 before remove the hole nodes is to avoid the error "RuntimeError: dictionary changed size during iteration".
         # caused by "for node in G1.nodes: xxx"
@@ -592,6 +596,12 @@ class Hole_Generator_on_Tube:
         KnitGraph_Visualizer = knitGraph_visualizer(copy_knit_graph)
         KnitGraph_Visualizer.visualize()
 
+    def string_generator(self, count_dict, item):
+        if item not in count_dict:
+            count_dict[item] = 0
+        count_dict[item] += 1
+        return count_dict[item]
+            
     def remove_old_and_add_new_yarn(self, path: List[int], remain_subgraphs, G1):    
         """
         remove loop_ids from old yarn and assign loop_ids to new yarn for each subgraph using path_search() above.
@@ -605,6 +615,7 @@ class Hole_Generator_on_Tube:
         for loop_id in visited_nodes_old_yarn:
             child_id, loop = self._old_yarn.add_loop_to_end(loop_id = loop_id) #we use old yarn first on the modified KnitGraph
         new_yarns = []
+        count_dict = {}
         for i in range(len(remain_subgraphs)):
             G2 = G1.copy() #G1 is the above pre-processed graph but with hole nodes and nodes on the old yarn deleted; while G2 is used to represent each isolated subgraph
             # in each for loop.
@@ -620,17 +631,29 @@ class Hole_Generator_on_Tube:
             remain_nodes = G2.nodes
             while len(remain_nodes) > 0: #for the subgraph that we aim at inside each for loop, we need to keep path searching until every node has been consumed/assigned
                 # to a yarn.
-                while True:
-                    yarn_carrier_id = random.randint(1,10)
-                    if yarn_carrier_id!=self._old_yarn.carrier.carrier_ids and yarn_carrier_id not in new_yarns:
-                        new_yarns.append(yarn_carrier_id)
-                        break
-                new_yarn_id = str(yarn_carrier_id)
-                new_yarn = Yarn(new_yarn_id, self._knit_graph, carrier_id=yarn_carrier_id)
+                if len(self._new_yarns) < 9:
+                    while True:
+                        yarn_carrier_id = random.randint(1, 10)
+                        if yarn_carrier_id!=self._old_yarn.carrier.carrier_ids and yarn_carrier_id not in new_yarns:
+                            new_yarns.append(yarn_carrier_id)
+                            break
+                    new_yarn_id = str(yarn_carrier_id)
+                    new_yarn = Yarn(new_yarn_id, self._knit_graph, carrier_id=yarn_carrier_id)
+                else:
+                    if len(self._new_yarns) == 9:
+                        # Creating an iterator
+                        yarn_id_iterator = cycle(new_yarns) #iter(new_yarns)
+                    # Iterating through the list using the iterator
+                    yarn_carrier_id = next(yarn_id_iterator)
+                    showup_times = self.string_generator(count_dict, yarn_carrier_id)
+                    generated_string = str(yarn_carrier_id)+'_'+str(showup_times)
+                    # print(f'new_yarns is {new_yarns}, yarn_carrier_id is {yarn_carrier_id}, generated_string is {generated_string}')
+                    new_yarn = Yarn(generated_string, self._knit_graph, carrier_id=yarn_carrier_id, last_loop = min(G2.nodes))
                 self._knit_graph.add_yarn(new_yarn)
                 self._new_yarns.append(new_yarn)  
                 G2.remove_nodes_from(path)
                 path, remain_nodes = self.path_search(G2)
+                # print(f'path is {path}')
                 for loop_id in path:
                     #doing clip here:
                     # if len([*self._knit_graph.graph.successors(parent_id)])
@@ -751,6 +774,7 @@ class Hole_Generator_on_Tube:
         used to order the node on the yarn from small to bigger node id.
         """
         yarns = [*self._knit_graph.yarns.values()]
+        # yarns = self._new_yarns
         for yarn in yarns:
             # node_coor_order = []
             course_to_wale_ids = {}
@@ -833,7 +857,7 @@ class Hole_Generator_on_Tube:
         # 
         self.read_connectivity_from_knitgraph()
         # 
-        self.rebuild_yarn_graph()
+        # self.rebuild_yarn_graph()
         # 
         self.connect_stitches_on_knitgraph()
         #connect unstable (have no child loops) nodes on the edge of the hole to the nearest top neighbor to prevent them from falling off the parent loops,

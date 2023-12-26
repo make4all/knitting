@@ -23,7 +23,8 @@ class Knitout_Generator:
         self.gauge: float = knit_graph.gauge 
         self.wale_dist = int(1/self.gauge)
         # print(f'self.wale_dist is {self.wale_dist}')
-        self._carrier_set = [yarn.carrier for yarn in [*self._knit_graph.yarns.values()]]
+        # self._carrier_set = [yarn.carrier for yarn in [*self._knit_graph.yarns.values()]]
+        self._carrier_set = list(set([yarn.carrier for yarn in [*self._knit_graph.yarns.values()]]))
         # print('self._carrier_set', self._carrier_set, type(self._carrier_set))
         self.yarns = [*self._knit_graph.yarns.values()]
         self.old_courses_to_loop_id = knit_graph.course_to_loop_ids

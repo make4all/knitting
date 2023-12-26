@@ -98,7 +98,9 @@ class knitGraph_visualizer:
     #get yarn edges color
     def get_yarn_edges(self):
         #add yarn edges and set edge color
+        print(f'len(self.yarns) is {len(self.yarns)}')
         for yarn in self.yarns:
+            print(f'yarn is {yarn.yarn_id}, yarn.yarn_graph.edges is {yarn.yarn_graph.edges}')
             for prior_node, next_node in yarn.yarn_graph.edges:
                 if prior_node not in self.nodes_to_positions or next_node not in self.nodes_to_positions:
                     continue

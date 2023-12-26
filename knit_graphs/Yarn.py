@@ -36,7 +36,10 @@ class Yarn:
         if last_loop is None:
             self.last_loop_id = None
         else:
-            self.last_loop_id: int = last_loop.loop_id
+            if isinstance(last_loop, int):
+                self.last_loop_id: int = last_loop
+            else:
+                self.last_loop_id: int = last_loop.loop_id
         self._yarn_id: str = yarn_id
 
     @property
