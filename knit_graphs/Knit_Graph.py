@@ -54,6 +54,7 @@ class Knit_Graph:
         self.object_type: str
         self.loop_ids_to_course: Dict[int, int] = {}
         self.course_to_loop_ids: Dict[int, List[int]] = {}
+        self.course_to_loop_ids_including_slip: Dict[int, List[int]] = {}
         self.loop_ids_to_wale: Dict[int, int] = {}
         self.wale_to_loop_ids: Dict[int, List[int]] = {}
         self.node_to_course_and_wale: Dict[int, Tuple[int, int]] = {}
@@ -459,7 +460,10 @@ class Knit_Graph:
         return self.node_to_course_and_wale
 
     def get_min_and_max_wale_id_on_course_on_bed(self):
-        for course_id, loop_ids in self.course_to_loop_ids.items():
+        # for course_id, loop_ids in self.course_to_loop_ids_.items():
+        self.course_to_loop_ids_including_slip[0] = self.course_to_loop_ids[0]
+        print(f'self.course_to_loop_ids_including_slip is {self.course_to_loop_ids_including_slip}')
+        for course_id, loop_ids in self.course_to_loop_ids_including_slip.items():
             max_wale_on_front = -10000
             min_wale_on_front = 10000
             max_wale_on_back = -10000
@@ -505,7 +509,7 @@ class Knit_Graph:
                         if loop_id in self.loops_on_back_part_of_the_tube:
                             # print(f'loop id {loop_id} has wale updated from {self.node_to_course_and_wale[loop_id][1]} to {self.node_to_course_and_wale[loop_id][1] - (self.courses_to_max_wale_on_front[course_id] - self.courses_to_max_wale_on_back[course_id]) - self.wale_dist} to reduce float')
                             # self.node_to_course_and_wale[loop_id] = (course_id, self.node_to_course_and_wale[loop_id][1]-(int((self.courses_to_max_wale_on_front[course_id] - self.courses_to_max_wale_on_back[course_id])/self.wale_dist)+1)*self.wale_dist)
-                            adjust_wale = self.courses_to_max_wale_on_front[course_id] - self.courses_to_max_wale_on_back[course_id] + 1
+                            adjust_wale = self.courses_to_max_wale_on_front[course_id] - self.courses_to_max_wale_on_back[course_id] - 1
                             print(f'loop id {loop_id} has wale updated from {self.node_to_course_and_wale[loop_id][1]} to {self.node_to_course_and_wale[loop_id][1] + adjust_wale}')
                             self.node_to_course_and_wale[loop_id] = (course_id, self.node_to_course_and_wale[loop_id][1]+adjust_wale)
                     # self.courses_to_min_wale_on_front[course_id] = self.courses_to_min_wale_on_front[course_id]-(int((self.courses_to_max_wale_on_front[course_id] - self.courses_to_max_wale_on_back[course_id])/self.wale_dist)+1)*self.wale_dist
@@ -515,7 +519,7 @@ class Knit_Graph:
             # print(f'after float reduced, self.courses_to_min_wale_on_back is {self.courses_to_min_wale_on_back}, self.courses_to_max_wale_on_back is {self.courses_to_max_wale_on_back}')
             # print(f'after float reduced, self.courses_to_min_wale_on_front is {self.courses_to_min_wale_on_front}, self.courses_to_max_wale_on_front is {self.courses_to_max_wale_on_front}')
                 if course_id+1 in self.courses_to_min_wale_on_front:
-                    if  self.courses_to_min_wale_on_back[course_id] > self.courses_to_min_wale_on_front[course_id+1] + 1:
+                    if  self.courses_to_min_wale_on_back[course_id] > self.courses_to_min_wale_on_front[course_id+1]: #+ 1:
                         count_of_front_half_shift += 1
                         # adjust_wale = self.courses_to_min_wale_on_back[course_id] - self.courses_to_min_wale_on_front[course_id+1] - 1 if count_of_front_half_shift % 2 == 1 else self.courses_to_min_wale_on_back[course_id] - self.courses_to_min_wale_on_front[course_id+1] + 1 - self.wale_dist
                         adjust_wale = self.courses_to_min_wale_on_back[course_id] - self.courses_to_min_wale_on_front[course_id+1] + 1 

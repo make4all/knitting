@@ -264,11 +264,12 @@ class knitGraph_visualizer:
         p.add_tools(hover, TapTool(), BoxSelectTool(), WheelZoomTool())
 
         for edge in [*self.edge_color_property.keys()]:
-            vec_start = np.array([pos[edge[0]][0], pos[edge[0]][1]])
-            vec_end = np.array([pos[edge[1]][0], pos[edge[1]][1]])
-            vec_dir = (vec_start - vec_end) / np.linalg.norm(vec_start - vec_end)
-            radius_x = 0.008 * x_range
-            radius_y = 0.01 * y_range
+            # vec_start = np.array([pos[edge[0]][0], pos[edge[0]][1]])
+            # vec_end = np.array([pos[edge[1]][0], pos[edge[1]][1]])
+            # vec_dir = (vec_start - vec_end) / np.linalg.norm(vec_start - vec_end)
+            # radius_x = 0.008 * x_range
+            # radius_y = 0.01 * y_range
+            
             # p.add_layout(Arrow(end=NormalHead(fill_color=self.edge_color_property[edge]['color'], fill_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha']), size=7),
             #     x_start=(pos[edge[0]][0] - radius_x * vec_dir[0]), y_start=(pos[edge[0]][1] - radius_y * vec_dir[1]), x_end=(pos[edge[1]][0] + radius_x * vec_dir[0]), \
             #         y_end=(pos[edge[1]][1] + radius_y * vec_dir[1]), line_width=3, line_color=self.edge_color_property[edge]['color'], line_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha'])))

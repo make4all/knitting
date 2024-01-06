@@ -29,6 +29,7 @@ class Knitout_Generator:
         self.yarns = [*self._knit_graph.yarns.values()]
         self.old_courses_to_loop_id = knit_graph.course_to_loop_ids
         self.old_loop_id_to_courses = knit_graph.loop_ids_to_course
+        self.already_used = False
         self._loop_id_to_courses, self._courses_to_loop_ids = knit_graph.get_courses()
         print(f'self._courses_to_loop_ids in knitout interpreter is {self._courses_to_loop_ids}')
         # because we have used bind-off to secure the bottom loops that has no child, so we actually updated the course_to_loop_ids by bind-off,
@@ -746,7 +747,8 @@ class Knitout_Generator:
                 elif bed == 'f':
                     front_bed_needles_to_tuck_on.append(needle_pos)
                     first_course_front_loops.append(loop_id)
-            if carrier == first_carrier_in_use:
+            if carrier == first_carrier_in_use and self.already_used == False:
+                self.already_used = True
                 #note that +2 is because we purposely put loops on front bed and on back bed on exclusive slot to work as half gauging.
                 back_bed_needles_to_tuck_on = [i+2 for i in back_bed_needles_to_tuck_on]
                 # below line might subject to change upon testing: if tuck on sent out warning, we will change to see if caused by this.
@@ -844,7 +846,7 @@ class Knitout_Generator:
                         self._add_carriage_pass(carriage_pass, f"first row loops on front bed for for {carrier}")
                         carriage_pass = Carriage_Pass(Pass_Direction.Left_to_Right, first_all_back, self._machine_state)
                         self._add_carriage_pass(carriage_pass, f"first row loops on back bed for {carrier}")
-            elif carrier != first_carrier_in_use:
+            else: #elif carrier != first_carrier_in_use:
                 # for other carriers, tuck on needles on the side to avoid messing the designed pattern, but note that tuck on which side is determined by the pass direction,
                 # if ignore this, introducing a new yarn could fail
                 # different from sheet, for tube, for a course there can be two opposite yarn walking direction, which makes pass_direction useless here, thus we introduce
@@ -979,6 +981,7 @@ class Knitout_Generator:
         # xferred to the opposite bed. Otherwise, with the first procedure, knit_purl_xfer will be activated to get them back to the
         # opposite bed, which is not only a waste of carriage for two more, but also can lead to mess up. See 
         parents_on_child_fabric_for_closetop_decrease = []
+        print(f'loop ids in convertor is {loop_ids}')
         for loop_id in loop_ids:  # find target needle locations of each loop in the course
             parent_ids = [*self._knit_graph.graph.predecessors(loop_id)]
             #get the loop on the final course on the parent knitgraph, so that we can drop them before knitting remaining straps for example (which might be 

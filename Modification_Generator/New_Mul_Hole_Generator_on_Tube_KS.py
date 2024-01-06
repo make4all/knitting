@@ -618,6 +618,7 @@ class Hole_Generator_on_Tube:
             child_id, loop = self._old_yarn.add_loop_to_end(loop_id = loop_id) #we use old yarn first on the modified KnitGraph
         new_yarns = []
         count_dict = {}
+        available_carriers = 1
         for i in range(len(remain_subgraphs)):
             G2 = G1.copy() #G1 is the above pre-processed graph but with hole nodes and nodes on the old yarn deleted; while G2 is used to represent each isolated subgraph
             # in each for loop.
@@ -633,18 +634,19 @@ class Hole_Generator_on_Tube:
             remain_nodes = G2.nodes
             while len(remain_nodes) > 0: #for the subgraph that we aim at inside each for loop, we need to keep path searching until every node has been consumed/assigned
                 # to a yarn.
-                if len(self._new_yarns) < 9:
+                if len(self._new_yarns) < available_carriers-1:
                     while True:
-                        yarn_carrier_id = random.randint(1, 10)
+                        yarn_carrier_id = random.randint(1, available_carriers) #assume 10 carriers are available. If only 1 carrier is available, use random.randint(1, 1)
                         if yarn_carrier_id!=self._old_yarn.carrier.carrier_ids and yarn_carrier_id not in new_yarns:
                             new_yarns.append(yarn_carrier_id)
                             break
                     new_yarn_id = str(yarn_carrier_id)
                     new_yarn = Yarn(new_yarn_id, self._knit_graph, carrier_id=yarn_carrier_id)
                 else:
-                    if len(self._new_yarns) == 9:
-                        # Creating an iterator
-                        yarn_id_iterator = cycle(new_yarns) #iter(new_yarns)
+                    if available_carriers == 1:
+                        new_yarns = [self._old_yarn.carrier.carrier_ids]
+                    # Creating an iterator
+                    yarn_id_iterator = cycle(new_yarns) #iter(new_yarns)
                     # Iterating through the list using the iterator
                     yarn_carrier_id = next(yarn_id_iterator)
                     showup_times = self.string_generator(count_dict, yarn_carrier_id)

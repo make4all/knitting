@@ -141,6 +141,7 @@ class Knitspeak_Compiler:
             #----
             self.last_course_loop_ids = self.cur_course_loop_ids
             self.last_course_loop_ids_temp = self.last_course_loop_ids.copy()
+            self.knit_graph.course_to_loop_ids_including_slip[course_id] = self.cur_course_loop_ids
             self.cur_course_loop_ids = []
             self.loop_ids_consumed_by_current_course = set()
             
@@ -343,7 +344,7 @@ class Knitspeak_Compiler:
                 print(f'number_of_parents is {number_of_parents}')
                 for i in range(number_of_parents):
                     print(f'i is {i}, len(self.last_course_loop_ids_temp) is {len(self.last_course_loop_ids_temp)}')
-                    if len(self.last_course_loop_ids_temp) < 1:
+                    if len(self.last_course_loop_ids_temp) < 1 and number_of_parents != 0: #make sure this is not yo
                         self.terminated = True
                         print(f'self.terminated is {self.terminated}')
                         return
@@ -424,7 +425,7 @@ class Knitspeak_Compiler:
                 print(f'number_of_parents is {number_of_parents}')
                 for i in range(number_of_parents):
                     print(f'i is {i}, len(self.last_course_loop_ids_temp) is {len(self.last_course_loop_ids_temp)}')
-                    if len(self.last_course_loop_ids_temp) < 1:
+                    if len(self.last_course_loop_ids_temp) < 1 and number_of_parents != 0:
                         self.terminated = True
                         print(f'self.terminated is {self.terminated}')
                         return
