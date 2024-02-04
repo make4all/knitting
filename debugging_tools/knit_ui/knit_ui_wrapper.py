@@ -29,11 +29,12 @@ def generate_initial_graph(pattern_used, gauge, color, width, height, knit_speak
                                       pattern=pattern_used)
     except:
         raise ErrorException(f'Error when parsing the knit speak. Please check if the entered knit speak and the size is valid.')
-    knit_graph.gauge = gauge
+    knit_graph.gauge = gauge    
     loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
     loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_wales()
-    node_to_course_and_wale = knit_graph.get_node_course_and_wale()
     node_on_front_or_back = knit_graph.get_node_bed()
+    course_to_loops_on_front_part_of_the_tube, course_to_loops_on_back_part_of_the_tube = knit_graph.get_node_bed_for_courses()
+    node_to_course_and_wale = knit_graph.get_node_course_and_wale()
     course_and_wale_and_bed_to_node = knit_graph.get_course_and_wale_and_bed_to_node()
     #----
     max_wale_id_front_and_back = knit_graph.get_min_and_max_wale_id_on_course_on_bed()

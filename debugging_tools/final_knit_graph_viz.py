@@ -39,7 +39,7 @@ class knitGraph_visualizer:
         self.carrier_id_to_color = {1:'black', 2:'skyblue', 3:'orange', 4:'green', 5: 'yellow', 6:'blue', 7: 'pink', 8: 'purple', 9:'cyan', 10:'red'}
         self.cable_depth_to_color = {1:'grey', -1:'magenta'}
         self.alpha_front = 1
-        self.alpha_back = 0.4 #previously 0.7
+        self.alpha_back = 0.7 #previously 0.7
         self.node_color_property = {}
         self.edge_color_property = {}
         self.stitch_labels = {}
@@ -269,7 +269,7 @@ class knitGraph_visualizer:
             # vec_dir = (vec_start - vec_end) / np.linalg.norm(vec_start - vec_end)
             # radius_x = 0.008 * x_range
             # radius_y = 0.01 * y_range
-            
+
             # p.add_layout(Arrow(end=NormalHead(fill_color=self.edge_color_property[edge]['color'], fill_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha']), size=7),
             #     x_start=(pos[edge[0]][0] - radius_x * vec_dir[0]), y_start=(pos[edge[0]][1] - radius_y * vec_dir[1]), x_end=(pos[edge[1]][0] + radius_x * vec_dir[0]), \
             #         y_end=(pos[edge[1]][1] + radius_y * vec_dir[1]), line_width=3, line_color=self.edge_color_property[edge]['color'], line_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha'])))

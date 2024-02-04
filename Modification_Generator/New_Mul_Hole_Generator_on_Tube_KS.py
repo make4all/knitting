@@ -634,7 +634,7 @@ class Hole_Generator_on_Tube:
             remain_nodes = G2.nodes
             while len(remain_nodes) > 0: #for the subgraph that we aim at inside each for loop, we need to keep path searching until every node has been consumed/assigned
                 # to a yarn.
-                if len(self._new_yarns) < available_carriers-1:
+                if len(self._new_yarns) < available_carriers - 1:
                     while True:
                         yarn_carrier_id = random.randint(1, available_carriers) #assume 10 carriers are available. If only 1 carrier is available, use random.randint(1, 1)
                         if yarn_carrier_id!=self._old_yarn.carrier.carrier_ids and yarn_carrier_id not in new_yarns:
@@ -643,15 +643,17 @@ class Hole_Generator_on_Tube:
                     new_yarn_id = str(yarn_carrier_id)
                     new_yarn = Yarn(new_yarn_id, self._knit_graph, carrier_id=yarn_carrier_id)
                 else:
+                    if len(self._new_yarns) == available_carriers - 1:
+                        new_yarns.insert(0, self._old_yarn.carrier.carrier_ids)
+                        # Creating an iterator
+                        yarn_id_iterator = cycle(new_yarns) #iter(new_yarns)
                     if available_carriers == 1:
                         new_yarns = [self._old_yarn.carrier.carrier_ids]
-                    # Creating an iterator
-                    yarn_id_iterator = cycle(new_yarns) #iter(new_yarns)
                     # Iterating through the list using the iterator
                     yarn_carrier_id = next(yarn_id_iterator)
                     showup_times = self.string_generator(count_dict, yarn_carrier_id)
                     generated_string = str(yarn_carrier_id)+'_'+str(showup_times)
-                    # print(f'new_yarns is {new_yarns}, yarn_carrier_id is {yarn_carrier_id}, generated_string is {generated_string}')
+                    print(f'new_yarns is {new_yarns}, yarn_carrier_id is {yarn_carrier_id}, generated_string is {generated_string}')
                     new_yarn = Yarn(generated_string, self._knit_graph, carrier_id=yarn_carrier_id, last_loop = min(G2.nodes))
                 self._knit_graph.add_yarn(new_yarn)
                 self._new_yarns.append(new_yarn)  
