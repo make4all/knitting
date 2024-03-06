@@ -10,6 +10,8 @@ import bokeh.events
 # from bokeh.layouts import widgetbox
 from bokeh.models import CustomJS, Column
 from bokeh.plotting import curdoc
+from bokeh.client import push_session
+from bokeh.plotting import show
 
 hv.extension('bokeh')
 
@@ -171,8 +173,8 @@ def _create_knit_graph(event):
         plot, knit_graph = generate_initial_graph(final_type, gauge_map[gauge.value], int(yarn_carrier.value),
                                                   width.value, height.value,
                                                   "Tube" if pattern_type.active == 0 else "Sheet")
-        # print(f'type(plot) is {type(plot)}, {plot}')
-        column_widgets = Column()
+        print(f'type(plot) is {type(plot)}, {plot}')
+        column_widgets = column()
         # 0 is Handle, 1 is Pocket, 2 is Hole, 3 is Strap
         if knitting_procedure.active == 2:
             ###########################################################################
@@ -214,7 +216,7 @@ def _create_knit_graph(event):
                     hole_nodes_add_from_graph.on_event(bokeh.events.ButtonClick, partial(hole_nodes_button_clicked, bokeh.events.ButtonClick, i, hole_index))
                     hole_children.append(row(hole_index, hole_nodes_add_from_graph))
 
-                column_widgets = Column(children=hole_children)
+                column_widgets = column(children=hole_children)
             elif pattern_type.active == 1:  # Hole on Sheet
                 hole_children = [widget2]
                 for i in range(0, 10):
@@ -225,7 +227,7 @@ def _create_knit_graph(event):
                     hole_nodes_add_from_graph.on_event(bokeh.events.ButtonClick, partial(hole_nodes_button_clicked, bokeh.events.ButtonClick, i + 10, hole_index))
                     hole_children.append(row(hole_carrier, hole_index, hole_nodes_add_from_graph))
 
-                column_widgets = Column(children=hole_children)
+                column_widgets = column(children=hole_children)
         # 0 is Handle, 1 is Pocket, 2 is Hole, 3 is Strap
         elif knitting_procedure.active == 1:
             ###########################################################################
@@ -377,7 +379,7 @@ def _create_knit_graph(event):
             pocket_widget_box = column(row(left_keynodes_pocket, pocket_left_add_from_graph), row(right_keynodes_pocket, pocket_right_add_from_graph), confirm_tuples_pocket,
                                           left_checkbox, right_checkbox, pocket_yarn_carrier_id,
                                           is_front_patch_pocket, close_top_pocket)
-            column_widgets = Column(widget2, pocket_widget_box)
+            column_widgets = column(widget2, pocket_widget_box)
         elif knitting_procedure.active == 0:
             ###########################################################################
             # call back events
@@ -525,9 +527,9 @@ def _create_knit_graph(event):
             handle_left_add_from_graph.on_event(bokeh.events.ButtonClick, handle_left_button_clicked)
             handle_right_add_from_graph.on_event(bokeh.events.ButtonClick, handle_right_button_clicked)
             ###########################################################################
-            handle_widget_box = Column(row(left_keynodes_handle, handle_left_add_from_graph), row(right_keynodes_handle, handle_right_add_from_graph),
+            handle_widget_box = column(row(left_keynodes_handle, handle_left_add_from_graph), row(right_keynodes_handle, handle_right_add_from_graph),
                                           handle_yarn_carrier_id, is_front_patch_handle)
-            column_widgets = Column(widget2, handle_widget_box)
+            column_widgets = column(widget2, handle_widget_box)
 
         elif knitting_procedure.active == 3:
             ###########################################################################
@@ -604,10 +606,18 @@ def _create_knit_graph(event):
             
             strap_add_from_graph.on_event(bokeh.events.ButtonClick, strap_button_clicked)
             ###########################################################################
-            strap_widget_box = Column(row(keynodes_strap, strap_add_from_graph), row(length_input_strap),
+            strap_widget_box = column(row(keynodes_strap, strap_add_from_graph), row(length_input_strap),
                                           strap_yarn_carrier_id, is_front_patch_strap)
-            column_widgets = Column(widget2, strap_widget_box)
-        curdoc().add_root(row(column_widgets, plot))
+            column_widgets = column(widget2, strap_widget_box)
+        # curdoc().clear()
+        curdoc().add_root(row(column_widgets, plot, width = 1200))
+        # curdoc().add_root(row(column_widgets))
+        # renderer.server_doc(layout)
+        # show(hv.render(plot))
+        #create a session
+        # session = push_session(curdoc())
+        # session.show(plot)
+        # session.loop_until_closed()
 
         # HOW TO ACCESS ELEMENTS IN CURDOC()
         # print(curdoc().roots)

@@ -17,7 +17,6 @@ from holoviews import opts
 import numpy as np
 from bokeh.plotting import show
 
-
 class knitGraph_visualizer:
     """
     :param knit_graph: the knit graph to visualize
@@ -273,17 +272,17 @@ class knitGraph_visualizer:
             # p.add_layout(Arrow(end=NormalHead(fill_color=self.edge_color_property[edge]['color'], fill_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha']), size=7),
             #     x_start=(pos[edge[0]][0] - radius_x * vec_dir[0]), y_start=(pos[edge[0]][1] - radius_y * vec_dir[1]), x_end=(pos[edge[1]][0] + radius_x * vec_dir[0]), \
             #         y_end=(pos[edge[1]][1] + radius_y * vec_dir[1]), line_width=3, line_color=self.edge_color_property[edge]['color'], line_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha'])))
-            p.add_layout(Arrow(end=NormalHead(fill_color=self.edge_color_property[edge]['color'], fill_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha']), size=7),
+            p.add_layout(Arrow(end=NormalHead(fill_color=self.edge_color_property[edge]['color'], fill_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha']), size=7), #size=7
                 x_start=(pos[edge[0]][0]), y_start=(pos[edge[0]][1]), x_end=(pos[edge[1]][0]), \
                     y_end=(pos[edge[1]][1]), line_width=3, line_color=self.edge_color_property[edge]['color'], line_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha'])))
             edge_x = (pos[edge[0]][0] + pos[edge[1]][0]) / 2
             edge_y = (pos[edge[0]][1] + pos[edge[1]][1]) / 2
             if edge in self.stitch_labels:
-                label = Label(x=edge_x, y=edge_y, text=str(self.stitch_labels[edge]), x_offset=-8, y_offset=-6, text_color="black", text_alpha=1, text_font_size='9px', text_font_style='bold')
+                label = Label(x=edge_x, y=edge_y, text=str(self.stitch_labels[edge]), x_offset=-8, y_offset=-6, text_color="black", text_alpha=1, text_font_size='9px', text_font_style='bold') #text_font_size='9px'
                 p.add_layout(label)
 
         for node in G.nodes:
-            label = Label(x=pos[node][0], y=pos[node][1], text=str(node), x_offset=(-3 * len(str(node))), y_offset=-3.5, text_color="white", text_font_size='10px', text_font_style='bold')
+            label = Label(x=pos[node][0], y=pos[node][1], text=str(node), x_offset=(-3 * len(str(node))), y_offset=-3.5, text_color="white", text_font_size='10px', text_font_style='bold') #text_font_size='10px'
             p.add_layout(label)
 
         graph = p.renderers[-1]
@@ -292,11 +291,11 @@ class knitGraph_visualizer:
         graph.node_renderer.data_source.data['course'] = [self.node_to_course_and_wale[node][0] for node in self.node_to_course_and_wale]
         graph.node_renderer.data_source.data['wale'] = [self.node_to_course_and_wale[node][1] for node in self.node_to_course_and_wale]
         graph.edge_renderer.data_source.data['alpha'] = [0 for edge in G.edges()]
-        graph.node_renderer.glyph.update(size=20, fill_color="colors", fill_alpha="alpha")
+        graph.node_renderer.glyph.update(size=20, fill_color="colors", fill_alpha="alpha") #size = 20
         graph.edge_renderer.glyph.update(line_alpha="alpha")
         graph.edge_renderer.glyph.line_width = 'scale_width'
-
         return p
+
 
     def visualize(self):
         self.get_nodes_position()
