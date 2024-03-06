@@ -1,23 +1,5 @@
 # KnitA11y
 
-## Launch the UI (Please first ensure the codebase has been set up properly following the 'Set Up' instructions below.)
-In the command line, type:
-```console
-cd debugging_tools/knit_ui
-```
-Next, type:
-```console
-bokeh serve --show Bokeh_knit_ui.py
-```
-
-Some example KnitScripts to begin with:
-```console
-All rs rounds k 10. All ws rounds k 10.
-```
-```console
-All rs rows k 10. All ws rows k 10.
-```
-
 ## Set Up
 
 This project may work on older versions of Python, but it was developed with Python 3.9
@@ -40,6 +22,23 @@ For Windows: `set PYTHONPATH=%PYTHONPATH%;C:\path\to\your\project\`
 
 Now you should be able to access main methods from cmd line (e.g., `python tests\test_simple_knitgraphs.py`)
 
+## Launch the UI (Please first ensure the codebase has been set up properly following the 'Set Up' instructions below.)
+In the command line, type:
+```console
+cd debugging_tools/knit_ui
+```
+Next, type:
+```console
+bokeh serve --show Bokeh_knit_ui.py
+```
+
+Some example KnitScripts to begin with:
+```console
+All rs rounds k 10. All ws rounds k 10.
+```
+```console
+All rs rows k 10. All ws rows k 10.
+```
 
 ### knit_graphs
 This package contains the classes used to create a knit graph (`Loop`, `Yarn`, `Knit_Graph`, `Pull_Direction(Enum)`). 
