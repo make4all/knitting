@@ -26,9 +26,11 @@ Particularly if you are a Windows User I highly recommend running this code as a
 
 Otherwise:
 
-Install the required packages using the `requirements.txt` file:
+Install the required packages using the `environment.yml` file:
 
-`pip install -r requirements.txt` while in the project directory.
+`conda env create -f environment.yml` while in the project directory.
+
+Activate the environment using `conda activate knita11y`
 
 Add the project directory to your `PYTHONPATH`
 
