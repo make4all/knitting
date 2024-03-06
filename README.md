@@ -22,7 +22,7 @@ For Windows: `set PYTHONPATH=%PYTHONPATH%;C:\path\to\your\project\`
 
 Now you should be able to access main methods from cmd line (e.g., `python tests\test_simple_knitgraphs.py`)
 
-## Launch the UI (Please first ensure the codebase has been set up properly following the 'Set Up' instructions below.)
+## Launch the UI
 In the command line, type:
 ```console
 cd debugging_tools/knit_ui
