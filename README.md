@@ -1,6 +1,28 @@
 # KnitA11y
 
-## Launch the UI (Please first ensure the codebase has been set up properly following the 'Set Up' instructions below.)
+## Set Up
+
+This project may work on older versions of Python, but it was developed with Python 3.9
+
+Particularly if you are a Windows User I highly recommend running this code as a [PyCharm Project](https://www.jetbrains.com/help/pycharm/importing-project-from-existing-source-code.html).
+
+Otherwise:
+
+Install the required packages using the `environment.yml` file:
+
+`conda env create -f environment.yml` while in the project directory.
+
+Activate the environment using `conda activate knita11y`
+
+Add the project directory to your `PYTHONPATH`
+
+In Unix machines: `export PYTHONPATH="${PYTHONPATH}:/path/to/your/project/"`
+
+For Windows: `set PYTHONPATH=%PYTHONPATH%;C:\path\to\your\project\`
+
+Now you should be able to access main methods from cmd line (e.g., `python tests\test_simple_knitgraphs.py`)
+
+## Launch the UI
 In the command line, type:
 ```console
 cd debugging_tools/knit_ui
@@ -17,27 +39,6 @@ All rs rounds k 10. All ws rounds k 10.
 ```console
 All rs rows k 10. All ws rows k 10.
 ```
-
-## Set Up
-
-This project may work on older versions of Python, but it was developed with Python 3.9
-
-Particularly if you are a Windows User I highly recommend running this code as a [PyCharm Project](https://www.jetbrains.com/help/pycharm/importing-project-from-existing-source-code.html).
-
-Otherwise:
-
-Install the required packages using the `requirements.txt` file:
-
-`pip install -r requirements.txt` while in the project directory.
-
-Add the project directory to your `PYTHONPATH`
-
-In Unix machines: `export PYTHONPATH="${PYTHONPATH}:/path/to/your/project/"`
-
-For Windows: `set PYTHONPATH=%PYTHONPATH%;C:\path\to\your\project\`
-
-Now you should be able to access main methods from cmd line (e.g., `python tests\test_simple_knitgraphs.py`)
-
 
 ### knit_graphs
 This package contains the classes used to create a knit graph (`Loop`, `Yarn`, `Knit_Graph`, `Pull_Direction(Enum)`). 
