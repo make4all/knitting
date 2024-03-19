@@ -15,6 +15,7 @@ class Symbol_Table:
     def __init__(self):
         self._symbol_table: Dict[str, Union[Cable_Definition, Stitch_Definition, int]] = {"k": self._knit(), "p": self._purl(),
                                                                                          "yo": self._yo(), "slip": self._slip(),
+                                                                                         "kfsb": self._kfsb(),
                                                                                          'cast_off': self._castoff(),
                                                                                          "row_courses": set(), "round_courses": set()}
         self._decreases()
@@ -23,6 +24,9 @@ class Symbol_Table:
         # set current row variable
         self._symbol_table["current_row"] = 0
 
+    def _kfsb(self):
+        return Stitch_Definition(pull_direction=Pull_Direction.BtF, child_loops = 2)
+    
     def _cables(self):
         # Todo: Add cable symbols keyed to their definitions to the symbol table
         #  (i.e., self._symbol_table[{cable_name}] = Cable_Definition(...))

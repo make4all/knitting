@@ -87,6 +87,8 @@ class Knit_Graph:
         self.course_to_loops_on_front_part_of_the_tube: Dict[int, List[int]] = {}
         self.course_to_loops_on_back_part_of_the_tube: Dict[int, List[int]] = {}
 
+        self.course_to_row: Dict[int, bool] = {} 
+
     def add_loop_to_front_part(self, loop_id: int):
         self.loops_on_front_part_of_the_tube.add(loop_id)
 
@@ -264,7 +266,7 @@ class Knit_Graph:
                             wale = self.loop_ids_to_wale[mid_node] -1 - self.yarn_over_loop_to_loop_index[loop_id]*self.wale_dist
                             self.loop_ids_to_wale[loop_id] = wale
                     #----#
-        print(f'loop_ids_to_wale in KnitGraph is {self.loop_ids_to_wale}, wale_to_loop_ids in KnitGraph is {self.wale_to_loop_ids}')
+        print(f'in get_wale(), loop_ids_to_wale in KnitGraph is {self.loop_ids_to_wale}, wale_to_loop_ids in KnitGraph is {self.wale_to_loop_ids}')
         return self.loop_ids_to_wale, self.wale_to_loop_ids
 
     def get_node_bed(self):
@@ -281,10 +283,12 @@ class Knit_Graph:
         return self.node_on_front_or_back
 
     def get_node_bed_for_courses(self):
+        self.course_to_loop_ids_including_slip[0] = self.course_to_loop_ids[0]
         for course_id in [*self.course_to_loop_ids.keys()]:
             self.course_to_loops_on_back_part_of_the_tube[course_id] = []
             self.course_to_loops_on_front_part_of_the_tube[course_id] = []
-            for loop_id in self.course_to_loop_ids[course_id]:
+            # for loop_id in self.course_to_loop_ids[course_id]:
+            for loop_id in self.course_to_loop_ids_including_slip[course_id]:
                 bed = self.node_on_front_or_back[loop_id]
                 if bed == 'b':
                     self.course_to_loops_on_back_part_of_the_tube[course_id].append(loop_id)
@@ -364,6 +368,8 @@ class Knit_Graph:
                         for parent_id in self.graph.predecessors(loop_id):
                             parent_offset = self.graph[parent_id][loop_id]['parent_offset']
                             wale = self.node_to_course_and_wale[parent_id][1] - parent_offset*self.wale_dist
+                            print(f'loop_id is {loop_id}, parent id is {parent_id}, parent wale is {self.node_to_course_and_wale[parent_id][1]}, \
+                                  original wale is {self.node_to_course_and_wale[loop_id][1]}, parent_offset is {parent_offset}, updated wale is {wale}')
                             self.node_to_course_and_wale[loop_id] = (course_id, wale)
                             break
                         #-------
@@ -427,7 +433,7 @@ class Knit_Graph:
 
                             
                 #----
-                print(f'node_to_course_and_wale in KnitGraph before wale readjust is {self.node_to_course_and_wale}')
+                # print(f'node_to_course_and_wale in KnitGraph before wale readjust is {self.node_to_course_and_wale}')
                 #---adjust wale again if there are any leaning stitches that has mismatched parent offset for the first screening
                 # if course_id in self.courses_to_number_of_left_leaning_front_half:
                 #     number_of_left_leaning_front_half = self.courses_to_number_of_left_leaning_front_half[course_id]
@@ -514,7 +520,7 @@ class Knit_Graph:
                 #---
                 
         #-------
-        print(f'node_to_course_and_wale in KnitGraph after wale redjust is {self.node_to_course_and_wale}')
+        print(f'in get_node_course_and_wale(), node_to_course_and_wale in KnitGraph after wale redjust is {self.node_to_course_and_wale}')
         return self.node_to_course_and_wale
 
     def get_min_and_max_wale_id_on_course_on_bed(self):
@@ -543,6 +549,47 @@ class Knit_Graph:
             self.courses_to_max_wale_on_front[course_id] = max_wale_on_front
             self.courses_to_min_wale_on_back[course_id] = min_wale_on_back
             self.courses_to_max_wale_on_back[course_id] = max_wale_on_back
+
+    def update_min_and_max_wale_id_on_course_on_bed(self, course_id): #this function can't update the wale for those yo or slip nodes.
+        for c_id in range(course_id, max([*self.course_to_loop_ids_including_slip.keys()])):
+            next_row_loop_ids = self.course_to_loop_ids[c_id]
+            for loop_id in next_row_loop_ids:
+                self.has_parent_of_0_offset = False
+                parent_ids = [*self.graph.predecessors(loop_id)]
+                if len(parent_ids) > 0:
+                    for parent_id in self.graph.predecessors(loop_id):
+                        parent_offset = self.graph[parent_id][loop_id]['parent_offset']
+                        wale = self.node_to_course_and_wale[parent_id][1] - parent_offset*self.wale_dist
+                        self.node_to_course_and_wale[loop_id] = (c_id, wale)
+                        break
+        print(f'in update_min_and_max_wale_id_on_course_on_bed, self.node_to_course_and_wale is {self.node_to_course_and_wale}')
+        for c_id in range(course_id, max([*self.course_to_loop_ids_including_slip.keys()])):
+            print(f'haha c_id is {c_id}, max([*self.course_to_loop_ids_including_slip.keys()]) is {max([*self.course_to_loop_ids_including_slip.keys()])}')
+            loop_ids = self.course_to_loop_ids_including_slip[c_id]
+        # for course_id, loop_ids in self.course_to_loop_ids_including_slip.items():
+            max_wale_on_front = -10000
+            min_wale_on_front = 10000
+            max_wale_on_back = -10000
+            min_wale_on_back = 10000
+            for loop in loop_ids:
+                if loop in self.node_on_front_or_back:
+                    wale_id = self.node_to_course_and_wale[loop][1]
+                    if self.node_on_front_or_back[loop] == 'f':
+                        if wale_id > max_wale_on_front:
+                            max_wale_on_front = wale_id
+                        if wale_id < min_wale_on_front:
+                            min_wale_on_front = wale_id
+                    elif self.node_on_front_or_back[loop] == 'b':
+                        if wale_id > max_wale_on_back:
+                            max_wale_on_back = wale_id
+                        if wale_id < min_wale_on_back:
+                            min_wale_on_back = wale_id
+            self.courses_to_min_wale_on_front[course_id] = min_wale_on_front
+            self.courses_to_max_wale_on_front[course_id] = max_wale_on_front
+            self.courses_to_min_wale_on_back[course_id] = min_wale_on_back
+            self.courses_to_max_wale_on_back[course_id] = max_wale_on_back
+        print(f'updated self.courses_to_min_wale_on_front is {self.courses_to_min_wale_on_front}, updated self.courses_to_max_wale_on_front is {self.courses_to_max_wale_on_front},\
+              updated self.courses_to_min_wale_on_back is {self.courses_to_min_wale_on_back}, updated self.courses_to_max_wale_on_back is {self.courses_to_max_wale_on_back}')
 
     # def update_wales_to_reduce_float(self):
     #     if self.object_type == 'tube':
@@ -597,8 +644,10 @@ class Knit_Graph:
     #                     self.courses_to_max_wale_on_front[course_id+1] = self.courses_to_max_wale_on_front[course_id+1] + adjust_wale
     #                     self.courses_to_min_wale_on_front[course_id+1] = self.courses_to_min_wale_on_front[course_id+1] + adjust_wale
     
+                
     #version 2 
     def update_wales_to_reduce_float(self):
+        print(f'in update_wales_to_reduce_float(), before update, self.node_to_course_and_wale is {self.node_to_course_and_wale}')
         if self.object_type == 'tube':
             count_of_front_half_shift = 0
             for course_id in [*self.course_to_loop_ids.keys()][1:]:
@@ -610,19 +659,21 @@ class Knit_Graph:
                             # self.node_to_course_and_wale[loop_id] = (course_id, self.node_to_course_and_wale[loop_id][1]-(int((self.courses_to_max_wale_on_back[course_id] - self.courses_to_max_wale_on_front[course_id])/self.wale_dist)+1)*self.wale_dist)
                             #---
                             adjust_wale = self.courses_to_max_wale_on_back[course_id] - self.courses_to_max_wale_on_front[course_id] + 1
-                            print(f'loop id {loop_id} has wale updated from {self.node_to_course_and_wale[loop_id][1]} to {self.node_to_course_and_wale[loop_id][1] - adjust_wale} to reduce float')
+                            print(f'c1: course id is {course_id}, loop id {loop_id} has wale updated from {self.node_to_course_and_wale[loop_id][1]} to {self.node_to_course_and_wale[loop_id][1] - adjust_wale} to reduce float')
                             self.node_to_course_and_wale[loop_id] = (course_id, self.node_to_course_and_wale[loop_id][1]-adjust_wale)
                     # self.courses_to_min_wale_on_back[course_id] = self.courses_to_min_wale_on_back[course_id]-(int((self.courses_to_max_wale_on_back[course_id] - self.courses_to_max_wale_on_front[course_id])/self.wale_dist)+1)*self.wale_dist
                     # self.courses_to_max_wale_on_back[course_id] = self.courses_to_max_wale_on_back[course_id]-(int((self.courses_to_max_wale_on_back[course_id] - self.courses_to_max_wale_on_front[course_id])/self.wale_dist)+1)*self.wale_dist
                     self.courses_to_min_wale_on_back[course_id] = self.courses_to_min_wale_on_back[course_id]-adjust_wale
                     self.courses_to_max_wale_on_back[course_id] = self.courses_to_max_wale_on_back[course_id]-adjust_wale
                 elif self.courses_to_max_wale_on_back[course_id] < self.courses_to_max_wale_on_front[course_id] - 1:
+                    print(f'c2:self.courses_to_max_wale_on_back[course_id] is {self.courses_to_max_wale_on_back[course_id]}, self.courses_to_max_wale_on_front[course_id] is {self.courses_to_max_wale_on_front[course_id]}')
+                    print(f'c2: self.course_to_loop_ids[course_id] is {self.course_to_loop_ids[course_id]}')
                     for loop_id in self.course_to_loop_ids[course_id]:
                         if loop_id in self.loops_on_back_part_of_the_tube:
                             # print(f'loop id {loop_id} has wale updated from {self.node_to_course_and_wale[loop_id][1]} to {self.node_to_course_and_wale[loop_id][1] - (self.courses_to_max_wale_on_front[course_id] - self.courses_to_max_wale_on_back[course_id]) - self.wale_dist} to reduce float')
                             # self.node_to_course_and_wale[loop_id] = (course_id, self.node_to_course_and_wale[loop_id][1]-(int((self.courses_to_max_wale_on_front[course_id] - self.courses_to_max_wale_on_back[course_id])/self.wale_dist)+1)*self.wale_dist)
                             adjust_wale = self.courses_to_max_wale_on_front[course_id] - self.courses_to_max_wale_on_back[course_id] - 1
-                            print(f'loop id {loop_id} has wale updated from {self.node_to_course_and_wale[loop_id][1]} to {self.node_to_course_and_wale[loop_id][1] + adjust_wale}')
+                            print(f'c2: course id is {course_id}, loop id {loop_id} has wale updated from {self.node_to_course_and_wale[loop_id][1]} to {self.node_to_course_and_wale[loop_id][1] + adjust_wale}')
                             self.node_to_course_and_wale[loop_id] = (course_id, self.node_to_course_and_wale[loop_id][1]+adjust_wale)
                     # self.courses_to_min_wale_on_front[course_id] = self.courses_to_min_wale_on_front[course_id]-(int((self.courses_to_max_wale_on_front[course_id] - self.courses_to_max_wale_on_back[course_id])/self.wale_dist)+1)*self.wale_dist
                     # self.courses_to_max_wale_on_front[course_id] = self.courses_to_max_wale_on_front[course_id]-(int((self.courses_to_max_wale_on_front[course_id] - self.courses_to_max_wale_on_back[course_id])/self.wale_dist)+1)*self.wale_dist
@@ -654,40 +705,52 @@ class Knit_Graph:
                 #----move loops from one bed to another if the number of loops on both beds are not equal
                 n_f = len(self.course_to_loops_on_front_part_of_the_tube[course_id])
                 n_b = len(self.course_to_loops_on_back_part_of_the_tube[course_id])
-                if n_b > n_f:
-                    num_loops_on_one_bed = int((n_b+n_f)/2)
-                    right_end_wale_front = self.loop_ids_to_wale[self.course_to_loop_ids[course_id][0]] #c is course id 
-                    for i in range(n_b-num_loops_on_one_bed): #the number of loops that should be moved to the other bed
-                        loop = self.course_to_loop_ids[course_id][-1-i]
-                        wale = right_end_wale_front-self.wale_dist
-                        right_end_wale_front = wale
-                        self.loop_ids_to_wale[loop] = wale
-                        self.node_to_course_and_wale[loop] = (course_id, wale)
-                        self.node_on_front_or_back[loop] = 'f'
-                        # self.course_to_loops_on_back_part_of_the_tube[course_id].remove(loop)
-                        # self.course_to_loops_on_front_part_of_the_tube[course_id].append(loop)
-                elif n_b < n_f:
-                    num_loops_on_one_bed = int((n_b+n_f)/2)
-                    for back_loop in self.course_to_loops_on_back_part_of_the_tube[course_id]:
-                        wale = self.node_to_course_and_wale[back_loop][1] - self.wale_dist*(2*(n_f - num_loops_on_one_bed))
-                        print(f'back loop is {back_loop}, self.node_to_course_and_wale[back_loop][1] is {self.node_to_course_and_wale[back_loop][1]}, wale is {wale}')
-                        self.loop_ids_to_wale[back_loop] = wale
-                        self.node_to_course_and_wale[back_loop] = (course_id, wale)
-                    print(f'self.node_to_course_and_wale is {self.node_to_course_and_wale}, self.course_to_loops_on_back_part_of_the_tube[course_id] is {self.course_to_loops_on_back_part_of_the_tube[course_id]}')
-                    left_end_wale_back = self.node_to_course_and_wale[min(self.course_to_loops_on_back_part_of_the_tube[course_id])][1]
-                    print(f'left_end_wale_back is {left_end_wale_back}')
-                    for i in range(n_f - num_loops_on_one_bed):
-                        loop = self.course_to_loops_on_front_part_of_the_tube[course_id][-1-i]
-                        print(f'haha loop is {loop}')
-                        wale = left_end_wale_back+self.wale_dist
-                        left_end_wale_back = wale
-                        print(f'haha wale is {wale}')
-                        self.loop_ids_to_wale[loop] = wale
-                        self.node_to_course_and_wale[loop] = (course_id, wale)
-                        self.node_on_front_or_back[loop] = 'b'
-                        # self.course_to_loops_on_front_part_of_the_tube[course_id].remove(loop)
-                        # self.course_to_loops_on_back_part_of_the_tube[course_id].append(loop)
+                print(f'course_id is {course_id}, self.course_to_loops_on_front_part_of_the_tube is {self.course_to_loops_on_front_part_of_the_tube},\
+                      self.course_to_loops_on_back_part_of_the_tube[course_id] is {self.course_to_loops_on_back_part_of_the_tube[course_id]}, n_b is {n_b}, n_f is {n_f}')
+                if self.course_to_row[course_id] == False: #if this course is a round
+                    if n_b > n_f+1:
+                        num_loops_on_one_bed = int((n_b+n_f)/2)
+                        right_end_wale_front = self.loop_ids_to_wale[self.course_to_loop_ids[course_id][0]] #c is course id 
+                        for i in range(n_b-num_loops_on_one_bed): #the number of loops that should be moved to the other bed
+                            loop = self.course_to_loop_ids[course_id][-1-i]
+                            wale = right_end_wale_front-self.wale_dist
+                            right_end_wale_front = wale
+                            self.loop_ids_to_wale[loop] = wale
+                            self.node_to_course_and_wale[loop] = (course_id, wale)
+                            self.node_on_front_or_back[loop] = 'f'
+                            # self.course_to_loops_on_back_part_of_the_tube[course_id].remove(loop)
+                            # self.course_to_loops_on_front_part_of_the_tube[course_id].append(loop)
+                        # self.courses_to_min_wale_on_back[course_id] = self.courses_to_max_wale_on_back[course_id]-self.wale_dist*(n_b-num_loops_on_one_bed)
+                        # self.courses_to_min_wale_on_front[course_id] = wale
+
+                    elif n_b < n_f - 1:
+                        num_loops_on_one_bed = int((n_b+n_f)/2)
+                        for back_loop in self.course_to_loops_on_back_part_of_the_tube[course_id]:
+                            wale = self.node_to_course_and_wale[back_loop][1] - self.wale_dist*((n_f - num_loops_on_one_bed)*2)
+                            print(f'back loop is {back_loop}, self.node_to_course_and_wale[back_loop][1] is {self.node_to_course_and_wale[back_loop][1]}, new wale is {wale}')
+                            self.loop_ids_to_wale[back_loop] = wale
+                            self.node_to_course_and_wale[back_loop] = (course_id, wale)
+                        print(f'self.node_to_course_and_wale is {self.node_to_course_and_wale}, self.course_to_loops_on_back_part_of_the_tube[course_id] is {self.course_to_loops_on_back_part_of_the_tube[course_id]}')
+                        left_end_wale_back = self.node_to_course_and_wale[min(self.course_to_loops_on_back_part_of_the_tube[course_id])][1]
+                        print(f'left_end_wale_back is {left_end_wale_back}')
+                        for i in range(n_f - num_loops_on_one_bed):
+                            loop = self.course_to_loops_on_front_part_of_the_tube[course_id][-1-i]
+                            print(f'loop on front that is moved to back is {loop}')
+                            wale = left_end_wale_back+self.wale_dist
+                            left_end_wale_back = wale
+                            print(f'its wale now becomes {wale}')
+                            self.loop_ids_to_wale[loop] = wale
+                            self.node_to_course_and_wale[loop] = (course_id, wale)
+                            self.node_on_front_or_back[loop] = 'b'
+                            # self.course_to_loops_on_front_part_of_the_tube[course_id].remove(loop)
+                            # self.course_to_loops_on_back_part_of_the_tube[course_id].append(loop)
+                #         self.courses_to_max_wale_on_back[course_id] = wale
+                #         self.courses_to_max_wale_on_front[course_id] = self.courses_to_max_wale_on_front[course_id]-(n_f - num_loops_on_one_bed)*self.wale_dist
+                #         print(f'self.courses_to_max_wale_on_back[course_id] becomes {self.courses_to_max_wale_on_back[course_id]}, \
+                #               self.courses_to_max_wale_on_front[course_id] is {self.courses_to_max_wale_on_front[course_id]}')
+                # self.update_min_and_max_wale_id_on_course_on_bed(course_id)
                 #------
+        print(f'in update_wales_to_reduce_float(), self.node_to_course_and_wale is {self.node_to_course_and_wale}')
 
     def adjust_overall_slanting(self):
         #now that the float has been reduced, we need to adjust the overall slanting to ensure the knitgraph is not overly slanting towards 
@@ -710,18 +773,21 @@ class Knit_Graph:
             for course_id in [*self.course_to_loop_ids.keys()]:
                 if (course_id+1) in self.course_to_loop_ids:
                     if abs(self.courses_to_max_wale_on_front[course_id] - self.courses_to_max_wale_on_front[course_id+1]) > self.wale_dist: #since racking bound is 4
+                        print(f'self.courses_to_max_wale_on_front[course_id] is {self.courses_to_max_wale_on_front[course_id]},\
+                               self.courses_to_max_wale_on_front[course_id+1]) is {self.courses_to_max_wale_on_front[course_id+1]},\
+                              self.wale_dist is {self.wale_dist}')
                         wale_to_shift = self.courses_to_max_wale_on_front[course_id] - self.courses_to_max_wale_on_front[course_id+1]  #- 4
                         wale_to_shift = wale_to_shift + self.wale_dist if wale_to_shift > 0 else wale_to_shift - self.wale_dist
                         for next_course_id in [*self.course_to_loop_ids.keys()][course_id+1:]:
                             print(f'course_id+1 is {course_id+1}, next_course_id is {next_course_id}')
                             for loop_id in self.course_to_loop_ids[next_course_id]:
-                                print(f'233 self.node_to_course_and_wale[loop_id][1] is {self.node_to_course_and_wale[loop_id][1]}, wale_to_shift is {wale_to_shift}')
-                                self.node_to_course_and_wale[loop_id] = (next_course_id, self.node_to_course_and_wale[loop_id][1] + int(wale_to_shift/self.wale_dist/2)*self.wale_dist) 
+                                print(f'233-1 self.node_to_course_and_wale[loop_id][1] is {self.node_to_course_and_wale[loop_id][1]}, wale_to_shift is {wale_to_shift}, actual shift is {int(int(wale_to_shift/self.wale_dist)/2)*self.wale_dist}')
+                                self.node_to_course_and_wale[loop_id] = (next_course_id, self.node_to_course_and_wale[loop_id][1] + int(int(wale_to_shift/self.wale_dist)/2)*self.wale_dist) #ori int(wale_to_shift/self.wale_dist/2)*self.wale_dist)
                                 # self.node_to_course_and_wale[loop_id] = course_id+1, self.node_to_course_and_wale[loop_id][1] + wale_to_shift 
-                            self.courses_to_max_wale_on_front[next_course_id] = self.courses_to_max_wale_on_front[next_course_id] + int(wale_to_shift/self.wale_dist/2)*self.wale_dist
-                            self.courses_to_max_wale_on_back[next_course_id] = self.courses_to_max_wale_on_back[next_course_id] + int(wale_to_shift/self.wale_dist/2)*self.wale_dist
-                            self.courses_to_min_wale_on_front[next_course_id] = self.courses_to_min_wale_on_front[next_course_id] + int(wale_to_shift/self.wale_dist/2)*self.wale_dist
-                            self.courses_to_min_wale_on_back[next_course_id] = self.courses_to_min_wale_on_back[next_course_id] + int(wale_to_shift/self.wale_dist/2)*self.wale_dist
+                            self.courses_to_max_wale_on_front[next_course_id] = self.courses_to_max_wale_on_front[next_course_id] + int(int(wale_to_shift/self.wale_dist)/2)*self.wale_dist
+                            self.courses_to_max_wale_on_back[next_course_id] = self.courses_to_max_wale_on_back[next_course_id] + int(int(wale_to_shift/self.wale_dist)/2)*self.wale_dist
+                            self.courses_to_min_wale_on_front[next_course_id] = self.courses_to_min_wale_on_front[next_course_id] + int(int(wale_to_shift/self.wale_dist)/2)*self.wale_dist
+                            self.courses_to_min_wale_on_back[next_course_id] = self.courses_to_min_wale_on_back[next_course_id] + int(int(wale_to_shift/self.wale_dist)/2)*self.wale_dist
             # consider right edge stitches (min wale) of front
             for course_id in [*self.course_to_loop_ids.keys()]:
                 if (course_id+1) in self.course_to_loop_ids:
@@ -730,7 +796,7 @@ class Knit_Graph:
                         wale_to_shift = self.courses_to_min_wale_on_front[course_id+1] - self.courses_to_min_wale_on_front[course_id] #- 4
                         for next_course_id in [*self.course_to_loop_ids.keys()][course_id+1:]:
                             for loop_id in self.course_to_loop_ids[next_course_id]:
-                                print(f'233 self.node_to_course_and_wale[loop_id][1] is {self.node_to_course_and_wale[loop_id][1]}, wale_to_shift is {wale_to_shift}')
+                                print(f'233-2 self.node_to_course_and_wale[loop_id][1] is {self.node_to_course_and_wale[loop_id][1]}, wale_to_shift is {wale_to_shift}')
                                 self.node_to_course_and_wale[loop_id] = (next_course_id, self.node_to_course_and_wale[loop_id][1] - int(wale_to_shift/self.wale_dist/2)*self.wale_dist) 
                                 # self.node_to_course_and_wale[loop_id] = course_id+1, self.node_to_course_and_wale[loop_id][1] + wale_to_shift 
                             self.courses_to_max_wale_on_front[next_course_id] = self.courses_to_max_wale_on_front[next_course_id] - int(wale_to_shift/self.wale_dist/2)*self.wale_dist
@@ -779,6 +845,83 @@ class Knit_Graph:
                             self.courses_to_max_wale_on_back[next_course_id] = self.courses_to_max_wale_on_back[next_course_id] - wale_to_shift
                             self.courses_to_min_wale_on_front[next_course_id] = self.courses_to_min_wale_on_front[next_course_id] - wale_to_shift
                             self.courses_to_min_wale_on_back[next_course_id] = self.courses_to_min_wale_on_back[next_course_id] - wale_to_shift
+        
+        #-------work for sheet
+        # if self.object_type == 'sheet':
+        #     for course_id in [*self.course_to_loop_ids.keys()]:
+        #         if (course_id+1) in self.course_to_loop_ids:
+        #             if abs(self.courses_to_min_wale_on_front[course_id+1] - self.courses_to_min_wale_on_front[course_id]) > self.wale_dist: #since racking bound is 4
+        #                 offset = (self.courses_to_min_wale_on_front[course_id+1] - self.courses_to_min_wale_on_front[course_id]) 
+        #                 wale_to_shift = int(offset/(2)) 
+        #                 print(f'course id is {course_id}, wale_to_shift is {wale_to_shift}')
+        #                 for next_course_id in [*self.course_to_loop_ids.keys()][course_id+1:]:
+        #                     for loop_id in self.course_to_loop_ids[next_course_id]:
+        #                         self.node_to_course_and_wale[loop_id] = (next_course_id, self.node_to_course_and_wale[loop_id][1] - wale_to_shift) 
+        #                         # self.node_to_course_and_wale[loop_id] = course_id+1, self.node_to_course_and_wale[loop_id][1] + wale_to_shift 
+        #                     self.courses_to_max_wale_on_front[next_course_id] = self.courses_to_max_wale_on_front[next_course_id] - wale_to_shift
+        #                     self.courses_to_min_wale_on_front[next_course_id] = self.courses_to_min_wale_on_front[next_course_id] - wale_to_shift
+        #             elif abs(self.courses_to_max_wale_on_front[course_id+1] - self.courses_to_max_wale_on_front[course_id]) > self.wale_dist: #since racking bound is 4
+        #                 offset = (self.courses_to_max_wale_on_front[course_id+1] - self.courses_to_max_wale_on_front[course_id]) 
+        #                 wale_to_shift = int(offset/(2)) 
+        #                 print(f'course id is {course_id}, wale_to_shift is {wale_to_shift}')
+        #                 for next_course_id in [*self.course_to_loop_ids.keys()][course_id+1:]:
+        #                     for loop_id in self.course_to_loop_ids[next_course_id]:
+        #                         self.node_to_course_and_wale[loop_id] = (next_course_id, self.node_to_course_and_wale[loop_id][1] - wale_to_shift) 
+        #                         # self.node_to_course_and_wale[loop_id] = course_id+1, self.node_to_course_and_wale[loop_id][1] + wale_to_shift 
+        #                     self.courses_to_max_wale_on_front[next_course_id] = self.courses_to_max_wale_on_front[next_course_id] - wale_to_shift
+        #                     self.courses_to_min_wale_on_front[next_course_id] = self.courses_to_min_wale_on_front[next_course_id] - wale_to_shift
+        #------
+                            
+        print(f'self.course_to_row is {self.course_to_row}')
+        # Initialize the minimum key to None
+        min_row_id = None
+        row_ids = []
+        # Iterate over the dictionary
+        for key, value in self.course_to_row.items():
+            # Check if the value is True and update the minimum key accordingly
+            if value:
+                row_ids.append(key)
+       
+                # for course_id in [*self.course_to_loop_ids.keys()]:
+                    # if (course_id+1) in self.course_to_loop_ids:
+        if len(row_ids) != 0:
+            min_row_id = min(row_ids)
+            course_id = min_row_id-1
+            print(f'in min_row_id, course id is {course_id}')
+            for course_id in [*self.course_to_loop_ids.keys()][course_id:]:
+                if (course_id+1) in self.course_to_loop_ids:
+                    if abs(self.courses_to_min_wale_on_front[course_id+1] - self.courses_to_min_wale_on_front[course_id]) > self.wale_dist: #since racking bound is 4
+                        offset = (self.courses_to_min_wale_on_front[course_id+1] - self.courses_to_min_wale_on_front[course_id]) 
+                        wale_to_shift = int(offset/(2)) 
+                        print(f'course id is {course_id}, wale_to_shift is {wale_to_shift}')
+                        for next_course_id in [*self.course_to_loop_ids.keys()][course_id+1:]:
+                            for loop_id in self.course_to_loop_ids[next_course_id]:
+                                self.node_to_course_and_wale[loop_id] = (next_course_id, self.node_to_course_and_wale[loop_id][1] - wale_to_shift) 
+                                # self.node_to_course_and_wale[loop_id] = course_id+1, self.node_to_course_and_wale[loop_id][1] + wale_to_shift 
+                            self.courses_to_max_wale_on_front[next_course_id] = self.courses_to_max_wale_on_front[next_course_id] - wale_to_shift
+                            self.courses_to_min_wale_on_front[next_course_id] = self.courses_to_min_wale_on_front[next_course_id] - wale_to_shift
+                    elif abs(self.courses_to_max_wale_on_front[course_id+1] - self.courses_to_max_wale_on_front[course_id]) > self.wale_dist: #since racking bound is 4
+                        offset = (self.courses_to_max_wale_on_front[course_id+1] - self.courses_to_max_wale_on_front[course_id]) 
+                        wale_to_shift = int(offset/(2)) 
+                        print(f'course id is {course_id}, wale_to_shift is {wale_to_shift}')
+                        for next_course_id in [*self.course_to_loop_ids.keys()][course_id+1:]:
+                            for loop_id in self.course_to_loop_ids[next_course_id]:
+                                self.node_to_course_and_wale[loop_id] = (next_course_id, self.node_to_course_and_wale[loop_id][1] - wale_to_shift) 
+                                # self.node_to_course_and_wale[loop_id] = course_id+1, self.node_to_course_and_wale[loop_id][1] + wale_to_shift 
+                            self.courses_to_max_wale_on_front[next_course_id] = self.courses_to_max_wale_on_front[next_course_id] - wale_to_shift
+                            self.courses_to_min_wale_on_front[next_course_id] = self.courses_to_min_wale_on_front[next_course_id] - wale_to_shift
+                    elif abs(self.courses_to_min_wale_on_back[course_id+1] - self.courses_to_min_wale_on_back[course_id]) > self.wale_dist:
+                        offset = (self.courses_to_min_wale_on_back[course_id+1] - self.courses_to_min_wale_on_back[course_id]) 
+                        wale_to_shift = int(offset/(2)) 
+                        print(f'course id is {course_id}, wale_to_shift is {wale_to_shift}')
+                        for next_course_id in [*self.course_to_loop_ids.keys()][course_id+1:]:
+                            for loop_id in self.course_to_loop_ids[next_course_id]:
+                                self.node_to_course_and_wale[loop_id] = (next_course_id, self.node_to_course_and_wale[loop_id][1] - wale_to_shift) 
+                                # self.node_to_course_and_wale[loop_id] = course_id+1, self.node_to_course_and_wale[loop_id][1] + wale_to_shift 
+                            self.courses_to_max_wale_on_back[next_course_id] = self.courses_to_max_wale_on_back[next_course_id] - wale_to_shift
+                            self.courses_to_min_wale_on_back[next_course_id] = self.courses_to_min_wale_on_back[next_course_id] - wale_to_shift
+
+                        
     
     # @back up version 
     # def adjust_overall_slanting(self):
@@ -831,7 +974,8 @@ class Knit_Graph:
                     #----
                     updated_parent_offset = (self.node_to_course_and_wale[parent_id][1] - self.node_to_course_and_wale[loop_id][1])/self.wale_dist
                     if parent_offset != updated_parent_offset:
-                        print(f'offset update for loop id is {loop_id}! parent id is {parent_id}, original parent offset is {parent_offset}, updated parent offset is {updated_parent_offset}')
+                        print(f'offset update for loop id is {loop_id}! parent id is {parent_id}, parent wale is {self.node_to_course_and_wale[parent_id][1]}, \
+                              loop wale is {self.node_to_course_and_wale[loop_id][1]}, original parent offset is {parent_offset}, updated parent offset is {updated_parent_offset}')
                     self.graph[parent_id][loop_id]['parent_offset'] = (self.node_to_course_and_wale[parent_id][1] - self.node_to_course_and_wale[loop_id][1])/self.wale_dist
 
     def get_carriers(self) -> List[Yarn_Carrier]:

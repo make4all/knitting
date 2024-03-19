@@ -36,7 +36,7 @@ def generate_initial_graph(pattern_used, gauge, color, width, height, knit_speak
     course_to_loops_on_front_part_of_the_tube, course_to_loops_on_back_part_of_the_tube = knit_graph.get_node_bed_for_courses()
     node_to_course_and_wale = knit_graph.get_node_course_and_wale()
     course_and_wale_and_bed_to_node = knit_graph.get_course_and_wale_and_bed_to_node()
-    #----
+    #----mar 19
     max_wale_id_front_and_back = knit_graph.get_min_and_max_wale_id_on_course_on_bed()
     knit_graph.update_wales_to_reduce_float()
     knit_graph.adjust_overall_slanting()

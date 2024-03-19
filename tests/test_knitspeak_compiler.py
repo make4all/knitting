@@ -46,6 +46,9 @@ def test_stst():
         all rs rows k 6. 
         all ws rows k 6.
     ''' #[6, 3]
+    sheet_pattern = r'''
+        From 1st to 3rd row k 4. 
+    ''' #[6, 3]
     # sheet_pattern = r'''
     #     1st row [k] to end.
     #     2nd row k 2, [yo, k2tog, k 2] 2.
@@ -93,10 +96,10 @@ def test_stst():
     #     2nd row p 3, [k 1, slip 1] to last 3 sts, k 3.
     #     3rd row k 3, [p] to end.
     # # """#[32, 3]
-    sheet_yarn_carrier_id = 1
-    compiler = Knitspeak_Compiler(carrier_id = sheet_yarn_carrier_id)
-    knit_graph = compiler.compile(starting_width = 6, row_count = 6
-                                  , object_type = 'sheet', pattern = sheet_pattern) #8 6; 8 10; [30, 50]
+    # sheet_yarn_carrier_id = 1
+    # compiler = Knitspeak_Compiler(carrier_id = sheet_yarn_carrier_id)
+    # knit_graph = compiler.compile(starting_width = 4, row_count = 3
+    #                               , object_type = 'sheet', pattern = sheet_pattern) #8 6; 8 10; [30, 50]
    
     # for tube
     # tube_pattern = r'''
@@ -104,7 +107,7 @@ def test_stst():
     #     21th round [p, k] 6, k2tog, [p, k] 6, k2tog, [p, k] 6, k2tog, [p, k] 6, k2tog.
     #     '''
     tube_pattern = r'''
-            From 1st to 5th round [k] to end. 
+            From 1st to 6th round [k] to end. 
             '''
 # 64th round [p, k] 6, p, k, [p, k] 6, p, k, [p, k] 6, p, k, [p, k] 6, p, k, [p, k] 6, p, k, [p, k] 6, p, k.
 # 65th round [p, k] 5, p, k, k2tog, [p, k] 5, p, k, k2tog, [p, k] 5, p, k, k2tog, [p, k] 5, p, k, k2tog, [p, k] 5, p, k, k2tog, [p, k] 5, p, k, k2tog.
@@ -273,31 +276,31 @@ def test_stst():
     #         From 1st to 4th round [k, p] to end.    
     #         5th round [k2tog, yo] to end.
     # '''#[36, 5]
-    # tube_yarn_carrier_id = 3
-    # compiler = Knitspeak_Compiler(carrier_id = tube_yarn_carrier_id)
-    # knit_graph = compiler.compile(10, 5, object_type = 'tube', pattern = tube_pattern) #[12, 10]; for tube [12, 5]; [48, 30]
+    tube_yarn_carrier_id = 1
+    compiler = Knitspeak_Compiler(carrier_id = tube_yarn_carrier_id)
+    knit_graph = compiler.compile(10, 6, object_type = 'tube', pattern = tube_pattern) #[12, 10]; for tube [12, 5]; [48, 30]
 
     # note that for gauge: 
     # if it is handle or pocket on tube, the gauge can be set by users to be any number <= 1/3; 
     # if it is handle or pocket on sheet, the gauge can be set by users to be any number <= 1/2.
     # if it is hole or tube or sheet, the gauge can be set by users to be any number <= 1/2.
-    # if it is strap (which can only be on tube), the gauge can be set by users to be any number <= 1/2.
+    # if it is strap (which can only be on tube), the gauge can be set by users to be any number <= 1/2.    
     knit_graph.gauge = 1/2
     loop_ids_to_course, course_to_loop_ids = knit_graph.get_courses()
-    loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_wales() 
-    node_to_course_and_wale = knit_graph.get_node_course_and_wale()
+    loop_ids_to_wale, wale_to_loop_ids = knit_graph.get_wales()
     node_on_front_or_back = knit_graph.get_node_bed()
+    course_to_loops_on_front_part_of_the_tube, course_to_loops_on_back_part_of_the_tube = knit_graph.get_node_bed_for_courses()
+    node_to_course_and_wale = knit_graph.get_node_course_and_wale()
+    course_and_wale_and_bed_to_node = knit_graph.get_course_and_wale_and_bed_to_node()
+    #----
     max_wale_id_front_and_back = knit_graph.get_min_and_max_wale_id_on_course_on_bed()
     knit_graph.update_wales_to_reduce_float()
-    course_and_wale_and_bed_to_node = knit_graph.get_course_and_wale_and_bed_to_node()
-    # knit_graph.yarn_starting_direction = 'left to right' 
-    # print(f'knit_graph.yarn_starting_direction in test_ks is {knit_graph.yarn_starting_direction}')
+    knit_graph.adjust_overall_slanting()
+    #----
     knit_graph.update_parent_offsets()
-    # above is needed calculations on the knitgraph
-    KnitGraph_Visualizer = knitGraph_visualizer(knit_graph = knit_graph)
+    KnitGraph_Visualizer = knitGraph_visualizer(knit_graph=knit_graph)
     KnitGraph_Visualizer.visualize()
-    
-    
+
     # add hole on sheet
     # below are for creating hole on rectangular shaped patterns 
     # yarns_and_holes_to_add = {6:[14, 15]}
@@ -374,10 +377,10 @@ def test_stst():
     # list_of_holes = [[51,63]]
     # # for size = [48, 30], hole_generator = Hole_Generator_on_Tube(list_of_holes = [[585, 586, 587, 588, 589, 590, 633, 634, 635, 636, 637, 638, 681, 682, 683, 684, 685, 686, 729, 730, 731, 732, 733, 734]], knitgraph = knit_graph)
     # hole_generator = Hole_Generator_on_Tube(list_of_holes = [[24, 35, 25, 34, 36,47]], knitgraph = knit_graph)
-    # hole_generator = Hole_Generator_on_Tube(list_of_holes = [[22, 23]], knitgraph = knit_graph)
-    # knitGraph = hole_generator.add_hole()
-    # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
-    # KnitGraph_Visualizer.visualize()
+    hole_generator = Hole_Generator_on_Tube(list_of_holes = [[22,21,31,32,42,41,51,52]], knitgraph = knit_graph)
+    knitGraph = hole_generator.add_hole()
+    KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+    KnitGraph_Visualizer.visualize()
 
     # add pocket on sheet
     # when gauge = 1/2: a square pocket -- pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = sheet_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 3), (6, 3)], right_keynodes_child_fabric=[(3, 11), (6, 11)], close_top = False, edge_connection_left_side = [True], edge_connection_right_side = [True])
@@ -386,10 +389,10 @@ def test_stst():
     # when gauge = 1/3: pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = sheet_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(3, 4), (6, 4)], right_keynodes_child_fabric=[(3, 13), (6, 13)], close_top = False, edge_connection_left_side = [True], edge_connection_right_side = [True])
     # pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = sheet_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = True, left_keynodes_child_fabric=[(3, 3), (6, 3)], right_keynodes_child_fabric=[(3, 11), (6, 11)], close_top = False, edge_connection_left_side = [True], edge_connection_right_side = [True])
     # for size = [30, 40], gauge = 1/2, pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = sheet_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(10, 9), (30, 9)], right_keynodes_child_fabric=[(10, 41), (30, 41)], close_top = False, edge_connection_left_side = [True], edge_connection_right_side = [True])
-    pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = sheet_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(2,1), (3,1), (4,3)], right_keynodes_child_fabric=[(2,7), (4,7)], close_top = False, edge_connection_left_side = [True, False], edge_connection_right_side = [True])
-    knitGraph = pocket_generator.build_pocket_graph() 
-    KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
-    KnitGraph_Visualizer.visualize()
+    # pocket_generator = Pocket_Generator_on_Sheet(parent_knitgraph = knit_graph, sheet_yarn_carrier_id = sheet_yarn_carrier_id, pocket_yarn_carrier_id=4, is_front_patch = False, left_keynodes_child_fabric=[(2,1), (3,1), (4,3)], right_keynodes_child_fabric=[(2,7), (4,7)], close_top = False, edge_connection_left_side = [True, False], edge_connection_right_side = [True])
+    # knitGraph = pocket_generator.build_pocket_graph() 
+    # KnitGraph_Visualizer = knitGraph_visualizer(knitGraph)
+    # KnitGraph_Visualizer.visualize()
 
     # add pocket on tube
     # when gauge = 1/3: left_keynodes_child_fabric=[(3, 4), (6, 4)], right_keynodes_child_fabric=[(3, 7), (6, 7)], edge_connection_left_side = [True], close_top = False, edge_connection_right_side = [True]
@@ -446,12 +449,12 @@ def test_stst():
 
     # this convertor is for the modified knitgraph
     # generator = Knitout_Generator(strap_with_hole_graph)
-    generator = Knitout_Generator(knitGraph)
-    generator.write_instructions(f"stst_test.k")
+    # generator = Knitout_Generator(knitGraph)
+    # generator.write_instructions(f"stst_test.k")
     
     #this convertor is for the unmodified knitgraph
-    # generator = Knitout_Generator(knit_graph) 
-    # generator.write_instructions(f"stst_test.k")
+    generator = Knitout_Generator(knit_graph) 
+    generator.write_instructions(f"stst_test.k")
 
 
 def test_rib():

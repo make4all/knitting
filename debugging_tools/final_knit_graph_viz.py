@@ -38,7 +38,7 @@ class knitGraph_visualizer:
         self.carrier_id_to_color = {1:'black', 2:'skyblue', 3:'orange', 4:'green', 5: 'yellow', 6:'blue', 7: 'pink', 8: 'purple', 9:'cyan', 10:'red'}
         self.cable_depth_to_color = {1:'grey', -1:'magenta'}
         self.alpha_front = 1
-        self.alpha_back = 0.7 #previously 0.7
+        self.alpha_back = 0.5 #previously 0.7
         self.node_color_property = {}
         self.edge_color_property = {}
         self.stitch_labels = {}
@@ -278,7 +278,7 @@ class knitGraph_visualizer:
             edge_x = (pos[edge[0]][0] + pos[edge[1]][0]) / 2
             edge_y = (pos[edge[0]][1] + pos[edge[1]][1]) / 2
             if edge in self.stitch_labels:
-                label = Label(x=edge_x, y=edge_y, text=str(self.stitch_labels[edge]), x_offset=-8, y_offset=-6, text_color="black", text_alpha=1, text_font_size='9px', text_font_style='bold') #text_font_size='9px'
+                label = Label(x=edge_x, y=edge_y, text=str(self.stitch_labels[edge]), x_offset=-8, y_offset=-6, text_color="black", text_alpha=1, text_font_size='10px', text_font_style='bold') #text_font_size='9px'
                 p.add_layout(label)
 
         for node in G.nodes:
@@ -291,7 +291,7 @@ class knitGraph_visualizer:
         graph.node_renderer.data_source.data['course'] = [self.node_to_course_and_wale[node][0] for node in self.node_to_course_and_wale]
         graph.node_renderer.data_source.data['wale'] = [self.node_to_course_and_wale[node][1] for node in self.node_to_course_and_wale]
         graph.edge_renderer.data_source.data['alpha'] = [0 for edge in G.edges()]
-        graph.node_renderer.glyph.update(size=20, fill_color="colors", fill_alpha="alpha") #size = 20
+        graph.node_renderer.glyph.update(size=35, fill_color="colors", fill_alpha="alpha") #size = 20
         graph.edge_renderer.glyph.update(line_alpha="alpha")
         graph.edge_renderer.glyph.line_width = 'scale_width'
         return p

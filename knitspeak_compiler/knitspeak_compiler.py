@@ -56,10 +56,14 @@ class Knitspeak_Compiler:
         return self.current_row % 2 == 0
 
     def get_course_walking_direction(self):
-        print(f'self._parser.parser.symbolTable._symbol_table["round_courses"] is {self._parser.parser.symbolTable._symbol_table["round_courses"]}')
+        print(f'self._parser.parser.symbolTable._symbol_table["round_courses"] is {self._parser.parser.symbolTable._symbol_table["round_courses"]},\
+              self._parser.parser.symbolTable._symbol_table["row_courses"] is {self._parser.parser.symbolTable._symbol_table["row_courses"]}')
         for course_id in self._parser.parser.symbolTable._symbol_table["round_courses"]:
             self.knit_graph.course_id_to_walking_direction[course_id] = 'clockwise' 
-        for course_id in self._parser.parser.symbolTable._symbol_table["row_courses"]:
+        row_courses = sorted(self._parser.parser.symbolTable._symbol_table["row_courses"])
+        print(f'sorted row_course is {row_courses}')
+        for course_id in row_courses:
+            # print(f'self.knit_graph.course_id_to_walking_direction is {self.knit_graph.course_id_to_walking_direction}')
             if course_id == 1:
                 self.knit_graph.course_id_to_walking_direction[course_id] = 'counter-clockwise'
             elif (course_id - 1) in self._parser.parser.symbolTable._symbol_table["round_courses"]:
@@ -114,8 +118,10 @@ class Knitspeak_Compiler:
             self.is_cur_round = False
             if self.current_row in self._parser.parser.symbolTable._symbol_table["row_courses"]:
                 self.is_cur_row = True
+                self.knit_graph.course_to_row[course_id] = True
             elif self.current_row in self._parser.parser.symbolTable._symbol_table["round_courses"]:
                 self.is_cur_round = True
+                self.knit_graph.course_to_row[course_id] = False
                 #--deprecated when test pattern haha
                 # if self.is_cur_on_front_bed:  # if last course is row and this course is round
                 #     # we need to reverse direction since round is always clock-wise
@@ -336,7 +342,7 @@ class Knitspeak_Compiler:
         if self._working_ws and self.is_cur_row and not flipped_by_cable:  # flips stitches following hand-knitting conventions
             stitch_def = stitch_def.copy_and_flip()
 
-        if stitch_def.child_loops == 1:
+        if stitch_def.child_loops >= 1:
             if flipped_by_cable == True:
                 print('in flipped_by_cable')
                 parent_loops = []
@@ -469,7 +475,7 @@ class Knitspeak_Compiler:
                     elif self.knit_graph.object_type == "tube":
                         if self.is_cur_row:
                             if self.current_row % 2 == 0:
-                                parent_offset = -parent_offset
+                                parent_offset = parent_offset #originally parent_offset = -parent_offset
 
                         if len(self.loop_ids_consumed_by_current_course) < 1 or is_on_front_bed_for_tube(self.knit_graph, parent_loop):
                             parent_offset = -parent_offset  # negate when in front bed
