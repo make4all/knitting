@@ -11,6 +11,7 @@ import bokeh.events
 from bokeh.models import CustomJS, Column
 from bokeh.plotting import curdoc
 
+
 hv.extension('bokeh')
 
 # run the following command to launch notebook
@@ -48,7 +49,7 @@ gauge = Select(title='Gauge',
 
 # yarn carrier - drop down
 yarn_carrier_options = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
-yarn_carrier_options_adjusted = ["2", "3", "4", "5", "6", "7", "8", "9", "10"]
+yarn_carrier_options_adjusted = ["2", "1", "3", "4", "5", "6", "7", "8", "9", "10"]
 yarn_carrier = Select(title='Yarn ID', options=yarn_carrier_options, value=yarn_carrier_options[0], width=300)
 
 # graph height and width - int sliders
@@ -205,6 +206,43 @@ def _create_knit_graph(event):
 
 
             ###########################################################################
+            
+            ####call back event to highlight the selected node####
+            # Define a callback function to handle node selection and highlighting
+            def highlight_node(event, i):
+                print('highlight code activated')
+                selected[0] = 10 + i
+                highlighted_nodes = []
+                highlight_code = '''
+                    if (selected[0] == 10 + s) {
+                        for (let i = 0; i < node.selected.indices.length; i++) { 
+                            if (!highlighted_nodes.includes(node.selected.indices[i])) {
+                                highlighted_nodes.push(node.selected.indices[i]);
+                            }
+                        }
+                        
+                        // Perform highlighting logic here
+                        // For example, change node colors or sizes
+                        for (let i = 0; i < highlighted_nodes.length; i++) {
+                            node.data.color[highlighted_nodes[i]] = 'red';  // Change node color to red
+                            node.data.size[highlighted_nodes[i]] = 15;       // Increase node size
+                        }
+                        node.change.emit();  // Update the plot to reflect the changes
+                        
+                    }
+                '''
+                highlight_callback = CustomJS(
+                    args={'node': plot.renderers[-1].node_renderer.data_source,
+                        'selected': selected,
+                        'highlighted_nodes': highlighted_nodes,
+                        's': i},
+                    code=highlight_code
+                )
+                plot.renderers[-1].node_renderer.data_source.selected.js_on_change('indices', highlight_callback)
+                # Attach the callback function to the tap event
+                plot.renderers[-1].node_renderer.data_source.selected.js_on_event(bokeh.events.Tap, highlight_callback)
+
+            #######call back event to highlight the selected node####
 
             if pattern_type.active == 0:  # Hole on Tube
                 hole_children = [widget2]
@@ -215,6 +253,9 @@ def _create_knit_graph(event):
                     hole_children.append(row(hole_index, hole_nodes_add_from_graph))
 
                 column_widgets = Column(children=hole_children)
+                # Call the highlight_node function with the appropriate arguments
+                highlight_node(event=bokeh.events.Tap, i=100)
+                
             elif pattern_type.active == 1:  # Hole on Sheet
                 hole_children = [widget2]
                 for i in range(0, 10):

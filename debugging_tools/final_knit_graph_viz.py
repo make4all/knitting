@@ -101,6 +101,8 @@ class knitGraph_visualizer:
         for yarn in self.yarns:
             print(f'yarn is {yarn.yarn_id}, yarn.yarn_graph.edges is {yarn.yarn_graph.edges}')
             for prior_node, next_node in yarn.yarn_graph.edges:
+                if prior_node == next_node:
+                    continue #(n, n) are mistakenly added to yarn_graph edges, will need to identify the issue source later, here we just use a trick.
                 if prior_node not in self.nodes_to_positions or next_node not in self.nodes_to_positions:
                     continue
                 self.edge_color_property[(prior_node, next_node)] = {}
@@ -115,7 +117,9 @@ class knitGraph_visualizer:
         for parent_id, child_id in self.knit_graph.graph.edges:
             self.edge_color_property[(parent_id, child_id)] = {}
             self.edge_color_property[(parent_id, child_id)]['alpha'] = self.alpha_front if self.node_on_front_or_back[parent_id] == 'f' and self.node_on_front_or_back[child_id] == 'f' else self.alpha_back
-            self.stitch_labels[(parent_id, child_id)] = self.knit_graph.graph[parent_id][child_id]["pull_direction"].opposite() if self.node_on_front_or_back[child_id] == 'b' else self.knit_graph.graph[parent_id][child_id]["pull_direction"]
+            # self.stitch_labels[(parent_id, child_id)] = self.knit_graph.graph[parent_id][child_id]["pull_direction"].opposite() if self.node_on_front_or_back[child_id] == 'b' else self.knit_graph.graph[parent_id][child_id]["pull_direction"]
+            #unlike above (the original), we do not invert the stitch pull direction on the back bed
+            self.stitch_labels[(parent_id, child_id)] = self.knit_graph.graph[parent_id][child_id]["pull_direction"]
             flag_for_on_yarn = False
             for yarn in self.yarns:
                 #if stitch edge color is determined by child_id, use below one
@@ -148,21 +152,30 @@ class knitGraph_visualizer:
         G.add_nodes_from(pos.keys())
         #draw nodes
         for node in G.nodes():
-            # node_size = 300 
+            # node_size = 500 
             #bigger node size: 1000
-            nx.draw_networkx_nodes(G, pos, nodelist=[node], node_size = 1000, node_color = self.node_color_property[node]['color'], alpha = self.node_color_property[node]['alpha'])
+            nx.draw_networkx_nodes(G, pos, nodelist=[node], node_size = 500, node_color = self.node_color_property[node]['color'], alpha = self.node_color_property[node]['alpha'])
         #draw edges
-        for edge in [*self.edge_color_property.keys()]:
-            # width = 3.0
-            # bigger version: width = 10
-            nx.draw_networkx_edges(G, pos, edgelist=[edge], width = 10.0, edge_color = self.edge_color_property[edge]['color'], style = 'solid', alpha = self.edge_color_property[edge]['alpha'])
+        # for edge in [*self.edge_color_property.keys()]:
+        #     # width = 3.0
+        #     # bigger version: width = 10
+        #     nx.draw_networkx_edges(G, pos, edgelist=[edge], width = 5.0, edge_color = self.edge_color_property[edge]['color'], style = 'solid', alpha = self.edge_color_property[edge]['alpha'])
+        #draw edges using different line styles
+        for edge in [*self.edge_color_property.keys()]: 
+            #width = 5.0
+            if edge in self.stitch_labels and str(self.stitch_labels[edge]) == 'FtB':
+                nx.draw_networkx_edges(G, pos, edgelist=[edge], width = 8.0, edge_color = self.edge_color_property[edge]['color'], node_size = 200, arrowstyle = '-', arrowsize= 20, style = 'dashed', alpha = self.edge_color_property[edge]['alpha'])
+            elif edge in self.stitch_labels and str(self.stitch_labels[edge]) == 'BtF':
+                nx.draw_networkx_edges(G, pos, edgelist=[edge], width = 8.0, edge_color = self.edge_color_property[edge]['color'],  node_size = 200, arrowstyle = '-', style = 'solid', alpha = self.edge_color_property[edge]['alpha'])
+            else:
+                nx.draw_networkx_edges(G, pos, edgelist=[edge], width = 8.0, edge_color = self.edge_color_property[edge]['color'], node_size = 300, arrows = True, style = 'solid', alpha = self.edge_color_property[edge]['alpha'])
         #draw node labels: font_size = 9 bigger font: 20
-        node_labels = {x: x for x in G.nodes}
-        nx.draw_networkx_labels(G, pos, labels=node_labels, font_size=20, font_color='w')
+        # node_labels = {x: x for x in G.nodes}
+        # nx.draw_networkx_labels(G, pos, labels=node_labels, font_size=9, font_color='w') 
         #draw edge labels
         # label_pos = 0.5, font_size = 5
         # small version: label_pos = 0.5, font_size = 0.0005
-        nx.draw_networkx_edge_labels(G, pos, edge_labels = self.stitch_labels, label_pos = 0.5, font_size = 5, font_color='k', rotate=False)
+        # nx.draw_networkx_edge_labels(G, pos, edge_labels = self.stitch_labels, label_pos = 0.5, font_size = 0.05, font_color='k', rotate=False)
         plt.show()
 
     def deprecated_draw_graph_holoviews(self):
@@ -253,14 +266,15 @@ class knitGraph_visualizer:
         # add nodes
         G.add_nodes_from(pos.keys())
         hv.extension('bokeh')
-        simple_graph = hv.Graph.from_networkx(G, pos).opts(width=950, height=1000, inspection_policy='nodes')
+        simple_graph = hv.Graph.from_networkx(G, pos).opts(width=950, height=1000, inspection_policy='nodes', node_hover_fill_color='red')
         p = hv.render(simple_graph)
 
         x_range = np.abs(p.x_range.start - p.x_range.end)
         y_range = np.abs(p.y_range.start - p.y_range.end)
 
-        hover = HoverTool(tooltips=[("Course:", "@course"), ("Wale:", "@wale")])
-        p.add_tools(hover, TapTool(), BoxSelectTool(), WheelZoomTool())
+        # hover = HoverTool(tooltips=[("Course:", "@course"), ("Wale:", "@wale")])
+        hover = HoverTool(tooltips=[("Course:", "@course"), ("Wale:", "@wale"), ("Bed:", "@bed")])
+        p.add_tools(hover, TapTool(), BoxSelectTool()) #p.add_tools(hover, TapTool(), BoxSelectTool(), WheelZoomTool())
 
         for edge in [*self.edge_color_property.keys()]:
             # vec_start = np.array([pos[edge[0]][0], pos[edge[0]][1]])
@@ -272,26 +286,57 @@ class knitGraph_visualizer:
             # p.add_layout(Arrow(end=NormalHead(fill_color=self.edge_color_property[edge]['color'], fill_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha']), size=7),
             #     x_start=(pos[edge[0]][0] - radius_x * vec_dir[0]), y_start=(pos[edge[0]][1] - radius_y * vec_dir[1]), x_end=(pos[edge[1]][0] + radius_x * vec_dir[0]), \
             #         y_end=(pos[edge[1]][1] + radius_y * vec_dir[1]), line_width=3, line_color=self.edge_color_property[edge]['color'], line_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha'])))
-            p.add_layout(Arrow(end=NormalHead(fill_color=self.edge_color_property[edge]['color'], fill_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha']), size=7), #size=7
+            ######
+            #add edges with arrow head
+            # p.add_layout(Arrow(end=NormalHead(fill_color=self.edge_color_property[edge]['color'], fill_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha']), size=7), #size=7
+            #     x_start=(pos[edge[0]][0]), y_start=(pos[edge[0]][1]), x_end=(pos[edge[1]][0]), \
+            #         y_end=(pos[edge[1]][1]), line_width=3, line_color=self.edge_color_property[edge]['color'], line_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha'])))
+            #######
+            #add edges without arrow head, use Arrow(end=None, ...)
+            if edge in self.stitch_labels and str(self.stitch_labels[edge]) == 'FtB':
+                p.add_layout(Arrow(end=None, #size=7, line_width=3
+                    x_start=(pos[edge[0]][0]), y_start=(pos[edge[0]][1]), x_end=(pos[edge[1]][0]), \
+                        y_end=(pos[edge[1]][1]), line_width=1, line_color=self.edge_color_property[edge]['color'], line_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha']), line_dash='dashed'))
+            elif edge in self.stitch_labels and str(self.stitch_labels[edge]) == 'BtF':
+                p.add_layout(Arrow(end=None, #size=7, line_width=3
+                    x_start=(pos[edge[0]][0]), y_start=(pos[edge[0]][1]), x_end=(pos[edge[1]][0]), \
+                        y_end=(pos[edge[1]][1]), line_width=1, line_color=self.edge_color_property[edge]['color'], line_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha'])))
+            else:
+                #for yarn edges #size=7, line_width=3
+                # print(f'edge is {edge}')
+                #---
+                p.add_layout(Arrow(end=NormalHead(fill_color=self.edge_color_property[edge]['color'], fill_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha']), size=2), #size=7
                 x_start=(pos[edge[0]][0]), y_start=(pos[edge[0]][1]), x_end=(pos[edge[1]][0]), \
-                    y_end=(pos[edge[1]][1]), line_width=3, line_color=self.edge_color_property[edge]['color'], line_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha'])))
+                    y_end=(pos[edge[1]][1]), line_width=1, line_color=self.edge_color_property[edge]['color'], line_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha'])))
+                #---
+                # p.add_layout(Arrow(end=None, #size=7
+                # x_start=(pos[edge[0]][0]), y_start=(pos[edge[0]][1]), x_end=(pos[edge[1]][0]), \
+                #     y_end=(pos[edge[1]][1]), line_width=1, line_color=self.edge_color_property[edge]['color'], line_alpha=(self.edge_color_property[edge]['alpha']*self.edge_color_property[edge]['alpha'])))
+            
             edge_x = (pos[edge[0]][0] + pos[edge[1]][0]) / 2
             edge_y = (pos[edge[0]][1] + pos[edge[1]][1]) / 2
-            if edge in self.stitch_labels:
-                label = Label(x=edge_x, y=edge_y, text=str(self.stitch_labels[edge]), x_offset=-8, y_offset=-6, text_color="black", text_alpha=1, text_font_size='10px', text_font_style='bold') #text_font_size='9px'
-                p.add_layout(label)
-
-        for node in G.nodes:
-            label = Label(x=pos[node][0], y=pos[node][1], text=str(node), x_offset=(-3 * len(str(node))), y_offset=-3.5, text_color="white", text_font_size='10px', text_font_style='bold') #text_font_size='10px'
-            p.add_layout(label)
+            #add stitch label
+            # if edge in self.stitch_labels:
+            #     label = Label(x=edge_x, y=edge_y, text=str(self.stitch_labels[edge]), x_offset=-8, y_offset=-6, text_color="black", text_alpha=1, text_font_size='8px', text_font_style='bold') #text_font_size='9px'
+            #     p.add_layout(label)
+        
+        # add node id label 
+        # for node in G.nodes:
+        #     # label = Label(x=pos[node][0], y=pos[node][1], text=str(node), x_offset=(-3 * len(str(node))), y_offset=-3.5, text_color="white", text_font_size='4px', text_font_style='bold') #text_font_size='10px'
+        #     label = Label(x=pos[node][0], y=pos[node][1], text=str(node), x_offset=(-1.2 * len(str(node))), y_offset=-1.5, text_color="white", text_font_size='6px', text_font_style='bold') #text_font_size='10px'
+        #     p.add_layout(label)
 
         graph = p.renderers[-1]
         graph.node_renderer.data_source.data['colors'] = [self.node_color_property[node]['color'] for node in G.nodes()]
+        #original for node alpha
         graph.node_renderer.data_source.data['alpha'] = [self.node_color_property[node]['alpha'] * self.node_color_property[node]['alpha'] for node in G.nodes()]
+        #now for node alpha
+        # graph.node_renderer.data_source.data['alpha'] = [0 for node in G.nodes()]
         graph.node_renderer.data_source.data['course'] = [self.node_to_course_and_wale[node][0] for node in self.node_to_course_and_wale]
         graph.node_renderer.data_source.data['wale'] = [self.node_to_course_and_wale[node][1] for node in self.node_to_course_and_wale]
+        graph.node_renderer.data_source.data['bed'] = [self.node_on_front_or_back[node] for node in self.node_on_front_or_back]
         graph.edge_renderer.data_source.data['alpha'] = [0 for edge in G.edges()]
-        graph.node_renderer.glyph.update(size=35, fill_color="colors", fill_alpha="alpha") #size = 20
+        graph.node_renderer.glyph.update(size=1, fill_color="colors", fill_alpha="alpha") #previously, size = 35; 20; 10(for figure 1). smaller: 5
         graph.edge_renderer.glyph.update(line_alpha="alpha")
         graph.edge_renderer.glyph.line_width = 'scale_width'
         return p

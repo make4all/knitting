@@ -42,6 +42,9 @@ def generate_initial_graph(pattern_used, gauge, color, width, height, knit_speak
     knit_graph.adjust_overall_slanting()
     #----
     knit_graph.update_parent_offsets()
+    #---mar 30
+    knit_graph.bind_off_final_course()
+    #---
     KnitGraph_Visualizer = knitGraph_visualizer(knit_graph=knit_graph)
     return KnitGraph_Visualizer.visualize()
 

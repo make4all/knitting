@@ -590,6 +590,17 @@ class Knit_Graph:
             self.courses_to_max_wale_on_back[course_id] = max_wale_on_back
         print(f'updated self.courses_to_min_wale_on_front is {self.courses_to_min_wale_on_front}, updated self.courses_to_max_wale_on_front is {self.courses_to_max_wale_on_front},\
               updated self.courses_to_min_wale_on_back is {self.courses_to_min_wale_on_back}, updated self.courses_to_max_wale_on_back is {self.courses_to_max_wale_on_back}')
+    
+    def bind_off_final_course(self): #though can be easily generailized to incorporate the bind off symbol in knitspeak
+        loop_ids = sorted(self.course_to_loop_ids[max(*self.course_to_loop_ids.keys())])
+        for i in range(len(loop_ids) - 1):
+            # Retrieve adjacent elements
+            loop1 = loop_ids[i]
+            loop2 = loop_ids[i + 1]
+            loop1_wale = self.node_to_course_and_wale[loop1][1]
+            loop2_wale = self.node_to_course_and_wale[loop2][1]
+            self.connect_loops(loop1, loop2, parent_offset = int((loop1_wale - loop2_wale)/self.wale_dist), pull_direction = Pull_Direction.BtF, depth = 0)
+            
 
     # def update_wales_to_reduce_float(self):
     #     if self.object_type == 'tube':
