@@ -40,13 +40,3 @@ All rs rounds k 10. All ws rounds k 10.
 All rs rows k 10. All ws rows k 10.
 ```
 
-### knit_graphs
-This package contains the classes used to create a knit graph (`Loop`, `Yarn`, `Knit_Graph`, `Pull_Direction(Enum)`). 
-
-### debugging_tools
-This package contains a visualizer method to help visualize simple knit graphs. This may be useful to extend for 
-debugging future projects. It also contains a set of simple knitgraph which manually generate some simple textures. 
-In future assignments we will make it easier to define more complex knit graphs.
-
-### knitting_machine
-This package contains the code to generate knitout code using a model of a v-bed knitting machine.
